@@ -1362,9 +1362,10 @@ body{
             <div class="deck-file-backup-actions">
               <button class="action-btn deck-save-btn" id="saveDeckBtn" type="button">Export current deck</button>
               <button class="action-btn deck-save-btn" id="loadDeckBtn" type="button">Import deck file</button>
+              <button class="action-btn deck-save-btn" id="exportAllDecksBtn" type="button">Export all decks</button>
             </div>
           </details>
-          <input id="loadDeckInput" type="file" accept=".txt,text/plain" hidden>
+          <input id="loadDeckInput" type="file" accept=".txt,.json,text/plain,application/json" hidden>
         </section>
 
         <section id="submitDeckPanel" class="deck-storage-panel" role="tabpanel" aria-labelledby="submitDeckTab" hidden>
@@ -2302,17 +2303,66 @@ if(document.readyState === 'loading'){
   setupCardInspectorModal();
 }
 
+function stickyCardContext(card){
+  if(!card) return {id:'', card:null, messages:[], variant:'warning'};
+  const id = card.dataset.cardId || card.dataset.id || card.dataset.bastionId || card.dataset.terraId || '';
+  const c = CARDS.find(x => x.id === id) || ROYAL_OPTIONS.find(x => x.id === id) || BASTION_OPTIONS.find(x => x.id === id) || TERRA_CARDS.find(x => x.id === id) || null;
+  const subtleRoyalReplacement = card.dataset.royalReplacementSubtle === '1'
+    ? (card.dataset.royalReplacement || '')
+    : '';
+  const hardWarnings = [
+    subtleRoyalReplacement ? '' : card.dataset.royalReplacement,
+    card.dataset.bastionReplacement,
+    card.dataset.restrictionReason
+  ].filter(Boolean);
+  const loyaltyNotice = card.dataset.royalLoyaltyWarning || subtleRoyalReplacement || '';
+  const selectedRoyalNotice = card.classList.contains('selected-royal-in-pool');
+  const messages = hardWarnings.length
+    ? hardWarnings
+    : (loyaltyNotice ? [loyaltyNotice] : (selectedRoyalNotice ? ['This is your Royal.'] : []));
+  const variant = hardWarnings.length
+    ? 'warning'
+    : (loyaltyNotice ? 'loyalty' : (selectedRoyalNotice ? 'selected' : 'warning'));
+  return {id, card:c, messages, variant, hardWarnings, loyaltyNotice};
+}
+
+function renderStickyCardFromElement(card){
+  const tooltip = document.getElementById('cardHoverTooltip');
+  if(!tooltip || !card) return;
+  const info = stickyCardContext(card);
+  const c = info.card;
+  if(!c) return;
+
+  const text = formatCardRulesText(cardRulesText(c));
+  const metaParts = [];
+  if(c.cost !== '' && c.cost != null) metaParts.push(`Cost ${c.cost}`);
+  if(c.faction) metaParts.push(c.faction);
+  if(c.type) metaParts.push(c.type);
+  if(c.stats) metaParts.push(c.stats);
+  const metaHtml = metaParts.length
+    ? `<div class="hover-meta">${escapeHtml(metaParts.join(' · '))}</div>`
+    : '';
+  const rulesHtml = text
+    ? `<div class="hover-text">${escapeHtml(text)}</div>`
+    : '<div class="hover-text hover-unavailable">No card text listed.</div>';
+
+  tooltip.innerHTML = `
+    <div class="sticky-card-preview sticky-card-data-only">
+      <div class="sticky-card-warnings">${stickyHoverNoticeHtml(info.messages, info.variant)}</div>
+      <div class="sticky-card-description">
+        <div class="hover-card-name">${escapeHtml(c.name || 'Unnamed Card')}</div>
+        ${metaHtml}
+        <div class="hover-rule-label">Card text</div>
+        ${rulesHtml}
+      </div>
+    </div>`;
+  tooltip.classList.remove('touch-card-selected');
+  tooltip.setAttribute('aria-hidden','false');
+}
+
 function setupCardHoverTooltip(root){
   const tooltip = document.getElementById('cardHoverTooltip');
   if(!tooltip || !root) return;
-
-  let activeCard = null;
-
-  const showPlaceholder = () => {
-    activeCard = null;
-    tooltip.innerHTML = '<div class="tooltip-placeholder">Hover over a card to view its rules text.</div>';
-    tooltip.setAttribute('aria-hidden','false');
-  };
 
   const selector = '.simple-card[data-card-id], .simple-card[data-id], .simple-card[data-bastion-id], .simple-card[data-terra-id], .deck-thumbnail[data-card-id]';
 
@@ -2328,76 +2378,31 @@ function setupCardHoverTooltip(root){
       const inspected = cardInspectorLookup(inspectorId());
       if(inspected) openCardInspector(inspected);
     });
+
+    /* Hover is now warning-only. It must never replace the card pinned in the
+       sticky header; only an intentional click/tap is allowed to do that. */
     card.addEventListener('mouseenter', e => {
       if(!cardHoverIsEnabled()) return;
-      const id = card.dataset.cardId || card.dataset.id || card.dataset.bastionId || card.dataset.terraId;
-      const c = CARDS.find(x => x.id === id) || ROYAL_OPTIONS.find(x => x.id === id) || BASTION_OPTIONS.find(x => x.id === id) || TERRA_CARDS.find(x => x.id === id);
-      if(!c) return;
-
-      const text = formatCardRulesText(cardRulesText(c));
-      const subtleRoyalReplacement = card.dataset.royalReplacementSubtle === '1'
-        ? (card.dataset.royalReplacement || '')
-        : '';
-      const hardWarnings = [
-        subtleRoyalReplacement ? '' : card.dataset.royalReplacement,
-        card.dataset.bastionReplacement,
-        card.dataset.restrictionReason
-      ].filter(Boolean);
-      const loyaltyNotice = card.dataset.royalLoyaltyWarning || subtleRoyalReplacement || '';
-      const selectedRoyalNotice = card.classList.contains('selected-royal-in-pool');
-      const stickyMessages = hardWarnings.length
-        ? hardWarnings
-        : (loyaltyNotice ? [loyaltyNotice] : (selectedRoyalNotice ? ['This is your Royal.'] : []));
-      const stickyVariant = hardWarnings.length
-        ? 'warning'
-        : (loyaltyNotice ? 'loyalty' : (selectedRoyalNotice ? 'selected' : 'warning'));
-
-      // Keep warnings hover-triggered. Selection and second-Royal loyalty are
-      // informational notices, so they use the quieter brass treatment.
-      if(hardWarnings.length){
-        showMouseDisclaimer(hardWarnings, e.clientX, e.clientY, 'warning');
-      } else if(loyaltyNotice){
-        showMouseDisclaimer([loyaltyNotice], e.clientX, e.clientY, 'loyalty');
-      } else {
+      const info = stickyCardContext(card);
+      if(info.hardWarnings?.length){
+        showMouseDisclaimer(info.hardWarnings, e.clientX, e.clientY, 'warning');
+      }else if(info.loyaltyNotice){
+        showMouseDisclaimer([info.loyaltyNotice], e.clientX, e.clientY, 'loyalty');
+      }else{
         hideMouseDisclaimer();
       }
-
-      activeCard = card;
-      const metaParts = [];
-      if(c.cost !== '' && c.cost != null) metaParts.push(`Cost ${c.cost}`);
-      if(c.faction) metaParts.push(c.faction);
-      if(c.type) metaParts.push(c.type);
-      if(c.stats) metaParts.push(c.stats);
-      const metaHtml = metaParts.length
-        ? `<div class="hover-meta">${escapeHtml(metaParts.join(' · '))}</div>`
-        : '';
-      const rulesHtml = text
-        ? `<div class="hover-text">${escapeHtml(text)}</div>`
-        : '<div class="hover-text hover-unavailable">No card text listed.</div>';
-
-      // Keep the sticky header data-only. Any warnings are always shown first,
-      // followed by the card name, metadata, and rules text.
-      tooltip.innerHTML = `
-        <div class="sticky-card-preview sticky-card-data-only">
-          <div class="sticky-card-warnings">${stickyHoverNoticeHtml(stickyMessages, stickyVariant)}</div>
-          <div class="sticky-card-description">
-            <div class="hover-card-name">${escapeHtml(c.name || 'Unnamed Card')}</div>
-            ${metaHtml}
-            <div class="hover-rule-label">Card text</div>
-            ${rulesHtml}
-          </div>
-        </div>`;
-      tooltip.setAttribute('aria-hidden','false');
-      positionFloatingCardTooltip(e.clientX,e.clientY);
     });
     card.addEventListener('mousemove', e => {
       if(cardHoverIsEnabled() && (card.dataset.royalReplacement || card.dataset.bastionReplacement || card.dataset.restrictionReason || card.dataset.royalLoyaltyWarning)) positionMouseDisclaimer(e.clientX, e.clientY);
     });
-    card.addEventListener('mouseleave', () => {
-      // Warnings remain hover-only in both places. The card info itself stays
-      // persistent in the sticky tooltip, just like before.
-      hideMouseDisclaimer();
-      if(activeCard === card) clearStickyHoverNotice(tooltip);
+    card.addEventListener('mouseleave', hideMouseDisclaimer);
+
+    /* Desktop mouse clicks pin the card. Touch clicks are intercepted by the
+       dedicated touch controller below, which renders the same pinned content
+       together with +/- controls and warnings. */
+    card.addEventListener('click', e => {
+      if(e.button !== 0) return;
+      renderStickyCardFromElement(card);
     });
   });
 }
@@ -2498,6 +2503,7 @@ function renderPool(){
     }
 
     if(next === current) return;
+    if(delta < 0 && next < current) playDeckReturnAnimation(id, isSide ? 'side' : 'main');
     if(next === 0) delete target[id];
     else target[id] = next;
     if(!isSide) enforceSideDeckSharedCopyLimits();
@@ -2627,6 +2633,7 @@ function collapseRestrictedCardsIn(container, groupSelector){
 
 async function removeSelectedRoyal(id){
   if(!state.royals.includes(id)) return;
+  playDeckReturnAnimation(id,'royal');
   state.royals = state.royals.filter(royalId => royalId !== id);
   await reconcileWithDialog();
   reconcileBastionWithRoyals();
@@ -2823,6 +2830,12 @@ function renderRoyals(){
     await reconcileWithDialog();
     reconcileBastionWithRoyals();
     renderAll();
+    if(window.__kingdomsRecentLeaderTouch?.id === id && performance.now() - window.__kingdomsRecentLeaderTouch.time < 1600){
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const fresh = document.querySelector(`.simple-royal-card[data-id="${CSS.escape(id)}"]`);
+        if(fresh) window.__kingdomsPlayTouchedCardHover?.(fresh);
+      }));
+    }
   };
 
   grid.querySelectorAll('.simple-royal-card').forEach(card => {
@@ -3040,6 +3053,12 @@ function renderBastion(){
     await reconcileWithDialog();
     reconcileBastionWithRoyals();
     renderAll();
+    if(window.__kingdomsRecentLeaderTouch?.id === id && performance.now() - window.__kingdomsRecentLeaderTouch.time < 1600){
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const fresh = document.querySelector(`.simple-card[data-bastion-id="${CSS.escape(id)}"]`);
+        if(fresh) window.__kingdomsPlayTouchedCardHover?.(fresh);
+      }));
+    }
   };
 
   grid.querySelectorAll('.simple-card[data-bastion-id]').forEach(card => {
@@ -3087,6 +3106,59 @@ function deckThumbnail(card, count, kind = 'main', landscape = false, extraClass
 /* ============================================================================
    LEFT DECK PANEL / DECK BREAKDOWN
    ============================================================================ */
+
+/* Small return-flight animation used whenever a copy leaves the deck.
+   The animation is visual only: state updates still happen immediately. */
+function playDeckReturnAnimation(cardId, kind = 'main'){
+  if(!cardId || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+  const esc = (window.CSS && CSS.escape) ? CSS.escape(cardId) : String(cardId).replace(/["']/g,'\\$&');
+  const source = document.querySelector(`.deck-panel .deck-thumbnail[data-card-id="${esc}"][data-deck-kind="${kind}"]`)
+    || document.querySelector(`.deck-panel .deck-thumbnail[data-card-id="${esc}"]`);
+  if(!source) return;
+
+  const sourceArt = source.querySelector('.deck-thumbnail-art img, img');
+  const sourceRect = (source.querySelector('.deck-thumbnail-art') || source).getBoundingClientRect();
+  if(sourceRect.width < 2 || sourceRect.height < 2) return;
+
+  /* Removed cards now collapse toward the visual center of the screen instead
+     of flying to a particular pool card. This keeps the effect consistent for
+     normal cards, Royals, Bastions, Side Deck cards, and Terra. */
+  const viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+  const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+  const sourceCenterX = sourceRect.left + sourceRect.width / 2;
+  const sourceCenterY = sourceRect.top + sourceRect.height / 2;
+  const dx = viewportW / 2 - sourceCenterX;
+  const dy = viewportH / 2 - sourceCenterY;
+
+  const ghost = document.createElement('div');
+  ghost.className = 'deck-return-flight-card';
+  Object.assign(ghost.style, {
+    position:'fixed', left:`${sourceRect.left}px`, top:`${sourceRect.top}px`,
+    width:`${sourceRect.width}px`, height:`${sourceRect.height}px`,
+    zIndex:'1000000', pointerEvents:'none', borderRadius:'6px', overflow:'hidden',
+    transformOrigin:'50% 50%', willChange:'transform,opacity,filter',
+    boxShadow:'0 10px 24px rgba(0,0,0,.46),0 0 0 1px rgba(201,160,60,.42)',
+    background:'var(--panel-raised)'
+  });
+  if(sourceArt?.src){
+    const img=document.createElement('img');
+    img.src=sourceArt.src; img.alt='';
+    Object.assign(img.style,{width:'100%',height:'100%',objectFit:'cover',display:'block'});
+    ghost.appendChild(img);
+  }
+  document.body.appendChild(ghost);
+
+  const turn = dx >= 0 ? 3.5 : -3.5;
+  const anim = ghost.animate([
+    {transform:'translate3d(0,0,0) scale(1) rotate(0deg)',opacity:1,filter:'brightness(1)'},
+    {offset:.28,transform:`translate3d(${dx*.28}px,${dy*.24 - 12}px,0) scale(.82) rotate(${turn}deg)`,opacity:.94,filter:'brightness(1.08)'},
+    {offset:.68,transform:`translate3d(${dx*.72}px,${dy*.70 - 6}px,0) scale(.42) rotate(${turn*.45}deg)`,opacity:.66,filter:'brightness(1.12)'},
+    {transform:`translate3d(${dx}px,${dy}px,0) scale(.08) rotate(0deg)`,opacity:0,filter:'brightness(1.18)'}
+  ],{duration:440,easing:'cubic-bezier(.22,.76,.24,1)',fill:'forwards'});
+  anim.addEventListener('finish',()=>ghost.remove(),{once:true});
+}
+
 function renderDeckPanel(){
   const curveBars = document.getElementById('curveBars');
   const list = document.getElementById('deckListMini');
@@ -3217,13 +3289,14 @@ function renderDeckPanel(){
     });
 
     thumb.addEventListener('contextmenu', e => {
-      if(kind === 'terra'){ e.preventDefault(); e.stopPropagation(); if(changeTerraCard(id,-1)) renderAll(); return; }
+      if(kind === 'terra'){ e.preventDefault(); e.stopPropagation(); if(terraCardCount(id) > 0) playDeckReturnAnimation(id,'terra'); if(changeTerraCard(id,-1)) renderAll(); return; }
       if(kind === 'main' || kind === 'side'){
         e.preventDefault();
         e.stopPropagation();
         const target = kind === 'side' ? state.side : state.main;
         const current = target[id] || 0;
         if(current <= 0) return;
+        playDeckReturnAnimation(id, kind);
         const next = current - 1;
         if(next === 0) delete target[id];
         else target[id] = next;
@@ -3233,6 +3306,7 @@ function renderDeckPanel(){
         removeSelectedRoyal(id);
       }else if(kind === 'bastion'){
         e.preventDefault();
+        playDeckReturnAnimation(id,'bastion');
         state.bastion = null;
         state.cachedBastion = null;
         renderAll();
@@ -8619,4 +8693,1205 @@ communityEl('pilotName').maxLength=80;
 communityEl('openDeckFilePanel').addEventListener('click',()=>{
   if(!communityEl('submitDeckPanel').hidden){updateCommunitySubmitSummary();refreshCommunityNames();prepareCommunityCaptcha();}
 });
+</script>
+
+<style id="v72-larger-deck-options-screen">
+/* Larger deck-management screen.
+   The prior working envelope was ~740×680. 860×790 is ~35% more total panel
+   area while remaining capped to the usable viewport on smaller displays. */
+.deck-options-dialog{
+  width:min(860px,calc(100vw - 24px)) !important;
+  height:min(790px,calc(100dvh - 24px)) !important;
+  max-height:min(790px,calc(100dvh - 24px)) !important;
+}
+.deck-options-header{padding:20px 24px !important;}
+.deck-options-header h2{font-size:24px !important;}
+.deck-options-content{padding:22px 24px 26px !important;}
+.deck-options-content .deck-theme-customizer{padding:16px 14px !important;}
+.deck-options-content .deck-file-actions{gap:12px !important;}
+@media(max-width:760px), (max-height:620px){
+  .deck-options-dialog{
+    width:calc(100vw - 16px) !important;
+    height:calc(100dvh - 16px) !important;
+    max-height:calc(100dvh - 16px) !important;
+  }
+  .deck-options-header{padding:14px 16px !important;}
+  .deck-options-content{padding:16px !important;}
+}
+</style>
+
+<style id="v70-export-all-and-scaling">
+/* Three backup actions instead of two; still collapses to one column when the
+   dialog itself is narrow. */
+.deck-file-backup-actions{grid-template-columns:repeat(auto-fit,minmax(150px,1fr)) !important;}
+#exportAllDecksBtn[disabled]{opacity:.55;cursor:not-allowed;}
+/* The design-viewport scaler sizes the document itself, so nothing inside the
+   page is allowed to introduce its own horizontal scrollbar. */
+html.kingdoms-scaled,html.kingdoms-scaled body{max-width:100%;overflow-x:hidden;}
+</style>
+
+<style id="v71-builder-priority-scaling">
+/* Preserve the established 1920×1080 proportions while guaranteeing that
+   the actual deck-builder workspace remains the dominant horizontal region. */
+body.v35-layout-locked{
+  grid-template-columns:min(var(--v35-left-rail-width,387px),20%) minmax(0,1fr) !important;
+}
+/* Let the central builder consume every pixel assigned to it. */
+body.v35-layout-locked .builder-column,
+body.v35-layout-locked .page-content,
+body.v35-layout-locked .page-content > .wrap{
+  min-width:0 !important;
+  width:100% !important;
+  max-width:none !important;
+}
+/* CSS dvh does not expand when the root is zoomed down. Use the logical
+   viewport height calculated by the scaler so the app still reaches the
+   physical bottom edge at every scale instead of leaving unused black space. */
+body{
+  height:var(--kingdoms-logical-vh,100dvh) !important;
+  min-height:var(--kingdoms-logical-vh,100dvh) !important;
+  max-height:var(--kingdoms-logical-vh,100dvh) !important;
+}
+</style>
+
+<style id="v72-forced-landscape-view">
+/* Portrait/inverse-aspect displays are rendered as a landscape canvas.
+   JS supplies swapped logical dimensions before the 1920×1080 scale pass. */
+html.kingdoms-force-landscape{
+  width:100% !important;
+  height:100% !important;
+  overflow:hidden !important;
+}
+html.kingdoms-force-landscape body{
+  position:fixed !important;
+  left:0 !important;
+  top:0 !important;
+  width:var(--kingdoms-logical-vw) !important;
+  min-width:var(--kingdoms-logical-vw) !important;
+  max-width:var(--kingdoms-logical-vw) !important;
+  height:var(--kingdoms-logical-vh) !important;
+  min-height:var(--kingdoms-logical-vh) !important;
+  max-height:var(--kingdoms-logical-vh) !important;
+  transform-origin:0 0 !important;
+  transform:translateX(var(--kingdoms-logical-vh)) rotate(90deg) !important;
+  overflow:hidden !important;
+}
+</style>
+
+<script id="v71-dynamic-design-viewport">
+/* =====================================================================
+   Dynamic design viewport — 1920×1080 reference, builder-first fill.
+
+   1920×1080 is the visual reference. The app is globally zoomed so cards,
+   type, spacing, deck panels and controls keep essentially the same ratios.
+
+   Portrait / inverse-aspect viewports are presented as a forced landscape
+   canvas. We swap the physical width/height for layout calculations and
+   rotate the app 90° clockwise, so an upright phone/tablet uses the same
+   workspace proportions it would have when physically turned landscape.
+
+   On 16:9 screens this is a straight proportional scale. On wider screens
+   we intentionally move a little past strict "contain" scaling so the UI
+   uses more of the available display instead of looking undersized. The
+   center deck-builder remains fluid and receives the extra logical width;
+   the left deck rail is capped separately so it cannot consume that gain.
+
+   Escape hatch: ?noscale=1 disables scaling/orientation handling entirely.
+   ===================================================================== */
+(function kingdomsDesignViewport(){
+  'use strict';
+
+  const DESIGN_W  = 1920;
+  const DESIGN_H  = 1080;
+  const MIN_SCALE = 0.15;
+  const MAX_SCALE = 3;
+  const WIDE_FILL = 0.22;
+  const DEBOUNCE_MS = 100;
+
+  try{ if(new URLSearchParams(location.search).has('noscale')) return; }catch(_){}
+
+  const root = document.documentElement;
+  let scale = 1;
+  let forceLandscape = false;
+  let scaledForW = 0, scaledForH = 0;
+  let insideScalePass = false;
+  let debounceTimer = 0;
+
+  /* ---- capture real getters before shimming ----------------------- */
+  const wDesc = Object.getOwnPropertyDescriptor(window,'innerWidth')
+             || Object.getOwnPropertyDescriptor(Window.prototype,'innerWidth');
+  const hDesc = Object.getOwnPropertyDescriptor(window,'innerHeight')
+             || Object.getOwnPropertyDescriptor(Window.prototype,'innerHeight');
+  if(!wDesc || !hDesc) return;
+  const realW = () => wDesc.get.call(window);
+  const realH = () => hDesc.get.call(window);
+  const layoutPhysicalW = () => forceLandscape ? realH() : realW();
+  const layoutPhysicalH = () => forceLandscape ? realW() : realH();
+  const logicalW = () => layoutPhysicalW()/scale;
+  const logicalH = () => layoutPhysicalH()/scale;
+
+  /* ---- shim: element geometry ------------------------------------- */
+  const _getBCR = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function(){
+    const r = _getBCR.call(this);
+    if(!forceLandscape){
+      if(scale === 1) return r;
+      return new DOMRect(r.x/scale, r.y/scale, r.width/scale, r.height/scale);
+    }
+    /* Inverse of body: translateX(logicalH) rotate(90deg), then root zoom. */
+    return new DOMRect(
+      r.top/scale,
+      logicalH() - r.right/scale,
+      r.height/scale,
+      r.width/scale
+    );
+  };
+  if(window.Range?.prototype.getBoundingClientRect){
+    const _rBCR = Range.prototype.getBoundingClientRect;
+    Range.prototype.getBoundingClientRect = function(){
+      const r = _rBCR.call(this);
+      if(!forceLandscape){
+        if(scale === 1) return r;
+        return new DOMRect(r.x/scale, r.y/scale, r.width/scale, r.height/scale);
+      }
+      return new DOMRect(
+        r.top/scale,
+        logicalH() - r.right/scale,
+        r.height/scale,
+        r.width/scale
+      );
+    };
+  }
+
+  /* ---- shim: viewport dimensions ---------------------------------- */
+  Object.defineProperty(window,'innerWidth',{
+    configurable:true,
+    get(){ return Math.round(layoutPhysicalW()/scale); }
+  });
+  Object.defineProperty(window,'innerHeight',{
+    configurable:true,
+    get(){ return Math.round(layoutPhysicalH()/scale); }
+  });
+
+  /* ---- capture native pointer coordinates before patching --------- */
+  const nativePointer = {};
+  ['clientX','clientY','pageX','pageY','x','y'].forEach(prop=>{
+    const d=Object.getOwnPropertyDescriptor(MouseEvent.prototype,prop);
+    if(d?.get) nativePointer[prop]=d.get;
+  });
+
+  function chooseScale(rw,rh){
+    const sx = rw / DESIGN_W;
+    const sy = rh / DESIGN_H;
+    let chosen = sx <= sy ? sx : sy + (sx - sy) * WIDE_FILL;
+    return Math.min(MAX_SCALE, Math.max(MIN_SCALE, chosen));
+  }
+
+  /* Pointer getters are rewritten from the captured native descriptors so
+     rotated coordinates never recurse. */
+  const xMate={clientX:'clientY',pageX:'pageY',x:'y'};
+  const yMate={clientY:'clientX',pageY:'pageX',y:'x'};
+  Object.keys(nativePointer).forEach(prop=>{
+    Object.defineProperty(MouseEvent.prototype,prop,{
+      configurable:true,
+      get(){
+        const raw=nativePointer[prop].call(this);
+        if(!forceLandscape) return raw/scale;
+        if(xMate[prop]) return nativePointer[xMate[prop]].call(this)/scale;
+        return logicalH() - nativePointer[yMate[prop]].call(this)/scale;
+      }
+    });
+  });
+
+  function applyOrientationClass(){
+    root.classList.toggle('kingdoms-force-landscape', forceLandscape);
+  }
+
+  /* ---- the scaler ------------------------------------------------- */
+  function applyScale(){
+    if(insideScalePass) return;
+    insideScalePass = true;
+
+    const rw = realW(), rh = realH();
+    const nextLandscape = rh > rw;
+
+    if(Math.abs(rw - scaledForW) < 1 && Math.abs(rh - scaledForH) < 1 && nextLandscape===forceLandscape){
+      insideScalePass = false;
+      return;
+    }
+
+    forceLandscape = nextLandscape;
+    applyOrientationClass();
+
+    const effectiveW = forceLandscape ? rh : rw;
+    const effectiveH = forceLandscape ? rw : rh;
+    const next = chooseScale(effectiveW,effectiveH);
+    scaledForW = rw;
+    scaledForH = rh;
+
+    if(Math.abs(next - scale) >= 0.0005){
+      scale = next;
+      root.style.zoom = scale === 1 ? '' : String(scale);
+      root.classList.toggle('kingdoms-scaled', scale !== 1);
+    }
+
+    const lw = effectiveW/scale;
+    const lh = effectiveH/scale;
+    root.style.setProperty('--kingdoms-design-scale', scale.toFixed(4));
+    root.style.setProperty('--kingdoms-logical-vw', lw.toFixed(2)+'px');
+    root.style.setProperty('--kingdoms-logical-vh', lh.toFixed(2)+'px');
+
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+      requestAnimationFrame(() => { insideScalePass = false; });
+    });
+  }
+
+  function schedule(){
+    if(insideScalePass) return;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => requestAnimationFrame(applyScale), DEBOUNCE_MS);
+  }
+
+  applyScale();
+  window.addEventListener('resize', schedule, {passive:true});
+  window.addEventListener('orientationchange', schedule, {passive:true});
+  document.fonts?.ready.then(() => {
+    scaledForW = 0; scaledForH = 0;
+    requestAnimationFrame(applyScale);
+  });
+
+  window.kingdomsDesignViewport = {
+    get scale(){ return scale; },
+    get forcedLandscape(){ return forceLandscape; },
+    get designWidth(){ return DESIGN_W; },
+    get designHeight(){ return DESIGN_H; },
+    refresh(){ scaledForW = 0; scaledForH = 0; schedule(); }
+  };
+})();
+</script>
+
+<script id="v70-export-all-decks">
+/* =====================================================================
+   "Export all decks" - writes every locally saved deck into a single
+   JSON bundle. This same bundle is the input format for the Tabletop
+   Simulator importer, so card art URLs are resolved at export time.
+   ===================================================================== */
+(function kingdomsExportAllDecks(){
+  'use strict';
+
+  const COLLECTION_FORMAT = 'KingdomsTCG Deck Collection';
+  const COLLECTION_VERSION = 1;
+  const IMAGE_BASE = 'https://kingdomstcg.odoo.com/web/image/product.product/';
+
+  /* Tabletop Simulator cannot use data: URIs, so exports always resolve to
+     the hosted Odoo image, never to the embedded base64 copy. */
+  function hostedImage(id){
+    const productId = (typeof CARD_IMAGE_IDS !== 'undefined') ? CARD_IMAGE_IDS[id] : null;
+    return productId ? `${IMAGE_BASE}${productId}/image_1024` : null;
+  }
+
+  /* Bastions and Terra live in their own arrays, not in CARDS. */
+  function lookupCard(id){
+    const pools = [CARDS];
+    if(typeof BASTION_OPTIONS !== 'undefined') pools.push(BASTION_OPTIONS);
+    if(typeof TERRA_CARDS !== 'undefined') pools.push(TERRA_CARDS);
+    for(const pool of pools){
+      const found = pool.find(c => c && c.id === id);
+      if(found) return found;
+    }
+    return {};
+  }
+
+  function cardRecord(id, count){
+    const card = lookupCard(id);
+    const record = {
+      id,
+      name: card.name || id,
+      cost: Number.isFinite(card.cost) ? card.cost : null,
+      faction: card.faction || null,
+      type: card.type || null,
+      image: hostedImage(id)
+    };
+    if(count !== undefined) record.count = Math.max(0, Math.floor(Number(count) || 0));
+    return record;
+  }
+
+  function pileRecords(pile){
+    return Object.entries(pile || {})
+      .filter(([, count]) => Number(count) > 0)
+      .sort((a, b) => String(cardRecord(a[0]).name).localeCompare(String(cardRecord(b[0]).name)))
+      .map(([id, count]) => cardRecord(id, count));
+  }
+
+  function deckRecord(entry){
+    const deck = entry.deck || {};
+    const royals = (Array.isArray(deck.royals) ? deck.royals : []).map(id => cardRecord(id));
+    const main = pileRecords(deck.main);
+    const side = pileRecords(deck.side);
+    const terraCards = pileRecords(deck.terraDeck);
+    const naturalTerra = Math.max(0, Math.floor(Number(deck.terra) || 0));
+
+    return {
+      id: entry.id || null,
+      name: entry.name || deck.name || 'Kingdoms Deck',
+      pilot: deck.pilot || '',
+      createdAt: entry.createdAt || null,
+      updatedAt: entry.updatedAt || deck.ts || null,
+      royals,
+      bastion: deck.bastion ? cardRecord(deck.bastion) : null,
+      main,
+      mainCount: main.reduce((sum, c) => sum + c.count, 0),
+      side,
+      sideCount: side.reduce((sum, c) => sum + c.count, 0),
+      terra: { natural: naturalTerra, cards: terraCards,
+               total: naturalTerra + terraCards.reduce((sum, c) => sum + c.count, 0) },
+      theme: deck.theme || null,
+      /* The existing human-readable format, kept verbatim so a bundle can
+         always be read (or re-imported one deck at a time) by hand. */
+      text: (typeof serializeDeckText === 'function') ? serializeDeckText(deck) : '',
+      /* Raw builder shape, so importing the bundle restores decks exactly. */
+      builder: deck
+    };
+  }
+
+  function buildCollection(entries){
+    const decks = entries.map(deckRecord);
+    const missingArt = new Set();
+    decks.forEach(deck => {
+      [...deck.royals, deck.bastion, ...deck.main, ...deck.side, ...deck.terra.cards]
+        .forEach(card => { if(card && !card.image) missingArt.add(card.id); });
+    });
+    return {
+      format: COLLECTION_FORMAT,
+      version: COLLECTION_VERSION,
+      exportedAt: new Date().toISOString(),
+      deckCount: decks.length,
+      cardImageBase: IMAGE_BASE,
+      /* Cards with no hosted product image. Tabletop Simulator will spawn
+         these face-blank unless you add art for them. */
+      cardsWithoutHostedArt: [...missingArt].sort(),
+      decks
+    };
+  }
+
+  function downloadCollection(collection){
+    const stamp = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([JSON.stringify(collection, null, 2)], {type:'application/json;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `kingdoms-decks-${stamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  const button = document.getElementById('exportAllDecksBtn');
+  if(!button) return;
+
+  function syncButton(){
+    const total = (typeof readLocalDecks === 'function') ? readLocalDecks().length : 0;
+    button.disabled = total === 0;
+    button.textContent = total ? `Export all decks (${total})` : 'Export all decks';
+  }
+
+  button.addEventListener('click', () => {
+    let entries = [];
+    try{ entries = readLocalDecks(); }
+    catch(_){ entries = []; }
+
+    if(!entries.length){
+      setDeckStorageStatus('There are no saved decks on this device to export yet.', 'err');
+      return;
+    }
+    try{
+      const collection = buildCollection(entries);
+      downloadCollection(collection);
+      const warning = collection.cardsWithoutHostedArt.length
+        ? ` ${collection.cardsWithoutHostedArt.length} card(s) have no hosted art and will spawn blank in Tabletop Simulator.`
+        : '';
+      setDeckStorageStatus(
+        `Exported ${collection.deckCount} deck${collection.deckCount === 1 ? '' : 's'} as a single JSON bundle.${warning}`
+      );
+    }catch(error){
+      setDeckStorageStatus(error && error.message ? error.message : 'Could not export the deck collection.', 'err');
+    }
+  });
+
+  /* --- importing a bundle back ------------------------------------- */
+  /* The existing Import button reads one plain-text deck. Teach it to also
+     recognise a collection bundle and merge every deck inside it. */
+  const fileInput = document.getElementById('loadDeckInput');
+  if(fileInput){
+    fileInput.addEventListener('change', event => {
+      const file = event.target.files && event.target.files[0];
+      if(!file || !/\.json$/i.test(file.name)) return;
+      event.stopImmediatePropagation();
+      file.text().then(text => {
+        let parsed;
+        try{ parsed = JSON.parse(text); }
+        catch(_){ throw new Error('That file is not valid JSON.'); }
+        if(!parsed || parsed.format !== COLLECTION_FORMAT) throw new Error('That JSON file is not a Kingdoms deck collection.');
+        if(!Array.isArray(parsed.decks) || !parsed.decks.length) throw new Error('That collection contains no decks.');
+
+        const existing = readLocalDecks();
+        const byName = new Map(existing.map(entry => [String(entry.name || '').toLowerCase(), entry]));
+        let added = 0, updated = 0;
+
+        parsed.decks.forEach(record => {
+          const deck = record && record.builder;
+          if(!deck || typeof deck !== 'object') return;
+          const name = record.name || deck.name || 'Kingdoms Deck';
+          const now = Date.now();
+          const match = byName.get(String(name).toLowerCase());
+          if(match){
+            match.deck = deck;
+            match.name = name;
+            match.updatedAt = record.updatedAt || now;
+            updated++;
+          }else{
+            const entry = {
+              id: (typeof createLocalDeckId === 'function') ? createLocalDeckId() : `deck-${now}-${added}`,
+              name,
+              createdAt: record.createdAt || now,
+              updatedAt: record.updatedAt || now,
+              deck
+            };
+            existing.push(entry);
+            byName.set(String(name).toLowerCase(), entry);
+            added++;
+          }
+        });
+
+        if(!added && !updated) throw new Error('No readable decks were found in that collection.');
+        writeLocalDecks(existing);
+        if(typeof renderLocalDecks === 'function') renderLocalDecks();
+        syncButton();
+        setDeckStorageStatus(`Imported collection: ${added} deck(s) added, ${updated} updated.`);
+      }).catch(error => {
+        setDeckStorageStatus(error && error.message ? error.message : 'That collection could not be imported.', 'err');
+      }).finally(() => { fileInput.value = ''; });
+    }, true);
+  }
+
+  /* Keep the button's count in step with the saved list. */
+  const list = document.getElementById('savedDeckList');
+  if(list && window.MutationObserver) new MutationObserver(syncButton).observe(list, {childList:true});
+  document.getElementById('openDeckFilePanel')?.addEventListener('click', () => setTimeout(syncButton, 0));
+  syncButton();
+})();
+</script>
+
+<style id="touch-sticky-card-actions">
+/* Touch-only +/- controls shown at the bottom of the persistent card header. */
+#cardHoverTooltip .touch-card-actions{
+  position:sticky;
+  bottom:0;
+  z-index:40;
+  display:grid;
+  grid-template-columns:minmax(56px,1fr) auto minmax(56px,1fr);
+  align-items:center;
+  gap:10px;
+  margin-top:14px;
+  padding:10px 0 2px;
+  background:linear-gradient(180deg,transparent 0%,var(--profile-deck-bg-3,var(--panel)) 28%);
+}
+#cardHoverTooltip .touch-card-action-btn{
+  min-height:46px;
+  border:1px solid var(--profile-outline,var(--brass-dim));
+  border-radius:9px;
+  background:color-mix(in srgb,var(--profile-deck-panel,var(--panel-raised)) 88%,#000 12%);
+  color:var(--parchment);
+  font:800 26px/1 'Work Sans',sans-serif;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  transform:translate3d(0,0,0) scale(1);
+  transform-origin:center;
+  will-change:transform,filter,box-shadow;
+  transition:
+    transform .24s cubic-bezier(.2,.82,.2,1),
+    filter .22s ease,
+    color .22s ease,
+    border-color .22s ease,
+    background .22s ease,
+    box-shadow .24s ease;
+}
+/* Mirror the desktop card hover language, but only inside the sticky header. */
+#cardHoverTooltip .touch-card-action-btn:hover,
+#cardHoverTooltip .touch-card-action-btn:focus-visible,
+#cardHoverTooltip .touch-card-action-btn.touch-hover{
+  transform:translateY(-4px) scale(1.045);
+  filter:brightness(1.08) saturate(1.06);
+  color:var(--brass);
+  border-color:var(--brass);
+  background:color-mix(in srgb,var(--profile-deck-panel,var(--panel-raised)) 78%,var(--brass) 22%);
+  box-shadow:0 0 0 1px rgba(201,160,60,.48),0 8px 16px rgba(0,0,0,.42),0 0 18px rgba(201,160,60,.22);
+}
+#cardHoverTooltip .touch-card-action-btn:active{
+  transform:translateY(-1px) scale(.97);
+  filter:brightness(.96);
+  box-shadow:0 0 0 1px rgba(201,160,60,.35),0 3px 8px rgba(0,0,0,.34);
+}
+#cardHoverTooltip .touch-card-action-btn.touch-press{
+  transform:translate3d(0,-1px,0) scale(.965) !important;
+  filter:brightness(.95) saturate(1.03) !important;
+  box-shadow:0 0 0 1px rgba(201,160,60,.38),0 3px 9px rgba(0,0,0,.34) !important;
+}
+#cardHoverTooltip.touch-tap-feedback{
+  animation:touchStickyTapFeedback .28s cubic-bezier(.2,.82,.2,1);
+}
+#cardHoverTooltip .touch-card-actions.touch-actions-enter{
+  animation:touchActionsEnter .34s cubic-bezier(.2,.82,.2,1) both;
+}
+@keyframes touchStickyTapFeedback{
+  0%{transform:translate3d(0,0,0) scale(1);filter:brightness(1);}
+  42%{transform:translate3d(0,-2px,0) scale(1.006);filter:brightness(1.045);}
+  100%{transform:translate3d(0,0,0) scale(1);filter:brightness(1);}
+}
+@keyframes touchActionsEnter{
+  0%{opacity:.55;transform:translate3d(0,7px,0) scale(.985);}
+  58%{opacity:1;transform:translate3d(0,-1px,0) scale(1.006);}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1);}
+}
+@media (prefers-reduced-motion:reduce){
+  #cardHoverTooltip.touch-tap-feedback,
+  #cardHoverTooltip .touch-card-actions.touch-actions-enter{animation:none !important;}
+  #cardHoverTooltip .touch-card-action-btn{transition-duration:.01ms !important;}
+}
+#cardHoverTooltip .touch-card-action-btn:disabled{
+  opacity:.32;cursor:not-allowed;transform:none;filter:none;color:var(--parchment);box-shadow:none;
+}
+#cardHoverTooltip .touch-card-action-btn:disabled:hover,
+#cardHoverTooltip .touch-card-action-btn:disabled:focus-visible,
+#cardHoverTooltip .touch-card-action-btn:disabled.touch-hover{
+  transform:none;filter:none;color:var(--parchment);border-color:var(--profile-outline,var(--brass-dim));box-shadow:none;
+}
+#cardHoverTooltip .touch-card-action-count{
+  min-width:48px;
+  text-align:center;
+  color:var(--parchment);
+  font:800 16px/1 'Work Sans',sans-serif;
+}
+#cardHoverTooltip .touch-card-action-label{
+  grid-column:1 / -1;
+  margin-top:-2px;
+  text-align:center;
+  color:var(--muted);
+  font:700 9px/1.2 'Work Sans',sans-serif;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+#cardHoverTooltip.touch-card-selected .sticky-card-preview{
+  min-height:100%;
+  display:flex;
+  flex-direction:column;
+}
+#cardHoverTooltip.touch-card-selected .sticky-card-description{flex:1 1 auto;}
+@media (hover:hover) and (pointer:fine){
+  #cardHoverTooltip .touch-card-actions{display:none !important;}
+}
+</style>
+
+
+<style id="touch-card-hover-replay">
+/* Touch taps deliberately borrow the exact visual state used by desktop :hover. */
+.simple-card.touch-desktop-hover{
+  transform:translateY(-7px) scale(1.045) !important;
+  filter:drop-shadow(0 10px 14px rgba(0,0,0,.42)) !important;
+  z-index:20 !important;
+}
+.simple-card.touch-desktop-hover .simple-card-image{
+  box-shadow:0 0 0 1px rgba(201,160,60,.55),0 0 18px rgba(201,160,60,.22) !important;
+  filter:brightness(1.06) saturate(1.05) !important;
+}
+.simple-card.touch-desktop-hover .card-name{
+  color:var(--brass) !important;
+  transform:translateY(-1px) !important;
+}
+.simple-card.selected.touch-desktop-hover .simple-card-image{
+  box-shadow:0 0 0 2px var(--brass),0 0 20px rgba(201,160,60,.32) !important;
+}
+.simple-card.touch-desktop-hover .simple-card-copy-count{
+  transform:translate(-50%,-50%) scale(1.08) !important;
+  background:rgba(10,9,8,.82) !important;
+  border-color:rgba(201,160,60,.8) !important;
+  opacity:1 !important;
+}
+.bastion-card-wall .simple-card.touch-desktop-hover{
+  transform:translateY(-4px) !important;
+  z-index:50 !important;
+}
+.deck-thumbnail.touch-desktop-hover{
+  transform:scale(1.05) !important;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.5)) !important;
+  z-index:20 !important;
+}
+.deck-thumbnail.touch-desktop-hover .deck-thumbnail-art{
+  box-shadow:0 0 0 1px rgba(201,160,60,.6),0 0 16px rgba(201,160,60,.24) !important;
+}
+.deck-thumbnail.touch-desktop-hover figcaption{color:var(--brass) !important;}
+.deck-thumbnail.touch-desktop-hover .deck-copy-count{
+  transform:translate(-50%,-50%) scale(1.1) !important;
+  background:rgba(10,9,8,.85) !important;
+  border-color:rgba(201,160,60,.8) !important;
+}
+</style>
+
+<script id="touch-sticky-card-actions-behavior">
+(() => {
+  let touchCandidate = null;
+  let touchSelection = null;
+  let touchGestureSerial = 0;
+  let lastProcessedTouchGesture = 0;
+  const CARD_SELECTOR = '.simple-card[data-card-id], .deck-thumbnail[data-card-id]';
+  const LEADER_TOUCH_SELECTOR = '.simple-royal-card[data-id], .simple-card[data-bastion-id]';
+
+  function isRecentTouchFor(el){
+    return !!(touchCandidate && touchCandidate.el === el && performance.now() - touchCandidate.time < 1400);
+  }
+
+  function beginTouchGesture(el){
+    touchGestureSerial += 1;
+    touchCandidate = {el, time:performance.now(), gesture:touchGestureSerial};
+  }
+
+  function claimTouchGesture(el){
+    if(!isRecentTouchFor(el)) return false;
+    const gesture = Number(touchCandidate?.gesture || 0);
+    if(!gesture || gesture === lastProcessedTouchGesture) return false;
+    lastProcessedTouchGesture = gesture;
+    return true;
+  }
+
+  function lookup(id){
+    return (typeof cardInspectorLookup === 'function' && cardInspectorLookup(id)) ||
+      (typeof deckCardById === 'function' && deckCardById(id)) || null;
+  }
+
+  function playTouchedCardHover(el){
+    if(!el || !el.isConnected) return;
+
+    /* Use the same transition system as desktop hover. Removing and re-adding
+       the class gives every tap a fresh hover-in, and the timed removal gives
+       the matching hover-out. No separate touch-only animation curve. */
+    if(el._touchDesktopHoverTimer) window.clearTimeout(el._touchDesktopHoverTimer);
+    el.classList.remove('touch-desktop-hover');
+    void el.offsetWidth;
+    el.classList.add('touch-desktop-hover');
+    el._touchDesktopHoverTimer = window.setTimeout(() => {
+      if(el.isConnected) el.classList.remove('touch-desktop-hover');
+      el._touchDesktopHoverTimer = 0;
+    }, 360);
+  }
+
+  /* Expose the exact desktop-hover replay to the Royal/Bastion renderers.
+     Their click handlers live earlier in the file and rerender their entire zone. */
+  window.__kingdomsPlayTouchedCardHover = playTouchedCardHover;
+
+  function replayTouchedCardHover(sel){
+    if(!sel) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const escaped = (window.CSS && CSS.escape) ? CSS.escape(sel.id) : String(sel.id).replace(/[\"']/g,'\\$&');
+      let el = null;
+      if(sel.kind === 'main' || sel.kind === 'side' || sel.kind === 'terra'){
+        el = document.querySelector(`.page-content .simple-card[data-card-id="${escaped}"]`);
+      }
+      if(!el){
+        const candidates = Array.from(document.querySelectorAll(`[data-card-id="${escaped}"]`));
+        el = candidates.find(node => node.matches('.simple-card,.deck-thumbnail')) || null;
+      }
+      playTouchedCardHover(el);
+    }));
+  }
+
+  function selectionCount(sel){
+    if(!sel) return 0;
+    if(sel.kind === 'terra') return typeof terraCardCount === 'function' ? terraCardCount(sel.id) : 0;
+    if(sel.kind === 'royal') return state.royals.includes(sel.id) ? 1 : 0;
+    if(sel.kind === 'bastion') return state.bastion === sel.id ? 1 : 0;
+    const pile = sel.kind === 'side' ? state.side : state.main;
+    return (pile && pile[sel.id]) || 0;
+  }
+
+  function maxForSelection(sel, card){
+    if(sel.kind === 'terra') return MAX_TERRA;
+    if(sel.kind === 'royal' || sel.kind === 'bastion') return 1;
+    if(sel.kind === 'side' && typeof sideDeckCopyLimitFor === 'function') return sideDeckCopyLimitFor(sel.id);
+    return typeof maxCopiesFor === 'function' ? maxCopiesFor(card) : 4;
+  }
+
+  function canAdd(sel, card){
+    if(sel.kind === 'royal' || sel.kind === 'bastion') return false;
+    if(sel.blocked) return false;
+    if(sel.kind === 'main' && state.royals.includes(sel.id)) return false;
+    if(sel.kind === 'side' && typeof sideCount === 'function' && sideCount() >= MAX_SIDE_DECK) return false;
+    if(sel.kind === 'terra' && typeof terraDeckCount === 'function' && terraDeckCount() >= MAX_TERRA) return false;
+    return selectionCount(sel) < maxForSelection(sel, card);
+  }
+
+  function canRemove(sel){
+    return selectionCount(sel) > 0;
+  }
+
+  function playStickyTapFeedback(){
+    const tooltip = document.getElementById('cardHoverTooltip');
+    if(!tooltip) return;
+    tooltip.classList.remove('touch-tap-feedback');
+    void tooltip.offsetWidth;
+    tooltip.classList.add('touch-tap-feedback');
+    window.setTimeout(() => tooltip.classList.remove('touch-tap-feedback'), 320);
+  }
+
+  function replayStickyActionHover(action){
+    const tooltip = document.getElementById('cardHoverTooltip');
+    const button = tooltip?.querySelector(`[data-touch-card-action="${action}"]`);
+    if(!button || button.disabled) return;
+
+    /* Touch browsers can merge class changes around a re-render into one paint,
+       making a CSS-only replay effectively invisible. Drive the replay with the
+       Web Animations API on the NEW live button node so every successful copy
+       change visibly performs the desktop hover -> press -> hover -> rest motion. */
+    button.getAnimations?.().forEach(anim => {
+      if(anim.id === 'sticky-touch-hover-replay') anim.cancel();
+    });
+    button.classList.remove('touch-press','touch-hover');
+
+    const frames = [
+      {
+        transform:'translate3d(0,0,0) scale(1)',
+        filter:'brightness(1) saturate(1)',
+        color:'var(--parchment)',
+        borderColor:'var(--profile-outline,var(--brass-dim))',
+        boxShadow:'0 0 0 0 rgba(201,160,60,0)'
+      },
+      {
+        offset:.28,
+        transform:'translate3d(0,-4px,0) scale(1.045)',
+        filter:'brightness(1.08) saturate(1.06)',
+        color:'var(--brass)',
+        borderColor:'var(--brass)',
+        boxShadow:'0 0 0 1px rgba(201,160,60,.48),0 8px 16px rgba(0,0,0,.42),0 0 18px rgba(201,160,60,.22)'
+      },
+      {
+        offset:.48,
+        transform:'translate3d(0,-1px,0) scale(.965)',
+        filter:'brightness(.95) saturate(1.03)',
+        color:'var(--brass)',
+        borderColor:'var(--brass)',
+        boxShadow:'0 0 0 1px rgba(201,160,60,.38),0 3px 9px rgba(0,0,0,.34)'
+      },
+      {
+        offset:.72,
+        transform:'translate3d(0,-4px,0) scale(1.045)',
+        filter:'brightness(1.08) saturate(1.06)',
+        color:'var(--brass)',
+        borderColor:'var(--brass)',
+        boxShadow:'0 0 0 1px rgba(201,160,60,.48),0 8px 16px rgba(0,0,0,.42),0 0 18px rgba(201,160,60,.22)'
+      },
+      {
+        transform:'translate3d(0,0,0) scale(1)',
+        filter:'brightness(1) saturate(1)',
+        color:'var(--parchment)',
+        borderColor:'var(--profile-outline,var(--brass-dim))',
+        boxShadow:'0 0 0 0 rgba(201,160,60,0)'
+      }
+    ];
+
+    if(typeof button.animate === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      const anim = button.animate(frames,{
+        duration:520,
+        easing:'cubic-bezier(.2,.82,.2,1)',
+        fill:'none'
+      });
+      anim.id = 'sticky-touch-hover-replay';
+      return;
+    }
+
+    /* Fallback for older WebViews: use two animation frames before applying
+       the class so the resting state is definitely painted first. */
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if(!button.isConnected) return;
+      button.classList.add('touch-hover');
+      window.setTimeout(() => button.isConnected && button.classList.add('touch-press'), 145);
+      window.setTimeout(() => {
+        if(!button.isConnected) return;
+        button.classList.remove('touch-press');
+        button.classList.add('touch-hover');
+      }, 245);
+      window.setTimeout(() => button.isConnected && button.classList.remove('touch-hover'), 500);
+    }));
+  }
+
+  function bindTouchButtonPressFeedback(button){
+    if(!button) return;
+    let pressTimer = 0;
+    let releaseTimer = 0;
+
+    const clearTimers = () => {
+      if(pressTimer) window.clearTimeout(pressTimer);
+      if(releaseTimer) window.clearTimeout(releaseTimer);
+      pressTimer = 0;
+      releaseTimer = 0;
+    };
+
+    const down = ev => {
+      if(ev.pointerType && ev.pointerType !== 'touch' && ev.pointerType !== 'pen') return;
+      clearTimers();
+
+      /* Touch has no real :hover state. Start every tap by deliberately
+         entering the exact same visual state as desktop hover. */
+      button.classList.remove('touch-press');
+      button.classList.add('touch-hover');
+
+      /* Let the hover lift/glow become visible before compressing into
+         the pressed state. This makes a tap read as hover -> press. */
+      pressTimer = window.setTimeout(() => {
+        button.classList.add('touch-press');
+        pressTimer = 0;
+      }, 85);
+    };
+
+    const up = ev => {
+      if(ev && ev.pointerType && ev.pointerType !== 'touch' && ev.pointerType !== 'pen') return;
+      if(pressTimer){
+        window.clearTimeout(pressTimer);
+        pressTimer = 0;
+      }
+      button.classList.remove('touch-press');
+
+      /* Return through the hover state instead of snapping directly back. */
+      button.classList.add('touch-hover');
+      if(releaseTimer) window.clearTimeout(releaseTimer);
+      releaseTimer = window.setTimeout(() => {
+        button.classList.remove('touch-hover');
+        releaseTimer = 0;
+      }, 230);
+    };
+
+    const cancel = () => {
+      clearTimers();
+      button.classList.remove('touch-press','touch-hover');
+    };
+
+    button.addEventListener('pointerdown', down, {passive:true});
+    button.addEventListener('pointerup', up, {passive:true});
+    button.addEventListener('pointercancel', cancel, {passive:true});
+    button.addEventListener('pointerleave', ev => {
+      if(ev.pointerType === 'touch' || ev.pointerType === 'pen') return;
+      cancel();
+    }, {passive:true});
+  }
+
+  function metaHtml(card){
+    const parts = [];
+    if(card.cost !== '' && card.cost != null) parts.push(`Cost ${card.cost}`);
+    if(card.faction) parts.push(card.faction);
+    if(card.type) parts.push(card.type);
+    if(card.stats) parts.push(card.stats);
+    return parts.length ? `<div class="hover-meta">${escapeHtml(parts.join(' · '))}</div>` : '';
+  }
+
+  function renderTouchSelection(){
+    if(!touchSelection) return;
+    const tooltip = document.getElementById('cardHoverTooltip');
+    const card = lookup(touchSelection.id);
+    if(!tooltip || !card) return;
+
+    const text = typeof formatCardRulesText === 'function' ? formatCardRulesText(cardRulesText(card)) : (cardRulesText(card) || '');
+    const count = selectionCount(touchSelection);
+    const addDisabled = !canAdd(touchSelection, card);
+    const removeDisabled = !canRemove(touchSelection);
+    const warning = stickyHoverNoticeHtml(touchSelection.warningMessages || [], touchSelection.warningVariant || 'warning');
+    const kindLabel = touchSelection.kind === 'side' ? 'Side Deck' :
+      touchSelection.kind === 'terra' ? 'Terra Deck' :
+      touchSelection.kind === 'royal' ? 'Royal' :
+      touchSelection.kind === 'bastion' ? 'Bastion' : 'Main Deck';
+
+    tooltip.innerHTML = `
+      <div class="sticky-card-preview sticky-card-data-only">
+        <div class="sticky-card-warnings">${warning}</div>
+        <div class="sticky-card-description">
+          <div class="hover-card-name">${escapeHtml(card.name || 'Unnamed Card')}</div>
+          ${metaHtml(card)}
+          <div class="hover-rule-label">Card text</div>
+          ${text ? `<div class="hover-text">${escapeHtml(text)}</div>` : '<div class="hover-text hover-unavailable">No card text listed.</div>'}
+        </div>
+        <div class="touch-card-actions touch-actions-enter" aria-label="Touch card controls">
+          <button type="button" class="touch-card-action-btn" data-touch-card-action="remove" aria-label="Remove one ${escapeHtml(card.name || 'card')}" ${removeDisabled ? 'disabled' : ''}>−</button>
+          <div class="touch-card-action-count" aria-live="polite">${count}</div>
+          <button type="button" class="touch-card-action-btn" data-touch-card-action="add" aria-label="Add one ${escapeHtml(card.name || 'card')}" ${addDisabled ? 'disabled' : ''}>+</button>
+          <div class="touch-card-action-label">${kindLabel}</div>
+        </div>
+      </div>`;
+    tooltip.classList.add('touch-card-selected');
+    tooltip.setAttribute('aria-hidden','false');
+
+    const removeBtn = tooltip.querySelector('[data-touch-card-action="remove"]');
+    const addBtn = tooltip.querySelector('[data-touch-card-action="add"]');
+    bindTouchButtonPressFeedback(removeBtn);
+    bindTouchButtonPressFeedback(addBtn);
+    removeBtn?.addEventListener('click', ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      adjustTouchSelection(-1);
+    });
+    addBtn?.addEventListener('click', ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      adjustTouchSelection(1);
+    });
+  }
+
+  function adjustTouchSelection(delta, replayAction = true){
+    const sel = touchSelection;
+    if(!sel) return;
+    const card = lookup(sel.id);
+    if(!card) return;
+
+    if(delta > 0 && !canAdd(sel, card)) return;
+    if(delta < 0 && !canRemove(sel)) return;
+
+    if(sel.kind === 'terra'){
+      if(delta < 0 && selectionCount(sel) > 0) playDeckReturnAnimation(sel.id,'terra');
+      const changed = typeof changeTerraCard === 'function' && changeTerraCard(sel.id, delta);
+      if(changed) renderAll();
+      renderTouchSelection();
+      if(changed && replayAction){ requestAnimationFrame(() => replayStickyActionHover(delta > 0 ? 'add' : 'remove')); replayTouchedCardHover(sel); }
+      return;
+    }
+
+    if(sel.kind === 'royal'){
+      if(delta < 0 && typeof removeSelectedRoyal === 'function'){
+        Promise.resolve(removeSelectedRoyal(sel.id)).then(renderTouchSelection);
+      }
+      return;
+    }
+
+    if(sel.kind === 'bastion'){
+      if(delta < 0 && state.bastion === sel.id){
+        playDeckReturnAnimation(sel.id,'bastion');
+        state.bastion = null;
+        state.cachedBastion = null;
+        renderAll();
+        renderTouchSelection();
+      }
+      return;
+    }
+
+    const target = sel.kind === 'side' ? state.side : state.main;
+    const cache = sel.kind === 'side' ? state.cachedSide : state.cachedMain;
+    const current = target[sel.id] || 0;
+    const cap = maxForSelection(sel, card);
+    let next = Math.max(0, Math.min(cap, current + delta));
+
+    if(sel.kind === 'side' && delta > 0){
+      const room = Math.max(0, MAX_SIDE_DECK - sideCount());
+      next = Math.min(next, current + room);
+    }
+    if(next === current){ renderTouchSelection(); return; }
+    if(delta < 0 && next < current) playDeckReturnAnimation(sel.id, sel.kind);
+    delete cache[sel.id];
+    if(next === 0) delete target[sel.id]; else target[sel.id] = next;
+    if(sel.kind === 'main' && typeof enforceSideDeckSharedCopyLimits === 'function') enforceSideDeckSharedCopyLimits();
+    renderAll();
+    renderTouchSelection();
+    if(replayAction){ requestAnimationFrame(() => replayStickyActionHover(delta > 0 ? 'add' : 'remove')); replayTouchedCardHover(sel); }
+  }
+
+  function touchSelectionFromElement(el){
+    const id = el?.dataset?.cardId;
+    if(!id) return null;
+    const kind = el.classList.contains('deck-thumbnail')
+      ? (el.dataset.deckKind || 'main')
+      : (state.activeDeck === 'side' ? 'side' : 'main');
+    const context = typeof stickyCardContext === 'function'
+      ? stickyCardContext(el)
+      : {messages:[el.dataset.restrictionReason || ''].filter(Boolean), variant:'warning'};
+    return {
+      id,
+      kind,
+      blocked: !!el.dataset.restrictionReason || el.getAttribute('aria-disabled') === 'true',
+      warningMessages: context.messages || [],
+      warningVariant: context.variant || 'warning'
+    };
+  }
+
+  function touchTapWillAdd(el){
+    const sel = touchSelectionFromElement(el);
+    if(!sel) return false;
+    return selectionCount(sel) > 0 || !!(touchSelection && touchSelection.id === sel.id && touchSelection.kind === sel.kind);
+  }
+
+  function selectTouchedCard(el){
+    const nextSelection = touchSelectionFromElement(el);
+    if(!nextSelection) return;
+
+    /* Touch rule:
+       - If this card already has at least one copy in the relevant deck, a tap
+         immediately adds another copy (when legal) and keeps the sticky controls open.
+       - Otherwise the first tap selects/previews it; later taps add copies. */
+    const alreadyOwned = selectionCount(nextSelection) > 0;
+    const alreadySelected = !!(touchSelection && touchSelection.id === nextSelection.id && touchSelection.kind === nextSelection.kind);
+
+    touchSelection = nextSelection;
+
+    if(alreadyOwned || alreadySelected){
+      /* Do not run the pre-tap card animation here. The successful add path
+         rerenders the card and replays the hover once on the NEW node. */
+      adjustTouchSelection(1);
+      return;
+    }
+
+    renderTouchSelection();
+  }
+
+  /* Royals and Bastions rerender their entire selection zone when chosen.
+     Do NOT animate the pre-render node on touch-down: it gets replaced almost
+     immediately and creates a visible jump. Their own selection handlers replay
+     the desktop-hover state on the newly rendered card instead. */
+
+  /* A touch gesture owns its mutation on pointer-up. We deliberately do NOT
+     mutate from the browser's synthetic click event; some mobile browsers can
+     emit duplicate click-like events for a single physical tap. */
+  let activeCardPointer = null;
+  let suppressTouchClickUntil = 0;
+  let suppressTouchCardId = '';
+  const TAP_MOVE_LIMIT = 18;
+
+  document.addEventListener('pointerdown', ev => {
+    const leader = ev.target.closest?.(LEADER_TOUCH_SELECTOR);
+    if(leader && (ev.pointerType === 'touch' || ev.pointerType === 'pen')){
+      window.__kingdomsRecentLeaderTouch = {
+        id: leader.dataset.id || leader.dataset.bastionId || '',
+        kind: leader.dataset.bastionId ? 'bastion' : 'royal',
+        time: performance.now()
+      };
+    }
+
+    const el = ev.target.closest?.(CARD_SELECTOR);
+    if(!el) return;
+    if(ev.pointerType === 'touch' || ev.pointerType === 'pen'){
+      beginTouchGesture(el);
+      activeCardPointer = {
+        pointerId: ev.pointerId,
+        el,
+        id: el.dataset.cardId || '',
+        startX: ev.clientX,
+        startY: ev.clientY,
+        moved: false
+      };
+      /* First-selection taps animate immediately. Taps that will add a copy
+         animate only after the successful rerender, preventing a double pulse. */
+      if(!touchTapWillAdd(el)) playTouchedCardHover(el);
+      playStickyTapFeedback();
+    }else{
+      touchCandidate = null;
+      activeCardPointer = null;
+    }
+  }, true);
+
+  document.addEventListener('pointermove', ev => {
+    const active = activeCardPointer;
+    if(!active || ev.pointerId !== active.pointerId) return;
+    if(Math.hypot(ev.clientX - active.startX, ev.clientY - active.startY) > TAP_MOVE_LIMIT){
+      active.moved = true;
+    }
+  }, {capture:true, passive:true});
+
+  document.addEventListener('pointerup', ev => {
+    const active = activeCardPointer;
+    if(!active || ev.pointerId !== active.pointerId) return;
+    activeCardPointer = null;
+
+    const endEl = ev.target.closest?.(CARD_SELECTOR);
+    if(active.moved || !endEl || endEl !== active.el) return;
+
+    const accepted = claimTouchGesture(active.el);
+    if(!accepted) return;
+
+    /* One physical tap gets exactly one mutation here. Any click synthesized
+       afterward is suppression-only and can never mutate deck state. */
+    suppressTouchCardId = active.id;
+    suppressTouchClickUntil = performance.now() + 900;
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation();
+    selectTouchedCard(active.el);
+  }, true);
+
+  document.addEventListener('pointercancel', ev => {
+    if(activeCardPointer && ev.pointerId === activeCardPointer.pointerId) activeCardPointer = null;
+  }, true);
+
+  /* Fallback for older WebViews without Pointer Events. */
+  let fallbackTouch = null;
+  document.addEventListener('touchstart', ev => {
+    if(window.PointerEvent) return;
+    const leader = ev.target.closest?.(LEADER_TOUCH_SELECTOR);
+    if(leader){
+      window.__kingdomsRecentLeaderTouch = {
+        id: leader.dataset.id || leader.dataset.bastionId || '',
+        kind: leader.dataset.bastionId ? 'bastion' : 'royal',
+        time: performance.now()
+      };
+    }
+
+    const el = ev.target.closest?.(CARD_SELECTOR);
+    const touch = ev.changedTouches?.[0];
+    if(el && touch){
+      beginTouchGesture(el);
+      fallbackTouch = {el,id:el.dataset.cardId || '',startX:touch.clientX,startY:touch.clientY,moved:false};
+      if(!touchTapWillAdd(el)) playTouchedCardHover(el);
+      playStickyTapFeedback();
+    }
+  }, {capture:true, passive:true});
+
+  document.addEventListener('touchmove', ev => {
+    if(window.PointerEvent || !fallbackTouch) return;
+    const touch = ev.changedTouches?.[0];
+    if(!touch) return;
+    if(Math.hypot(touch.clientX - fallbackTouch.startX, touch.clientY - fallbackTouch.startY) > TAP_MOVE_LIMIT){
+      fallbackTouch.moved = true;
+    }
+  }, {capture:true, passive:true});
+
+  document.addEventListener('touchend', ev => {
+    if(window.PointerEvent || !fallbackTouch) return;
+    const active = fallbackTouch;
+    fallbackTouch = null;
+    if(active.moved) return;
+    const accepted = claimTouchGesture(active.el);
+    if(!accepted) return;
+    suppressTouchCardId = active.id;
+    suppressTouchClickUntil = performance.now() + 900;
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation();
+    selectTouchedCard(active.el);
+  }, {capture:true, passive:false});
+
+  document.addEventListener('click', ev => {
+    const el = ev.target.closest?.(CARD_SELECTOR);
+    if(!el) return;
+    const id = el.dataset.cardId || '';
+    const shouldSuppress = performance.now() < suppressTouchClickUntil && (!suppressTouchCardId || id === suppressTouchCardId);
+    if(!shouldSuppress && !isRecentTouchFor(el)) return;
+
+    /* Touch-generated clicks are suppression-only. All touch deck mutations
+       already happened exactly once on pointerup/touchend above. */
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.stopImmediatePropagation();
+  }, true);
+
+  document.addEventListener('contextmenu', ev => {
+    const el = ev.target.closest?.(CARD_SELECTOR);
+    if(el && isRecentTouchFor(el)){
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+    }
+  }, true);
+})();
 </script>
