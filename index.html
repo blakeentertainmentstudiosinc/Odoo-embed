@@ -1328,8 +1328,8 @@ body{
         </div>
       </div>
 
-      <!-- Decks stay on the player's device. Community submissions open a
-           pre-filled GitHub Issue; no password or API key is stored here. -->
+      <!-- Personal saves stay on the player's device. Community decks use
+           Supabase with public credentials and server-enforced permissions. -->
       <div class="deck-file-meta" id="deckFileSettings">
         <h3>Save / load deck</h3>
         <div class="field">
@@ -1346,6 +1346,7 @@ body{
         <div class="deck-storage-tabs" role="tablist" aria-label="Deck storage options">
           <button class="deck-storage-tab is-active" id="myDecksTab" type="button" role="tab" aria-selected="true" aria-controls="myDecksPanel">My Decks</button>
           <button class="deck-storage-tab" id="submitDeckTab" type="button" role="tab" aria-selected="false" aria-controls="submitDeckPanel">Submit Deck</button>
+          <button class="deck-storage-tab" id="communityDecksTab" type="button" role="tab" aria-selected="false" aria-controls="communityDecksPanel">Community Decks</button>
         </div>
 
         <section id="myDecksPanel" class="deck-storage-panel" role="tabpanel" aria-labelledby="myDecksTab">
@@ -1372,8 +1373,23 @@ body{
             <textarea id="deckDescription" rows="5" maxlength="1500" placeholder="Tell the community how the deck plays."></textarea>
           </div>
           <div class="community-submit-summary" id="communitySubmitSummary"></div>
+          <div id="communityNames" class="community-submit-summary" aria-live="polite"></div>
+          <div id="communityCaptcha"></div>
+          <label class="community-submit-note"><input type="checkbox" id="communityConsent"> Publish my deck, creator name, and description for everyone to see.</label>
           <button class="action-btn deck-save-btn" id="submitCommunityDeckBtn" type="button">Submit Deck to Community</button>
-          <p class="community-submit-note">GitHub will open with the complete decklist filled in. Sign in there and press <strong>Submit new issue</strong> to finish.</p>
+          <p class="community-submit-note">Publishes immediately. Creator names are self-reported, not verified Odoo accounts. Only share information you want public.</p>
+        </section>
+
+        <section id="communityDecksPanel" class="deck-storage-panel" role="tabpanel" aria-labelledby="communityDecksTab" hidden>
+          <label for="communitySearch">Search deck or creator names</label>
+          <input id="communitySearch" type="search" maxlength="80" placeholder="Search community decks">
+          <button id="communityRefresh" type="button" class="filter-btn">Search / Refresh</button>
+          <div id="communityGalleryStatus" role="status"></div>
+          <div id="communityGallery"></div>
+          <div class="saved-deck-actions">
+            <button id="communityPrevious" type="button" class="filter-btn">Previous</button>
+            <button id="communityNext" type="button" class="filter-btn">Next</button>
+          </div>
         </section>
 
         <div class="file-status" id="deckFileStatus" aria-live="polite"></div>
@@ -2406,9 +2422,15 @@ function setupRoyalPoolTooltips(grid){
    MAIN CARD POOL RENDERING
    ============================================================================ */
 function renderPool(){
-  const legal = state.royals.length >= 2
-    ? legalFactions()
-    : new Set(['Yellow','Red','Blue','Green','Colourless']);
+  // Match the Royal chooser when a Royal and a differently colored Bastion
+  // establish the two leader colors. Keep Colourless available and preserve
+  // the existing open pool for unfinished choices, Side Deck, and Castle.
+  const mixedLeaderLock = mixedRoyalBastionFactionLock();
+  const legal = mixedLeaderLock
+    ? new Set(['Colourless', ...leaderChoiceFactions()])
+    : state.royals.length >= 2
+      ? legalFactions()
+      : new Set(['Yellow','Red','Blue','Green','Colourless']);
   const grid = document.getElementById('poolGrid');
   const filtered = CARDS.filter(c => state.poolFilter === 'all' || c.faction === state.poolFilter);
   const factions = ['Yellow','Red','Blue','Green','Colourless'];
@@ -2438,7 +2460,7 @@ function renderPool(){
           const n = (sideDeckMode ? state.side[c.id] : state.main[c.id]) || 0;
           const img = cardImageUrl(c);
           const restrictionReason = !groupLegal && !sideRoyalChoice
-            ? `This card is greyed out because the selected Royals do not allow the ${group.faction} faction.`
+            ? `This card is greyed out because the selected ${mixedLeaderLock ? 'Royal and Bastion' : 'Royals'} do not allow the ${group.faction} faction.`
             : '';
           const selectedRoyalClass = selectedRoyal && !sideDeckMode ? ' selected-royal-in-pool restricted-card' : '';
           const sideCapReached = sideDeckMode && n >= sideDeckCopyLimitFor(c.id);
@@ -3927,12 +3949,11 @@ loadDeckInput.addEventListener('change', async () => {
 /* ============================================================================
    LOCAL DECK LIBRARY + COMMUNITY SUBMISSIONS
    ----------------------------------------------------------------------------
-   Decks are stored only in this browser's localStorage. Public submissions are
-   sent to GitHub through a pre-filled Issue URL, so this static page never
-   contains a GitHub token, password, or other secret.
+   Personal decks are stored in this browser's localStorage. Public submissions
+   use the Supabase integration at the end of this file. Only public service
+   configuration is embedded; guest session tokens stay in the guest's browser.
 ============================================================================ */
 const LOCAL_DECKS_STORAGE_KEY = 'kingdomsSavedDecksV1';
-const COMMUNITY_ISSUES_URL = 'https://github.com/blakeentertainmentstudiosinc/Odoo-embed/issues/new';
 let activeLocalDeckId = null;
 
 function setDeckStorageStatus(message, type='ok'){
@@ -4171,22 +4192,7 @@ function updateCommunitySubmitSummary(){
 }
 
 function submitCurrentDeckToCommunity(){
-  const deck = currentDeckForSave();
-  const description = document.getElementById('deckDescription').value.trim();
-  const params = new URLSearchParams({
-    title: `[DECK] ${deck.name}`,
-    body: communityDeckMarkdown(deck,description),
-    labels: 'deck-submission'
-  });
-  const issueUrl = `${COMMUNITY_ISSUES_URL}?${params.toString()}`;
-  const link = document.createElement('a');
-  link.href = issueUrl;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setDeckStorageStatus('GitHub opened with the full decklist. Submit the issue there to share the deck.');
+  publishCommunityDeck();
 }
 
 function selectDeckStorageTab(tab){
@@ -4201,7 +4207,10 @@ function selectDeckStorageTab(tab){
   submitTab.setAttribute('aria-selected',String(isSubmit));
   myPanel.hidden = isSubmit;
   submitPanel.hidden = !isSubmit;
-  if(isSubmit) updateCommunitySubmitSummary();
+  document.getElementById('communityDecksPanel').hidden = true;
+  document.getElementById('communityDecksTab').setAttribute('aria-selected','false');
+  document.getElementById('communityDecksTab').classList.remove('is-active');
+  if(isSubmit){ updateCommunitySubmitSummary(); refreshCommunityNames(); prepareCommunityCaptcha(); }
   else renderLocalDecks();
 }
 
@@ -8316,11 +8325,11 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 
 <!-- v68: restored exactly to the v66 layout after reverting the invasive v67 embed-shell experiment. -->
 
-<!-- v69: browser-local deck library and token-free GitHub community submissions. -->
+<!-- Community deck library: local saves, Supabase gallery and CAPTCHA-protected guest sessions. -->
 <style id="v69-local-decks-community">
-.deck-options-dialog{width:min(640px,calc(100vw - 24px)) !important;}
+.deck-options-dialog{width:min(740px,calc(100vw - 24px)) !important;}
 .deck-storage-tabs{
-  display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:5px;
   border:1px solid var(--profile-outline,var(--line));border-radius:9px;background:#0005;
 }
 .deck-storage-tab{
@@ -8374,6 +8383,17 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 .community-submit-summary span{color:var(--muted);font-size:12px;line-height:1.35;}
 .community-submit-note{margin:0;color:var(--muted);font-size:11px;line-height:1.45;}
 .community-submit-note strong{color:var(--parchment);}
+#communityGallery{display:grid;gap:12px;}
+.community-deck{padding:12px;border:1px solid var(--line);border-radius:9px;overflow-wrap:anywhere;}
+.community-deck h3{margin:0 0 6px;font-size:17px;}
+.community-deck p{font-size:12px;white-space:pre-wrap;}
+.community-leaders{display:flex;gap:8px;align-items:center;margin:10px 0;}
+.community-leaders img{width:70px;height:98px;object-fit:contain;}
+.community-leaders img.bastion{width:105px;height:75px;}
+.community-deck pre{white-space:pre-wrap;font:12px/1.5 'Work Sans',sans-serif;}
+#communityNames button{white-space:normal;min-height:34px;}
+#communitySearch{box-sizing:border-box;width:100%;padding:10px;background:var(--panel);color:var(--parchment);border:1px solid var(--line);border-radius:6px;}
+#communityGalleryStatus,#communityCaptcha{font-size:12px;line-height:1.5;}
 @media (max-width:620px){
   .saved-deck-row{grid-template-columns:1fr;}
   .saved-deck-actions{justify-content:flex-start;}
@@ -8381,3 +8401,222 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
   .deck-file-backup-actions{grid-template-columns:1fr;}
 }
 </style>
+
+<script id="kingdoms-community-backend">
+// Public browser credentials only. Never add a service_role or CAPTCHA secret here.
+const KINGDOMS_COMMUNITY = Object.freeze({
+  url:'https://rvzxknkfcozoqbbcthjc.supabase.co',
+  key:'sb_publishable_syzclGnXIogaGUJD_FPyog_SDSCyY0b',
+  turnstileSiteKey:'0x4AAAAAAE5-5dVa_ljG800I' // Public widget key; its secret belongs only in Supabase Auth settings.
+});
+const COMMUNITY_SESSION_KEY='kingdomsCommunityGuestV1';
+let communitySession=null, communityAuthPending=null;
+let communityCaptchaToken='', communityWidget=null, communityCaptchaLoading=null;
+let communityNamesSerial=0, communityNameChoice=null;
+let communityPage=0, communityGallerySerial=0, communityPendingSubmission=null;
+const communityEl=id=>document.getElementById(id);
+try{communitySession=JSON.parse(localStorage.getItem(COMMUNITY_SESSION_KEY)||'null');}catch(_){}
+
+function communityLeadersKey(deck){return [...deck.royals].sort().join('|')+'::'+(deck.bastion||'');}
+function communityText(tag,text,className){
+  const el=document.createElement(tag);el.textContent=text;
+  if(className)el.className=className;return el;
+}
+function saveCommunitySession(session){
+  communitySession=session;
+  try{localStorage.setItem(COMMUNITY_SESSION_KEY,JSON.stringify(session));}catch(_){}
+}
+async function communityRequest(path,options={}){
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),20000);
+  try{
+    const headers={apikey:KINGDOMS_COMMUNITY.key,'Content-Type':'application/json'};
+    if(options.token)headers.Authorization='Bearer '+options.token;
+    const response=await fetch(KINGDOMS_COMMUNITY.url+path,{
+      method:options.body===undefined?'GET':'POST',headers,signal:controller.signal,
+      body:options.body===undefined?undefined:JSON.stringify(options.body)
+    });
+    const data=await response.json().catch(()=>null);
+    if(!response.ok){
+      let message=data?.message||data?.msg||data?.error_description||'Community service is unavailable.';
+      if(['PGRST205','PGRST202','42P01'].includes(data?.code))message='Community database setup has not been installed yet.';
+      const error=new Error(message);error.status=response.status;throw error;
+    }
+    return data;
+  }catch(error){
+    if(error.name==='AbortError')throw new Error('Connection timed out. Your deck is still in the builder; please retry.');
+    throw error;
+  }finally{clearTimeout(timer);}
+}
+function resetCommunityCaptcha(){
+  communityCaptchaToken='';
+  if(communityWidget!==null && window.turnstile)window.turnstile.reset(communityWidget);
+}
+async function prepareCommunityCaptcha(){
+  const holder=communityEl('communityCaptcha');
+  if(communitySession?.refresh_token){holder.hidden=true;return;}
+  holder.hidden=false;
+  if(!KINGDOMS_COMMUNITY.turnstileSiteKey){
+    holder.textContent='Submissions are not enabled yet: the site owner needs to finish CAPTCHA setup.';return;
+  }
+  if(communityWidget!==null)return;
+  if(communityCaptchaLoading)return communityCaptchaLoading;
+  communityCaptchaLoading=(async()=>{
+    try{
+      if(!window.turnstile)await new Promise((resolve,reject)=>{
+        const script=document.createElement('script');
+        script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async=true;script.onload=resolve;
+        script.onerror=()=>{script.remove();reject(new Error('CAPTCHA could not load. Check your connection or content blocker.'));};
+        document.head.appendChild(script);
+      });
+      holder.replaceChildren();
+      communityWidget=window.turnstile.render(holder,{
+        sitekey:KINGDOMS_COMMUNITY.turnstileSiteKey,theme:'dark',size:'flexible',
+        callback:token=>{communityCaptchaToken=token;},
+        'expired-callback':()=>{communityCaptchaToken='';},
+        'error-callback':()=>{communityCaptchaToken='';setDeckStorageStatus('CAPTCHA failed. Please retry the verification.','err');}
+      });
+    }catch(error){holder.textContent=error.message;}
+    finally{communityCaptchaLoading=null;}
+  })();
+  return communityCaptchaLoading;
+}
+async function communityGuestToken(){
+  if(communityAuthPending)return communityAuthPending;
+  communityAuthPending=(async()=>{
+    if(communitySession?.access_token && communitySession.expires_at>Date.now()/1000+60)return communitySession.access_token;
+    if(communitySession?.refresh_token){
+      try{
+        const next=await communityRequest('/auth/v1/token?grant_type=refresh_token',{body:{refresh_token:communitySession.refresh_token}});
+        saveCommunitySession(next);return next.access_token;
+      }catch(error){
+        if(error.status!==400 && error.status!==401)throw error;
+        saveCommunitySession(null);await prepareCommunityCaptcha();
+        throw new Error('Your guest session expired. Complete the verification and submit again.');
+      }
+    }
+    if(!KINGDOMS_COMMUNITY.turnstileSiteKey)throw new Error('The site owner needs to finish CAPTCHA setup first.');
+    if(!communityCaptchaToken)throw new Error('Please complete the human verification first.');
+    try{
+      const session=await communityRequest('/auth/v1/signup',{body:{data:{},gotrue_meta_security:{captcha_token:communityCaptchaToken}}});
+      if(!session?.access_token)throw new Error('Enable Anonymous Sign-Ins in Supabase Authentication.');
+      saveCommunitySession(session);communityEl('communityCaptcha').hidden=true;return session.access_token;
+    }finally{resetCommunityCaptcha();}
+  })();
+  try{return await communityAuthPending;}finally{communityAuthPending=null;}
+}
+
+async function refreshCommunityNames(){
+  const serial=++communityNamesSerial;
+  const deck=currentDeckForSave(), key=communityLeadersKey(deck);
+  const holder=communityEl('communityNames');communityNameChoice=null;
+  holder.replaceChildren();
+  if(!deck.royals.length||!deck.bastion){holder.textContent='Select your Royals and Bastion to find matching deck names.';return;}
+  holder.textContent='Looking for decks with these exact Royals and Bastion…';
+  try{
+    const rows=await communityRequest('/rest/v1/rpc/kingdoms_matching_names',{body:{p_key:key}});
+    if(serial!==communityNamesSerial)return;
+    holder.replaceChildren(communityText('strong',rows.length?'These decks use the same Royals and Bastion':'No matching deck names yet'));
+    holder.append(communityText('span','Choose an existing name or use your own. Your cardlist and creator credit remain separate.'));
+    function choose(name){
+      if(name)communityEl('deckName').value=name;
+      communityNameChoice={key,name:communityEl('deckName').value.trim()};
+      updateCommunitySubmitSummary();
+      holder.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.name===(name||''))));
+    }
+    rows.forEach(row=>{
+      const b=savedDeckAction(`Use “${row.name}” · ${row.versions} version(s)`,'',()=>choose(row.name));
+      b.dataset.name=row.name;holder.append(b);
+    });
+    const own=savedDeckAction('Use my own deck name','',()=>choose(null));own.dataset.name='';holder.append(own);
+    if(!rows.length)choose(null);
+  }catch(error){if(serial===communityNamesSerial)holder.textContent=error.message;}
+}
+
+async function publishCommunityDeck(){
+  const button=communityEl('submitCommunityDeckBtn');
+  if(button.disabled)return;
+  const deck=currentDeckForSave();
+  const name=communityEl('deckName').value.trim();
+  const creator=communityEl('pilotName').value.trim();
+  const description=communityEl('deckDescription').value.trim();
+  if(!name||name.length>120||!creator||creator.length>80){setDeckStorageStatus('Enter a deck name (up to 120 characters) and a public creator name (up to 80).','err');return;}
+  if(!deck.royals.length||!deck.bastion||deck.mainCount<1){setDeckStorageStatus('Choose your Royals and Bastion and add Main Deck cards first.','err');return;}
+  if(!communityNameChoice||communityNameChoice.key!==communityLeadersKey(deck)||communityNameChoice.name!==name){
+    await refreshCommunityNames();setDeckStorageStatus('Review the matching names above, then choose one or use your own name.','err');return;
+  }
+  if(!communityEl('communityConsent').checked){setDeckStorageStatus('Confirm that you want to publish this information publicly.','err');return;}
+  const payload={p_name:name,p_creator:creator,p_description:description,p_deck:deck};
+  // Exclude volatile timestamps/theme from the retry signature.
+  const signature=JSON.stringify([name,creator,description,[...deck.royals].sort(),deck.bastion,deck.main,deck.side,deck.terra,deck.terraDeck]);
+  if(communityPendingSubmission?.signature!==signature)communityPendingSubmission={signature,id:crypto.randomUUID()};
+  payload.p_request_id=communityPendingSubmission.id;
+  button.disabled=true;button.textContent='Publishing…';
+  try{
+    const token=await communityGuestToken();
+    await communityRequest('/rest/v1/rpc/kingdoms_submit_deck',{body:payload,token});
+    communityEl('communityConsent').checked=false;
+    communityPage=0;communityEl('communitySearch').value='';openCommunityGallery();
+    setDeckStorageStatus(`Published “${name}”. It is now public.`);
+  }catch(error){setDeckStorageStatus(error.message||'Could not submit. Your deck is still in the builder.','err');}
+  finally{button.disabled=false;button.textContent='Submit Deck to Community';}
+}
+
+function communityDeckRow(row){
+  const card=communityText('article','','community-deck');
+  card.append(communityText('h3',row.name),communityText('p',`by ${row.creator} · ${new Date(row.created_at).toLocaleDateString()}`));
+  const leaders=communityText('div','','community-leaders');
+  [...row.deck.royals,row.deck.bastion].forEach(id=>{
+    const data=deckCardById(id);if(!data)return;
+    const img=document.createElement('img');img.src=cardImageUrl(data);img.alt=data.name;img.title=data.name;img.loading='lazy';
+    if(id===row.deck.bastion)img.className='bastion';leaders.append(img);
+  });
+  card.append(leaders,communityText('p',[...row.deck.royals,row.deck.bastion].map(deckCardLabel).join(' · ')));
+  if(row.description)card.append(communityText('p',row.description));
+  const details=document.createElement('details');details.append(communityText('summary','View complete decklist'));
+  details.append(communityText('pre',serializeDeckText(row.deck)));card.append(details);
+  card.append(savedDeckAction('Load Deck','primary',()=>{
+    if(!window.confirm('Load this community deck? Unsaved changes in the builder will be replaced.'))return;
+    try{
+      applyDeckToBuilder(row.deck);activeLocalDeckId=null;
+      communityNameChoice=null;selectDeckStorageTab('local');
+      setDeckStorageStatus(`Loaded “${row.name}”. Local save slots were not overwritten. Existing builder legality rules still apply.`);
+    }catch(error){setDeckStorageStatus(error.message,'err');}
+  }));return card;
+}
+async function loadCommunityGallery(){
+  const serial=++communityGallerySerial, page=communityPage;
+  const status=communityEl('communityGalleryStatus');status.textContent='Loading community decks…';
+  communityEl('communityPrevious').disabled=true;communityEl('communityNext').disabled=true;
+  communityEl('communityGallery').replaceChildren();
+  const params=new URLSearchParams({select:'id,name,creator,description,leaders_key,deck,created_at',order:'created_at.desc,id.desc',limit:'13',offset:String(page*12)});
+  const term=communityEl('communitySearch').value.trim().replace(/[%,()*"\\]/g,' ');
+  if(term)params.set('or',`(name.ilike.*${term}*,creator.ilike.*${term}*)`);
+  try{
+    const rows=await communityRequest('/rest/v1/kingdoms_decks?'+params);
+    if(serial!==communityGallerySerial)return;
+    communityEl('communityGallery').replaceChildren(...rows.slice(0,12).map(communityDeckRow));
+    status.textContent=rows.length?`Page ${page+1} · newest first`:'No decks found. Be the first to submit one!';
+    communityEl('communityPrevious').disabled=page===0;communityEl('communityNext').disabled=rows.length<=12;
+  }catch(error){if(serial===communityGallerySerial){status.textContent=error.message;communityEl('communityPrevious').disabled=page===0;}}
+}
+function openCommunityGallery(){
+  selectDeckStorageTab('local');
+  communityEl('myDecksPanel').hidden=true;communityEl('communityDecksPanel').hidden=false;
+  communityEl('myDecksTab').classList.remove('is-active');communityEl('myDecksTab').setAttribute('aria-selected','false');
+  communityEl('communityDecksTab').classList.add('is-active');communityEl('communityDecksTab').setAttribute('aria-selected','true');
+  loadCommunityGallery();
+}
+communityEl('communityDecksTab').addEventListener('click',openCommunityGallery);
+communityEl('communityRefresh').addEventListener('click',()=>{communityPage=0;loadCommunityGallery();});
+communityEl('communitySearch').addEventListener('keydown',e=>{if(e.key==='Enter'){communityPage=0;loadCommunityGallery();}});
+communityEl('communityNext').addEventListener('click',()=>{communityPage++;loadCommunityGallery();});
+communityEl('communityPrevious').addEventListener('click',()=>{communityPage=Math.max(0,communityPage-1);loadCommunityGallery();});
+communityEl('deckName').addEventListener('input',()=>{communityNameChoice=null;});
+communityEl('deckName').maxLength=120;
+communityEl('pilotName').maxLength=80;
+// Refresh state-sensitive name suggestions every time the file dialog opens.
+communityEl('openDeckFilePanel').addEventListener('click',()=>{
+  if(!communityEl('submitDeckPanel').hidden){updateCommunitySubmitSummary();refreshCommunityNames();prepareCommunityCaptcha();}
+});
+</script>
