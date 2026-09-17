@@ -1149,6 +1149,32 @@ body{
 .theme-picker-btn.primary{background:color-mix(in srgb,var(--profile-outline) 22%,rgba(0,0,0,.35));border-color:var(--profile-outline);}
 @media(max-width:480px){.theme-color-wheel{width:190px;height:190px}.theme-picker-dialog{padding:14px}}
 </style>
+
+<style id="v82-royal-info-refine">
+/* v82: smaller card info button + lower Royal slots */
+.card-info-button,
+.simple-card .card-info-button,
+.deck-thumbnail .card-info-button {
+  transform: scale(.8);
+  transform-origin: center;
+}
+
+/* Keep the selected Royal area bottom-anchored, but visually lower by ~140px. */
+.selected-royals-zone,
+.royal-slots,
+.royal-zone-group,
+.deck-royal-slots {
+  translate: 0 140px;
+}
+
+/* If the active layout uses the newer leader panel wrapper, move only the Royal section. */
+.leader-panel .royal-section,
+.selected-leaders-panel .royal-section,
+.deck-leaders-panel .royal-section {
+  transform: translateY(140px);
+}
+</style>
+
 </head>
 <body>
 <div id="cacheChangePopup" class="cache-change-popup" aria-live="polite" aria-atomic="true"></div>
@@ -1213,15 +1239,15 @@ body{
 
   <div id="leaderOptions">
   <section class="block">
-    <div class="block-title">Choose your royals</div>
-    <div class="block-sub">Sets which factions are legal for the rest of your deck, plus Colourless.</div>
-    <div class="royal-grid" id="royalGrid"></div>
-  </section>
-
-  <section class="block">
     <div class="block-title">Choose your bastion</div>
     <div class="block-sub">Choose exactly 1 Bastion. Colourless Bastions are available with up to one Royal; other Bastions must share a faction with a selected Royal. Abandoned Castle allows any faction but only one Royal.</div>
     <div class="royal-grid" id="bastionGrid"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-title">Choose your royals</div>
+    <div class="block-sub">Sets which factions are legal for the rest of your deck, plus Colourless.</div>
+    <div class="royal-grid" id="royalGrid"></div>
   </section>
 
   </div>
@@ -1350,7 +1376,11 @@ body{
         </div>
 
         <section id="myDecksPanel" class="deck-storage-panel" role="tabpanel" aria-labelledby="myDecksTab">
-          <button class="action-btn deck-save-btn" id="saveLocalDeckBtn" type="button">Save Current Deck</button>
+          <div class="deck-library-primary-actions" aria-label="Current deck actions">
+            <button class="action-btn deck-save-btn" id="saveLocalDeckBtn" type="button">Save Current Deck</button>
+            <button class="action-btn deck-save-btn deck-secondary-btn" id="newDeckBtn" type="button">New Deck</button>
+            <button class="action-btn deck-save-btn deck-secondary-btn" id="clearDeckBtn" type="button">Clear Deck</button>
+          </div>
           <div class="saved-deck-heading">
             <strong>Saved on this device</strong>
             <span id="savedDeckCount">0 decks</span>
@@ -1369,6 +1399,10 @@ body{
         </section>
 
         <section id="submitDeckPanel" class="deck-storage-panel" role="tabpanel" aria-labelledby="submitDeckTab" hidden>
+          <div class="field">
+            <label for="communityGameMode">Game mode <span class="field-optional">(optional)</span></label>
+            <input id="communityGameMode" type="text" maxlength="80" placeholder="e.g. Fort">
+          </div>
           <div class="field">
             <label for="deckDescription">Deck description <span class="field-optional">(optional)</span></label>
             <textarea id="deckDescription" rows="5" maxlength="1500" placeholder="Tell the community how the deck plays."></textarea>
@@ -1407,14 +1441,6 @@ body{
   </div>
 </dialog>
 
-<dialog id="greyedChoiceConfirm" class="castle-confirm" aria-labelledby="greyedChoiceTitle" aria-describedby="greyedChoiceText">
-  <h2 id="greyedChoiceTitle">Use this greyed-out card?</h2>
-  <p id="greyedChoiceText"></p>
-  <div class="castle-confirm-actions">
-    <button type="button" id="greyedChoiceCancel" class="filter-btn" autofocus>Cancel</button>
-    <button type="button" id="greyedChoiceAccept" class="action-btn">Continue</button>
-  </div>
-</dialog>
 
 <dialog id="colorIdentityDialog" class="castle-confirm" aria-labelledby="colorIdentityTitle" aria-describedby="colorIdentityText">
   <h2 id="colorIdentityTitle">Add cached cards back?</h2>
@@ -1750,6 +1776,7 @@ const state = {
   cachedMain: {},
   side: {},
   cachedSide: {},
+  sideFromMain: {},
   activeDeck: 'main',
   terra: 10,
   terraDeck: {},
@@ -2004,81 +2031,173 @@ function selectedRoyalCopyCount(id, royalIds = state.royals){
   return Array.isArray(royalIds) && royalIds.includes(id) ? 1 : 0;
 }
 
-/* Side Deck shares each card's copy limit with the Main Deck and the active
-   Royal slot. Example: 2 copies in Main leaves room for only 1 in Side; if
-   that same card is also your Royal, the Royal uses one of those copies too. */
+/* Side Deck and Main Deck share one normal per-card copy pool. Adding a card
+   to either deck while the combined total is already at cap transfers a copy
+   from the other deck instead of creating a new copy. sideFromMain remembers
+   Side Deck copies that were specifically moved out of Main Deck. */
 function sideDeckCopyLimitFor(id, mainMap = state.main, royalIds = state.royals){
   const card = deckCardById(id);
   if(!card) return 0;
   const mainCopies = Math.max(0, Number(mainMap && mainMap[id]) || 0);
   const royalCopies = selectedRoyalCopyCount(id, royalIds);
+  /* A selected Royal is copy #1 of that card's normal copy limit. Since active
+     Royals cannot also be placed in Main Deck, a normal 3-copy Royal can have
+     at most 2 additional copies in Side Deck. */
   return Math.max(0, maxCopiesFor(card) - mainCopies - royalCopies);
 }
 
+function sideDeckAbsoluteCopyLimitFor(id, royalIds = state.royals){
+  const card = deckCardById(id);
+  if(!card) return 0;
+  return Math.max(0, maxCopiesFor(card) - selectedRoyalCopyCount(id, royalIds));
+}
+
+function sharedDeckCopyCountFor(id){
+  return Math.max(0, Number(state.main[id]) || 0) +
+    Math.max(0, Number(state.side[id]) || 0);
+}
+
+function cappedDeckCopyCountFor(id){
+  /* Copy-cap checks include the active Royal slot. Display helpers may still
+     break the count out by zone, but legality is based on all physical copies. */
+  return sharedDeckCopyCountFor(id) + selectedRoyalCopyCount(id);
+}
+
+
+/* Display count used on card artwork throughout the builder. Unlike the copy-limit
+   helper above, this includes every visible deck zone: Main + Side + Royal + Bastion. */
+function totalDeckCopyCountFor(id){
+  return sharedDeckCopyCountFor(id) + selectedRoyalCopyCount(id) + (state.bastion === id ? 1 : 0);
+}
+
+/* Builder badge breakdown: keep the combined total prominent while showing
+   exactly how those copies are split between Main Deck and Side Deck. */
+function deckZoneCopyBreakdownFor(id){
+  return {
+    main: Math.max(0, Number(state.main[id]) || 0),
+    side: Math.max(0, Number(state.side[id]) || 0)
+  };
+}
+
+function builderCopyBadgeIsSplit(id){
+  const split = deckZoneCopyBreakdownFor(id);
+  return split.main > 0 && split.side > 0;
+}
+
+function builderCopyBadgeMarkup(id, total){
+  const split = deckZoneCopyBreakdownFor(id);
+  const royal = selectedRoyalCopyCount(id);
+  /* Only show the M/S distinction when copies are genuinely split between both
+     zones. Selected Royals get their own R1 marker so the leader-slot copy is
+     never lost from the visual count. */
+  if(split.main > 0 && split.side > 0){
+    return `<span class="copy-zone-split" aria-hidden="true">${royal ? '<span>R1</span>' : ''}<span>M${split.main}</span><span>S${split.side}</span></span>`;
+  }
+  return `<span class="copy-total">${total}</span>`;
+}
+
+function mainDeckAllowedFactions(){
+  const mixedLeaderLock = mixedRoyalBastionFactionLock();
+  if(mixedLeaderLock) return new Set(['Colourless', ...leaderChoiceFactions()]);
+  if(state.royals.length >= 2) return legalFactions();
+  return new Set(['Yellow','Red','Blue','Green','Colourless']);
+}
+
+function canReturnTransferredSideCopyToMain(id){
+  const card = CARDS.find(c => c.id === id);
+  if(!card || state.royals.includes(id)) return false;
+  if(!mainDeckAllowedFactions().has(card.faction)) return false;
+  const mainCopies = Math.max(0, Number(state.main[id]) || 0);
+  const sideCopies = Math.max(0, Number(state.side[id]) || 0);
+  return mainCopies + sideCopies < maxCopiesFor(card);
+}
+
+function canAddSideDeckCard(id){
+  const card = deckCardById(id);
+  if(!card || sideCount() >= MAX_SIDE_DECK) return false;
+  const currentSide = Math.max(0, Number(state.side[id]) || 0);
+  if(currentSide >= sideDeckAbsoluteCopyLimitFor(id)) return false;
+  if(cappedDeckCopyCountFor(id) < maxCopiesFor(card)) return true;
+  /* At the shared cap, Side Deck may still take a copy by moving one out of
+     Main Deck.  This is what makes a greyed 3-copy Main card sideboardable. */
+  return Math.max(0, Number(state.main[id]) || 0) > 0;
+}
+
 function enforceSideDeckSharedCopyLimits(){
+  state.sideFromMain ||= {};
+  /* Active Royals cannot have copies in Main Deck. If an older save/state has
+     one there, remove it rather than allowing an illegal fourth-zone copy. */
+  (state.royals || []).forEach(id => {
+    if(state.main[id]) delete state.main[id];
+    if(state.cachedMain[id]) delete state.cachedMain[id];
+  });
   Object.keys(state.side || {}).forEach(id => {
     const allowed = sideDeckCopyLimitFor(id);
     const current = Math.max(0, Number(state.side[id]) || 0);
     const next = Math.min(current, allowed);
     if(next <= 0) delete state.side[id];
     else state.side[id] = next;
+
+    /* If Main Deck was explicitly increased and Side Deck had to shrink, do
+       not leave transfer bookkeeping pointing at copies that no longer exist. */
+    const moved = Math.max(0, Number(state.sideFromMain[id]) || 0);
+    const keptMoved = Math.min(moved, Math.max(0, next));
+    if(keptMoved) state.sideFromMain[id] = keptMoved;
+    else delete state.sideFromMain[id];
   });
 }
 
 function changeSideDeckCard(id, delta){
   const card = deckCardById(id);
   if(!card || !delta) return false;
+  state.sideFromMain ||= {};
 
-  const current = state.side[id] || 0;
-  const cap = sideDeckCopyLimitFor(id);
-  let next = Math.max(0, Math.min(cap, current + delta));
+  const current = Math.max(0, Number(state.side[id]) || 0);
 
   if(delta > 0){
-    const room = Math.max(0, MAX_SIDE_DECK - sideCount());
-    next = Math.min(next, current + room);
+    if(!canAddSideDeckCard(id)) return false;
+
+    const totalAtCap = cappedDeckCopyCountFor(id) >= maxCopiesFor(card);
+    const mainCopies = Math.max(0, Number(state.main[id]) || 0);
+    if(totalAtCap && mainCopies > 0){
+      const nextMain = mainCopies - 1;
+      if(nextMain) state.main[id] = nextMain;
+      else delete state.main[id];
+      state.sideFromMain[id] = (state.sideFromMain[id] || 0) + 1;
+    }
+
+    delete state.cachedSide[id];
+    state.side[id] = current + 1;
+    return true;
   }
 
-  if(next === current) return false;
-  delete state.cachedSide[id];
-  if(next === 0) delete state.side[id];
-  else state.side[id] = next;
+  /* In Side Deck editor, removal means remove a physical copy from the whole
+     deck pool. Prefer Side copies first; once Side is empty, continue removing
+     Main copies so the user can clean up the card without switching views. */
+  if(current > 0){
+    const next = current - 1;
+    if(next) state.side[id] = next;
+    else delete state.side[id];
+    delete state.cachedSide[id];
+
+    const moved = Math.max(0, Number(state.sideFromMain[id]) || 0);
+    if(moved > 0){
+      if(moved === 1) delete state.sideFromMain[id];
+      else state.sideFromMain[id] = moved - 1;
+    }
+    return true;
+  }
+
+  const mainCurrent = Math.max(0, Number(state.main[id]) || 0);
+  if(mainCurrent <= 0) return false;
+  const nextMain = mainCurrent - 1;
+  if(nextMain) state.main[id] = nextMain;
+  else delete state.main[id];
+  delete state.cachedMain[id];
   return true;
 }
 
-function confirmGreyedSelectableCard(message, acceptLabel = 'Continue'){
-  return new Promise(resolve => {
-    const dialog = document.getElementById('greyedChoiceConfirm');
-    if(!dialog){ resolve(true); return; }
-    if(dialog.open){ resolve(false); return; }
 
-    const textNode = document.getElementById('greyedChoiceText');
-    const acceptBtn = document.getElementById('greyedChoiceAccept');
-    const cancelBtn = document.getElementById('greyedChoiceCancel');
-
-    textNode.textContent = message || 'This card is greyed out, but this action is still allowed. Continue?';
-    acceptBtn.textContent = acceptLabel;
-    dialog.returnValue = 'cancel';
-
-    acceptBtn.onclick = event => {
-      event.preventDefault();
-      event.stopPropagation();
-      dialog.close('confirm');
-    };
-    cancelBtn.onclick = event => {
-      event.preventDefault();
-      event.stopPropagation();
-      dialog.close('cancel');
-    };
-
-    dialog.addEventListener('close', () => {
-      acceptBtn.onclick = null;
-      cancelBtn.onclick = null;
-      resolve(dialog.returnValue === 'confirm');
-    }, {once:true});
-
-    dialog.showModal();
-  });
-}
 
 function terraCardById(id){ return TERRA_CARDS.find(c => c.id === id) || null; }
 function terraCardCount(id){ return id === 'natural-terra' ? (state.terra || 0) : ((state.terraDeck && state.terraDeck[id]) || 0); }
@@ -2229,6 +2348,9 @@ function cardInspectorLookup(id){
 
 function openCardInspector(card){
   if(!card) return;
+  /* Opening the large inspector is also an explicit information request, so
+     make the same card the new sticky-panel pin before showing the modal. */
+  pinCardObjectToSticky(card);
   const modal = document.getElementById('cardInspectorModal');
   if(!modal) return;
   const image = document.getElementById('cardInspectorImage');
@@ -2326,12 +2448,9 @@ function stickyCardContext(card){
   return {id, card:c, messages, variant, hardWarnings, loyaltyNotice};
 }
 
-function renderStickyCardFromElement(card){
+function renderStickyCardData(c, messages = [], variant = 'warning'){
   const tooltip = document.getElementById('cardHoverTooltip');
-  if(!tooltip || !card) return;
-  const info = stickyCardContext(card);
-  const c = info.card;
-  if(!c) return;
+  if(!tooltip || !c) return;
 
   const text = formatCardRulesText(cardRulesText(c));
   const metaParts = [];
@@ -2348,7 +2467,7 @@ function renderStickyCardFromElement(card){
 
   tooltip.innerHTML = `
     <div class="sticky-card-preview sticky-card-data-only">
-      <div class="sticky-card-warnings">${stickyHoverNoticeHtml(info.messages, info.variant)}</div>
+      <div class="sticky-card-warnings">${stickyHoverNoticeHtml(messages, variant)}</div>
       <div class="sticky-card-description">
         <div class="hover-card-name">${escapeHtml(c.name || 'Unnamed Card')}</div>
         ${metaHtml}
@@ -2357,7 +2476,20 @@ function renderStickyCardFromElement(card){
       </div>
     </div>`;
   tooltip.classList.remove('touch-card-selected');
+  tooltip.dataset.pinnedCardId = c.id || '';
   tooltip.setAttribute('aria-hidden','false');
+}
+
+function pinCardObjectToSticky(card){
+  if(!card) return;
+  renderStickyCardData(card);
+}
+
+function renderStickyCardFromElement(card){
+  if(!card) return;
+  const info = stickyCardContext(card);
+  if(!info.card) return;
+  renderStickyCardData(info.card, info.messages, info.variant);
 }
 
 function setupCardHoverTooltip(root){
@@ -2369,20 +2501,73 @@ function setupCardHoverTooltip(root){
   root.querySelectorAll(selector).forEach(card => {
     const inspectorId = () => card.dataset.cardId || card.dataset.id || card.dataset.bastionId || card.dataset.terraId;
     card.addEventListener('mousedown', e => {
+      if(e.target.closest('.card-info-button')) return;
       if(e.button === 1) e.preventDefault();
     });
     card.addEventListener('auxclick', e => {
+      /* The Info control is never an inspector trigger, even if the same card is
+         already pinned. Keep middle-click inspection limited to the card itself. */
+      if(e.target.closest('.card-info-button')){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
       if(e.button !== 1) return;
       e.preventDefault();
       e.stopPropagation();
+      renderStickyCardFromElement(card);
       const inspected = cardInspectorLookup(inspectorId());
       if(inspected) openCardInspector(inspected);
     });
 
-    /* Hover is now warning-only. It must never replace the card pinned in the
-       sticky header; only an intentional click/tap is allowed to do that. */
+    /* Right-click/remove should leave the removed card pinned as the current
+       reference instead of showing whichever card happened to be there before. */
+    card.addEventListener('contextmenu', e => {
+      if(e.target.closest('.card-info-button')) return;
+      renderStickyCardFromElement(card);
+    });
+
+    /* Every rendered card gets an explicit Info control. It never adds/removes
+       a copy or opens the inspector; it only pins the card in the sticky panel. */
+    if(!card.querySelector(':scope > .card-info-button')){
+      const infoButton = document.createElement('button');
+      infoButton.type = 'button';
+      infoButton.className = 'card-info-button';
+      infoButton.setAttribute('aria-label', 'Show card info for ' + ((cardInspectorLookup(inspectorId()) || {}).name || 'card'));
+      infoButton.innerHTML = '<span aria-hidden="true">i</span>';
+      /* Fully isolate the Info control from every card-level mouse/pointer action.
+         Re-clicking an already pinned card must only refresh the sticky panel. */
+      ['pointerdown','mousedown','mouseup','auxclick','dblclick','contextmenu'].forEach(type => {
+        infoButton.addEventListener(type, e => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        });
+      });
+      infoButton.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const id = inspectorId();
+        const alreadyPinned = tooltip.dataset.pinnedCardId === id;
+
+        // First click pins this card's text. Clicking Info again while that same
+        // card is already pinned promotes the action to the full inspector.
+        if(alreadyPinned){
+          const inspected = cardInspectorLookup(id);
+          if(inspected) openCardInspector(inspected);
+          return;
+        }
+
+        renderStickyCardFromElement(card);
+      });
+      card.appendChild(infoButton);
+    }
+
+    /* Desktop hover previews the card in the sticky header again. Click/tap and
+       the Info button still provide the existing explicit pin/inspector actions. */
     card.addEventListener('mouseenter', e => {
       if(!cardHoverIsEnabled()) return;
+      renderStickyCardFromElement(card);
       const info = stickyCardContext(card);
       if(info.hardWarnings?.length){
         showMouseDisclaimer(info.hardWarnings, e.clientX, e.clientY, 'warning');
@@ -2411,6 +2596,18 @@ function setupRoyalPoolTooltips(grid){
   if(!grid) return;
   grid.querySelectorAll('.selected-royal-in-pool').forEach(card => {
     const message = 'This is your Royal.';
+
+    /* A selected Royal is blocked from being added to the Main Deck, but it is
+       still a fully interactive information card. Capture ordinary left-clicks
+       before the deck-edit handler and pin its data to the sticky header. The
+       dedicated Info button keeps its own first-click pin / second-click inspector
+       behavior, so do not intercept clicks that originate on that button. */
+    card.addEventListener('click', e => {
+      if(e.button !== 0 || e.target.closest('.card-info-button')) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      renderStickyCardFromElement(card);
+    }, true);
     card.addEventListener('mouseenter', e => {
       showMouseDisclaimer([message], e.clientX, e.clientY, 'selected');
     });
@@ -2428,9 +2625,10 @@ function setupRoyalPoolTooltips(grid){
    ============================================================================ */
 function renderPool(){
   // Match the Royal chooser when a Royal and a differently colored Bastion
-  // establish the two leader colors. Keep Colourless available and preserve
-  // the existing open pool for unfinished choices, Side Deck, and Castle.
-  const mixedLeaderLock = mixedRoyalBastionFactionLock();
+  // establish the two leader colors. Side Deck mode must keep the same faction
+  // loyalty visibility as Main Deck mode instead of reopening every colour.
+  const mixedLeaderLock = state.royals.length === 1 && !!state.bastion &&
+    state.bastion !== 'abandoned-castle' && leaderChoiceFactions().size >= 2;
   const legal = mixedLeaderLock
     ? new Set(['Colourless', ...leaderChoiceFactions()])
     : state.royals.length >= 2
@@ -2438,13 +2636,39 @@ function renderPool(){
       : new Set(['Yellow','Red','Blue','Green','Colourless']);
   const grid = document.getElementById('poolGrid');
   const filtered = CARDS.filter(c => state.poolFilter === 'all' || c.faction === state.poolFilter);
-  const factions = ['Yellow','Red','Blue','Green','Colourless'];
+  const colouredFactions = ['Yellow','Red','Blue','Green'];
+  const colourlessCards = filtered.filter(c => c.faction === 'Colourless')
+    .sort((a,b) => a.cost - b.cost || a.name.localeCompare(b.name));
 
-  const groups = factions.map(faction => ({
+  const groups = colouredFactions.map(faction => ({
     faction,
     cards: filtered.filter(c => c.faction === faction)
       .sort((a,b) => a.cost - b.cost || a.name.localeCompare(b.name))
   })).filter(g => g.cards.length);
+
+  /* Colourless is shared deck space, not a separate visual lane. Put those cards
+     at the end of the last currently available coloured faction. If the user
+     explicitly filters to Colourless (or no coloured group exists), keep a
+     temporary Colourless group so the filter still has somewhere to render. */
+  if(colourlessCards.length){
+    const targetFaction = [...colouredFactions].reverse().find(faction =>
+      legal.has(faction) && groups.some(group => group.faction === faction)
+    );
+    const targetGroup = targetFaction ? groups.find(group => group.faction === targetFaction) : null;
+    if(targetGroup && state.poolFilter !== 'Colourless'){
+      targetGroup.cards.push(...colourlessCards);
+      targetGroup.includesColourless = true;
+    }else groups.push({faction:'Colourless', cards:colourlessCards});
+  }
+
+  /* Always put currently available faction categories first. Preserve the normal
+     Yellow -> Red -> Blue -> Green order inside the available and restricted sets. */
+  groups.sort((a,b) => {
+    const aAvailable = legal.has(a.faction) ? 0 : 1;
+    const bAvailable = legal.has(b.faction) ? 0 : 1;
+    if(aAvailable !== bAvailable) return aAvailable - bAvailable;
+    return colouredFactions.indexOf(a.faction) - colouredFactions.indexOf(b.faction);
+  });
 
   grid.innerHTML = groups.map(group => {
     const groupLegal = legal.has(group.faction);
@@ -2454,7 +2678,7 @@ function renderPool(){
     <div class="pool-group" data-faction="${group.faction}">
       <div class="pool-group-title">
         <span class="group-dot" style="background:${FACTION_VARS[group.faction]}"></span>
-        <span>${group.faction}</span>
+        <span>${group.includesColourless && group.faction !== 'Colourless' ? `${group.faction} + Colourless` : group.faction}</span>
         <span style="font-family:'Work Sans',sans-serif;font-size:11px;color:var(--muted-dim);font-weight:400;">${group.cards.length} cards</span>
       </div>
       <div class="card-wall-test">
@@ -2462,17 +2686,21 @@ function renderPool(){
           const selectedRoyal = state.royals.includes(c.id);
           const sideDeckMode = state.activeDeck === 'side';
           const sideRoyalChoice = sideDeckMode && isRoyalOptionId(c.id);
-          const n = (sideDeckMode ? state.side[c.id] : state.main[c.id]) || 0;
+          const n = totalDeckCopyCountFor(c.id);
           const img = cardImageUrl(c);
           const restrictionReason = !groupLegal && !sideRoyalChoice
             ? `This card is greyed out because the selected ${mixedLeaderLock ? 'Royal and Bastion' : 'Royals'} do not allow the ${group.faction} faction.`
             : '';
           const selectedRoyalClass = selectedRoyal && !sideDeckMode ? ' selected-royal-in-pool restricted-card' : '';
-          const sideCapReached = sideDeckMode && n >= sideDeckCopyLimitFor(c.id);
-          return `<article class="simple-card${selectedRoyalClass}${restrictionReason ? ' restricted-card' : ''}${sideCapReached ? ' side-copy-cap-reached' : ''}" data-card-id="${c.id}" ${sideCapReached ? 'data-side-copy-cap="1" aria-disabled="true" data-restriction-reason="Shared copy limit reached across your Main Deck, Side Deck, and Royal slot."' : ''} ${restrictionReason ? `data-restriction-reason="${escapeHtml(restrictionReason)}"` : ''}>
+          const standardMainCapReached = cappedDeckCopyCountFor(c.id) >= maxCopiesFor(c);
+          const sideCanAdd = sideDeckMode ? canAddSideDeckCard(c.id) : false;
+          const sideCapReached = sideDeckMode && !sideCanAdd;
+          const mainCapClass = standardMainCapReached ? ' main-copy-cap-reached' : '';
+          const sideSelectableClass = sideDeckMode && sideCanAdd && (restrictionReason || standardMainCapReached) ? ' side-deck-selectable-greyed' : '';
+          return `<article class="simple-card${selectedRoyalClass}${restrictionReason ? ' restricted-card' : ''}${mainCapClass}${sideSelectableClass}${sideCapReached ? ' side-copy-cap-reached' : ''}" data-card-id="${c.id}" ${sideCapReached ? 'data-side-copy-cap="1" aria-disabled="true"' : ''} ${restrictionReason ? `data-restriction-reason="${escapeHtml(restrictionReason)}"` : ''}>
             <div class="simple-card-image">
               ${img ? `<img src="${img}" alt="" loading="lazy">` : `<div class="card-image-missing"></div>`}
-              <div class="simple-card-copy-count" data-count="${n}" aria-hidden="true">${n}</div>
+              <div class="simple-card-copy-count${builderCopyBadgeIsSplit(c.id) ? ' split-copy-count' : ''}" data-count="${n}" aria-label="${builderCopyBadgeIsSplit(c.id) ? `${deckZoneCopyBreakdownFor(c.id).main} Main, ${deckZoneCopyBreakdownFor(c.id).side} Side` : `${n} copies`}">${builderCopyBadgeMarkup(c.id, n)}</div>
             </div>
             <div class="simple-card-info"><div class="card-name">${c.name}</div></div>
           </article>`;
@@ -2485,28 +2713,57 @@ function renderPool(){
     const changeMainCard = (id, delta) => {
     if(!id) return;
     const isSide = state.activeDeck === 'side';
+    /* Your active Royal can have extra copies only in Side Deck. Never add or
+       transfer that Royal into Main Deck. */
     if(state.royals.includes(id) && !isSide) return;
     const clickedCard = CARDS.find(c => c.id === id);
-    if(clickedCard && !legal.has(clickedCard.faction) && !(isSide && isRoyalOptionId(id))) return;
 
-    const target = isSide ? state.side : state.main;
-    const cache = isSide ? state.cachedSide : state.cachedMain;
-    delete cache[id];
-
-    const cap = isSide ? sideDeckCopyLimitFor(id) : maxCopiesFor(clickedCard);
-    const current = target[id] || 0;
-    let next = Math.max(0, Math.min(cap, current + delta));
-
-    if(isSide && delta > 0){
-      const room = Math.max(0, MAX_SIDE_DECK - sideCount());
-      next = Math.min(next, current + room);
+    /* Side Deck intentionally ignores Main Deck faction greying.  If the shared
+       copy cap is full, changeSideDeckCard moves a copy from Main instead. */
+    if(isSide){
+      if(delta < 0 && (state.side[id] || 0) > 0) playDeckReturnAnimation(id, 'side');
+      if(changeSideDeckCard(id, delta)) renderAll();
+      return;
     }
 
-    if(next === current) return;
-    if(delta < 0 && next < current) playDeckReturnAnimation(id, isSide ? 'side' : 'main');
+    if(clickedCard && !legal.has(clickedCard.faction)) return;
+    const target = state.main;
+    const cache = state.cachedMain;
+    delete cache[id];
+
+    const cap = maxCopiesFor(clickedCard);
+    const current = Math.max(0, Number(target[id]) || 0);
+    const sideCurrent = Math.max(0, Number(state.side[id]) || 0);
+    const sharedCurrent = sharedDeckCopyCountFor(id);
+
+    if(delta > 0){
+      /* Main + Side are one shared copy pool. If the card is already at its
+         total cap but Side Deck owns a copy, move that copy back to Main
+         instead of silently trimming Side Deck or exceeding the cap. */
+      if(sharedCurrent >= cap){
+        if(sideCurrent <= 0) return;
+        if(sideCurrent === 1) delete state.side[id];
+        else state.side[id] = sideCurrent - 1;
+
+        const moved = Math.max(0, Number(state.sideFromMain?.[id]) || 0);
+        if(moved > 0){
+          if(moved === 1) delete state.sideFromMain[id];
+          else state.sideFromMain[id] = moved - 1;
+        }
+        target[id] = current + 1;
+        renderAll();
+        return;
+      }
+      target[id] = current + 1;
+      renderAll();
+      return;
+    }
+
+    if(current <= 0) return;
+    playDeckReturnAnimation(id, 'main');
+    const next = current - 1;
     if(next === 0) delete target[id];
     else target[id] = next;
-    if(!isSide) enforceSideDeckSharedCopyLimits();
     renderAll();
   };
 
@@ -2524,6 +2781,9 @@ function renderPool(){
     });
   });
 
+  // Keep off-faction groups collapsed in both Main Deck and Side Deck views.
+  // Side Deck still uses its own add/remove logic; changing views no longer
+  // reveals every colour outside the current faction loyalty.
   collapseRestrictedCardsIn(grid, ".pool-group");
 
   setupCardHoverTooltip(grid);
@@ -2558,6 +2818,11 @@ function removeGreyedRoyalCopies(){
 
 function collapseRestrictedCardsIn(container, groupSelector){
   if(!container) return;
+
+  /* v88: Do not collapse greyed/restricted cards or entire categories into
+     More/View Other Cards controls. Keep every category expanded at all times. */
+  container.querySelectorAll('.restricted-collapsed').forEach(card => card.classList.remove('restricted-collapsed'));
+  return;
   const groups = Array.from(container.querySelectorAll(groupSelector)).map(group => {
     const wall = group.querySelector('.card-wall-test');
     const cards = Array.from(group.querySelectorAll('.simple-card'));
@@ -2667,29 +2932,66 @@ function mixedRoyalBastionFactionLock(){
 
 function renderRoyals(){
   const grid = document.getElementById('royalGrid');
-  const factions = ['Yellow','Red','Blue','Green','Colourless'];
+  const colouredFactions = ['Yellow','Red','Blue','Green'];
   const legal = legalFactions();
   const twoRoyalsChosen = state.royals.length >= maxRoyalSelections();
-
-  const groups = factions.map(faction => ({
-    faction,
-    cards: ROYAL_OPTIONS.filter(c => c.faction === faction).sort((a,b) => a.name.localeCompare(b.name))
-  })).filter(g => g.cards.length);
-
   const sideDeckMode = state.activeDeck === 'side';
   const mixedLeaderLock = mixedRoyalBastionFactionLock();
   const leaderFactions = mixedLeaderLock ? leaderChoiceFactions() : null;
+
+  const groups = colouredFactions.map(faction => ({
+    faction,
+    cards: ROYAL_OPTIONS.filter(c => c.faction === faction).sort((a,b) => a.name.localeCompare(b.name))
+  })).filter(g => g.cards.length);
+  const colourlessRoyals = ROYAL_OPTIONS.filter(c => c.faction === 'Colourless')
+    .sort((a,b) => a.name.localeCompare(b.name));
+
+  /* Colourless Royals follow the final faction lane the current leader identity
+     leaves available. They no longer consume a standalone Colourless category. */
+  if(colourlessRoyals.length){
+    const availableSet = mixedLeaderLock ? leaderFactions : legal;
+    const targetFaction = [...colouredFactions].reverse().find(faction =>
+      availableSet.has(faction) && groups.some(group => group.faction === faction)
+    );
+    const targetGroup = targetFaction ? groups.find(group => group.faction === targetFaction) : groups[groups.length - 1];
+    if(targetGroup){
+      targetGroup.cards.push(...colourlessRoyals);
+      targetGroup.includesColourless = true;
+    }else groups.push({faction:'Colourless', cards:colourlessRoyals});
+  }
+
+  /* Royal categories use the same availability-first ordering as the main card
+     pool. Restricted colours move behind every colour the current leaders allow. */
+  groups.sort((a,b) => {
+    const aBlocked = (twoRoyalsChosen && !legal.has(a.faction)) || (mixedLeaderLock && !leaderFactions.has(a.faction));
+    const bBlocked = (twoRoyalsChosen && !legal.has(b.faction)) || (mixedLeaderLock && !leaderFactions.has(b.faction));
+    if(aBlocked !== bBlocked) return Number(aBlocked) - Number(bBlocked);
+    return colouredFactions.indexOf(a.faction) - colouredFactions.indexOf(b.faction);
+  });
+
+  /* Once the player's Royal/faction identity is established, also place the
+     compact-view control after the final legal Royal group. This keeps the
+     action immediately after the Royals they can actually use, rather than
+     only after a greyed/restricted faction row. */
+  const royalIdentityLocked = !sideDeckMode && (twoRoyalsChosen || state.royals.length >= maxRoyalSelections() || (state.royals.length > 0 && !!state.bastion));
+  const legalRoyalGroups = groups.filter(group => {
+    const blockedByTwo = twoRoyalsChosen && !legal.has(group.faction);
+    const blockedByMixed = mixedLeaderLock && !leaderFactions.has(group.faction);
+    return !(blockedByTwo || blockedByMixed);
+  });
+  const lastLegalRoyalFaction = legalRoyalGroups.length ? legalRoyalGroups[legalRoyalGroups.length - 1].faction : null;
 
   grid.innerHTML = groups.map(group => {
     const blockedByTwoRoyals = twoRoyalsChosen && !legal.has(group.faction);
     const blockedByMixedLeader = mixedLeaderLock && !leaderFactions.has(group.faction);
     const groupDisabled = !sideDeckMode && (blockedByTwoRoyals || blockedByMixedLeader);
     const keepColourlessVisible = !sideDeckMode && groupDisabled && group.faction === 'Colourless';
+    const showCompactControlAfterLegal = royalIdentityLocked && !groupDisabled && group.faction === lastLegalRoyalFaction;
     return `
     <div class="pool-group royal-simple-group ${groupDisabled ? 'royal-category-disabled' : ''}" data-faction="${group.faction}"${keepColourlessVisible ? ' data-keep-visible="1"' : ''}>
       <div class="pool-group-title">
         <span class="group-dot" style="background:${FACTION_VARS[group.faction]}"></span>
-        <span>${group.faction}</span>
+        <span>${group.includesColourless && group.faction !== 'Colourless' ? `${group.faction} + Colourless` : group.faction}</span>
         <span style="font-family:'Work Sans',sans-serif;font-size:11px;color:var(--muted-dim);font-weight:400;">${group.cards.length} Royals</span>
       </div>
       <div class="card-wall-test royal-card-wall">
@@ -2697,10 +2999,9 @@ function renderRoyals(){
           const selected = state.royals.includes(c.id);
           const img = cardImageUrl(c);
           const blockedByMainDeck = !sideDeckMode && royalIsInMainDeck(c.id) && !selected;
-          const colourlessSwapWarning = !sideDeckMode && twoRoyalsChosen && group.faction === 'Colourless' && !selected;
-          const sideCopyLimit = sideDeckCopyLimitFor(c.id);
+          const colourlessSwapWarning = !sideDeckMode && twoRoyalsChosen && c.faction === 'Colourless' && !selected;
           const sideCopyCount = state.side[c.id] || 0;
-          const sideCopyLimitReached = sideDeckMode && sideCopyCount >= sideCopyLimit;
+          const sideCopyLimitReached = sideDeckMode && !canAddSideDeckCard(c.id);
           const firstSelectedRoyal = state.royals.length === 1
             ? ROYAL_OPTIONS.find(r => r.id === state.royals[0])
             : null;
@@ -2712,11 +3013,25 @@ function renderRoyals(){
              Bastion completing the leader pair.  Once 1 Royal + 1 Bastion are
              selected, hovering another Royal should not show the loyalty notice. */
           const confirmingFactionLoyalty = (state.royals.length === 1 && !state.bastion) || (!!state.bastion && state.royals.length === 0);
-          const secondRoyalLoyaltyWarning = !sideDeckMode && !selected && confirmingFactionLoyalty && maxRoyalSelections() > 1
+
+          /* Once a Royal + Bastion already define faction identity, choosing another
+             Royal should explain the resulting alignment instead of falling back to a
+             generic Royal-count warning. This is intentionally a subtle loyalty notice. */
+          const activeRoyalWithBastion = !sideDeckMode && !selected && state.royals.length === 1 && !!state.bastion && state.bastion !== 'abandoned-castle';
+          const activeRoyalCard = activeRoyalWithBastion ? ROYAL_OPTIONS.find(r => r.id === state.royals[0]) : null;
+          const activeBastionCard = activeRoyalWithBastion ? BASTION_OPTIONS.find(b => b.id === state.bastion) : null;
+          const projectedAlignment = activeRoyalWithBastion
+            ? Array.from(new Set([activeRoyalCard?.faction, c.faction, activeBastionCard?.faction].filter(Boolean)))
+            : [];
+          const factionAlignmentNotice = projectedAlignment.length
+            ? `This will change your faction alignment to ${projectedAlignment.join(' + ')}.`
+            : '';
+
+          const secondRoyalLoyaltyWarning = factionAlignmentNotice || (!sideDeckMode && !selected && confirmingFactionLoyalty && maxRoyalSelections() > 1
             ? (choosingSingleFactionSecondRoyal
                 ? 'You are about to confirm your faction loyalty. Are you sure?'
                 : 'You are about to confirm your faction loyalty. Are you sure?')
-            : '';
+            : '');
           let restrictionReason = '';
           let royalReplacement = '';
           let subtleSameFactionReplacement = false;
@@ -2725,7 +3040,7 @@ function renderRoyals(){
             if(blockedByMainDeck){
               restrictionReason = 'This Royal is greyed out because you already have a copy of it in your main deck.';
             }else if(blockedByMixedLeader){
-              restrictionReason = 'This Royal is greyed out because it does not share a faction with your selected Royal or Bastion.';
+              restrictionReason = activeRoyalWithBastion ? '' : 'This Royal is greyed out because it does not share a faction with your selected Royal or Bastion.';
             }else if(blockedByTwoRoyals){
               restrictionReason = `This Royal is greyed out because you already have 2 Royals and are not currently using the ${group.faction} color.`;
             }else if(colourlessSwapWarning){
@@ -2757,17 +3072,39 @@ function renderRoyals(){
 
           const restrictedClass = restrictionReason ? ' restricted-card' : '';
           const sideCapClass = sideCopyLimitReached ? ' side-copy-cap-reached' : '';
-          return `<article class="simple-card simple-royal-card ${selected && !sideDeckMode ? 'selected' : ''}${restrictedClass}${sideCapClass}${blockedByMainDeck ? ' royal-main-deck-blocked' : ''}" data-id="${c.id}" role="button" tabindex="0" aria-label="${escapeHtml(c.name)}" ${sideCopyLimitReached ? 'aria-disabled="true" data-side-copy-cap="1" data-restriction-reason="Shared copy limit reached across your Main Deck, Side Deck, and Royal slot."' : ''} ${restrictionReason ? `data-restriction-reason="${escapeHtml(restrictionReason)}"` : ''}${royalReplacement ? ` data-royal-replacement="${escapeHtml(royalReplacement)}"` : ''}${subtleSameFactionReplacement ? ` data-royal-replacement-subtle="1"` : ''}${secondRoyalLoyaltyWarning ? ` data-royal-loyalty-warning="${escapeHtml(secondRoyalLoyaltyWarning)}"` : ''}>
+          return `<article class="simple-card simple-royal-card ${selected && !sideDeckMode ? 'selected' : ''}${selected && sideDeckMode ? ' side-deck-current-royal' : ''}${restrictedClass}${sideCapClass}${blockedByMainDeck ? ' royal-main-deck-blocked' : ''}" data-id="${c.id}" role="button" tabindex="0" aria-label="${escapeHtml(c.name)}" ${sideCopyLimitReached ? 'aria-disabled="true" data-side-copy-cap="1" data-restriction-reason="Shared copy limit reached across your Main Deck, Side Deck, and Royal slot."' : ''} ${restrictionReason ? `data-restriction-reason="${escapeHtml(restrictionReason)}"` : ''}${royalReplacement ? ` data-royal-replacement="${escapeHtml(royalReplacement)}"` : ''}${subtleSameFactionReplacement ? ` data-royal-replacement-subtle="1"` : ''}${secondRoyalLoyaltyWarning ? ` data-royal-loyalty-warning="${escapeHtml(secondRoyalLoyaltyWarning)}"` : ''}>
             <div class="simple-card-image">
               ${img ? `<img src="${img}" alt="" loading="lazy">` : `<div class="card-image-missing"></div>`}
-              <div class="simple-card-copy-count" data-count="${state.activeDeck === 'side' ? (state.side[c.id] || 0) : (selected ? 1 : 0)}" aria-hidden="true">${state.activeDeck === 'side' ? (state.side[c.id] || 0) : (selected ? 1 : 0)}</div>
+              <div class="simple-card-copy-count${builderCopyBadgeIsSplit(c.id) ? ' split-copy-count' : ''}" data-count="${totalDeckCopyCountFor(c.id)}" aria-label="${builderCopyBadgeIsSplit(c.id) ? `${deckZoneCopyBreakdownFor(c.id).main} Main, ${deckZoneCopyBreakdownFor(c.id).side} Side` : `${totalDeckCopyCountFor(c.id)} copies`}">${builderCopyBadgeMarkup(c.id, totalDeckCopyCountFor(c.id))}</div>
             </div>
             <div class="simple-card-info"><div class="card-name">${c.name}</div></div>
           </article>`;
         }).join('')}
+        ${(groupDisabled || showCompactControlAfterLegal) ? `<button type="button" class="simple-card royal-category-castle-toggle" aria-label="Show only your Royals / Bastion" title="Show only your Royals / Bastion">
+          <div class="simple-card-image royal-category-castle-art" aria-hidden="true">
+            <svg viewBox="0 0 64 64" focusable="false">
+              <path d="M5 58V17h8v8h7V17h8v17h8V17h8v8h7V17h8v41H39V46a7 7 0 0 0-14 0v12Z"/>
+              <path class="castle-detail" d="M28 34V7h8v27M36 8h12l-4 5 4 5H36M12 36v7m8-7v7m24-7v7m8-7v7"/>
+            </svg>
+          </div>
+          <div class="simple-card-info"><div class="card-name">Show only your Royals / Bastion</div></div>
+        </button>` : ''}
       </div>
     </div>`;
   }).join('');
+
+  /* The compact-view control can appear after restricted rows and, once the
+     Royal/faction identity is locked, after the final legal Royal row. Reuse
+     the proven master castle toggle so preview/reopen behavior stays intact. */
+  grid.querySelectorAll('.royal-category-castle-toggle').forEach(button => {
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const master = document.getElementById('leaderOptionsToggle');
+      const options = document.getElementById('leaderOptions');
+      if(master && options && !options.hidden) master.click();
+    });
+  });
 
   const selectRoyal = async (card, confirmedGreyed = false) => {
     const id = card.dataset.id;
@@ -2782,18 +3119,17 @@ function renderRoyals(){
 
     const alreadySelected = state.royals.includes(id);
 
-    /* Some greyed Royals are intentionally selectable because selecting them
-       performs a legal replacement/removal. Confirm that exceptional action. */
-    if(!alreadySelected && card.classList.contains('restricted-card') && !confirmedGreyed){
-      const warning = [
-        card.dataset.restrictionReason,
-        card.dataset.royalReplacement
-      ].filter(Boolean).join(' ');
-      const accepted = await confirmGreyedSelectableCard(
-        warning || 'This Royal is greyed out, but it can still be selected. Continue?',
-        'Select Royal'
-      );
-      if(!accepted) return;
+    /* v127: Greyed/restricted Royals are informational only in the normal Royal
+       chooser. They may still be viewed/pinned, but cannot be selected or used
+       to replace an active Royal. Side Deck mode keeps its separate card-pool
+       behavior from above. */
+    const greyedRoyal =
+      card.classList.contains('restricted-card') ||
+      card.classList.contains('royal-main-deck-blocked') ||
+      !!card.closest('.royal-category-disabled');
+    if(greyedRoyal && !alreadySelected){
+      renderStickyCardFromElement(card);
+      return;
     }
 
     if(alreadySelected){
@@ -2840,10 +3176,29 @@ function renderRoyals(){
 
   grid.querySelectorAll('.simple-royal-card').forEach(card => {
     const trySelectRoyal = () => selectRoyal(card);
-    card.addEventListener('click', e => { e.preventDefault(); trySelectRoyal(); });
+    card.addEventListener('click', e => {
+      if(e.target.closest('.card-info-button')) return;
+      e.preventDefault();
+
+      /* A Royal that is already one of your active Royals behaves like a normal
+         card for left-click information.  Do not remove/reselect it here: pin
+         its card data to the sticky header and leave Royal removal to right-click. */
+      if(state.activeDeck !== 'side' && state.royals.includes(card.dataset.id)){
+        renderStickyCardFromElement(card);
+        return;
+      }
+
+      trySelectRoyal();
+    });
     card.addEventListener('contextmenu', e => {
+      if(e.target.closest('.card-info-button')) return;
       e.preventDefault();
       e.stopPropagation();
+
+      /* Pin the Royal being acted on before the deck rerenders, matching the
+         sticky-header behavior used by ordinary deck cards. */
+      renderStickyCardFromElement(card);
+
       if(state.activeDeck === 'side'){
         if(changeSideDeckCard(card.dataset.id, -1)) renderAll();
         return;
@@ -2855,7 +3210,7 @@ function renderRoyals(){
     });
   });
 
-  collapseRestrictedCardsIn(grid, ".royal-simple-group");
+  if(state.activeDeck !== 'side') collapseRestrictedCardsIn(grid, ".royal-simple-group");
   setupCardHoverTooltip(grid);
 
   // Greyed-out Royals use the same mouse-bound disclaimer behavior as other restrictions.
@@ -2937,17 +3292,20 @@ function renderBastion(){
     <div class="pool-group bastion-card-group"><div class="pool-group-title"><span>Bastions</span></div><div class="card-wall-test royal-card-wall bastion-card-wall">
       ${allBastions.map(c => {
         const selected = state.bastion === c.id;
+        const sideDeckMode = state.activeDeck === 'side';
         const abandonedCastleRestricted = c.id === 'abandoned-castle' && state.royals.length >= 2;
         const baseLegalChoice = legal.has(c.faction) && !abandonedCastleRestricted;
         const greyedByMixedLeader = mixedLeaderLock && !leaderFactions.has(c.faction);
-        const legalChoice = baseLegalChoice && !greyedByMixedLeader;
+        const mainLegalChoice = baseLegalChoice && !greyedByMixedLeader;
+        const legalChoice = sideDeckMode ? true : mainLegalChoice;
+        const sideCopyLimitReached = sideDeckMode && !canAddSideDeckCard(c.id);
         /* With exactly one Royal selected, an off-colour Bastion is the choice
            that confirms the second faction identity, so surface the same quiet
            faction-loyalty hover notice used for Royals. */
         const bastionLoyaltyWarning = state.activeDeck !== 'side' && !selected &&
           !!singleRoyalForBastionWarning && c.id !== 'abandoned-castle' &&
           c.faction !== singleRoyalForBastionWarning.faction
-            ? 'You are about to confirm your faction loyalty. Are you sure?'
+            ? `Choosing this Bastion will add ${c.faction} to your faction identity.`
             : '';
         let restrictionReason = '';
         let bastionReplacement = '';
@@ -2965,10 +3323,11 @@ function renderBastion(){
           restrictionReason = `This Bastion is greyed out because it does not share a faction with your selected Royals.`;
         }
         const img = cardImageUrl(c);
-        return `<article class="simple-card simple-royal-card ${selected ? 'selected' : ''} ${legalChoice ? '' : 'bastion-category-disabled restricted-card'}" data-bastion-id="${c.id}" data-bastion-legal="${legalChoice ? '1' : '0'}" data-bastion-selectable-greyed="${greyedByMixedLeader ? '1' : '0'}" ${restrictionReason ? `data-restriction-reason="${escapeHtml(restrictionReason)}"` : ''}${bastionReplacement ? ` data-bastion-replacement="${escapeHtml(bastionReplacement)}"` : ''}${bastionLoyaltyWarning ? ` data-royal-loyalty-warning="${escapeHtml(bastionLoyaltyWarning)}"` : ''} role="button" tabindex="0" aria-label="${escapeHtml(c.name)}">
+        const sideGreyedClass = sideDeckMode && !mainLegalChoice ? ' restricted-card side-deck-selectable-greyed' : '';
+        return `<article class="simple-card simple-royal-card ${selected ? 'selected' : ''}${!sideDeckMode && !legalChoice ? ' bastion-category-disabled restricted-card' : ''}${sideGreyedClass}${sideCopyLimitReached ? ' side-copy-cap-reached' : ''}" data-bastion-id="${c.id}" data-bastion-legal="${mainLegalChoice ? '1' : '0'}" data-bastion-selectable-greyed="${greyedByMixedLeader ? '1' : '0'}" ${sideCopyLimitReached ? 'data-side-copy-cap="1" aria-disabled="true"' : ''} ${restrictionReason ? `data-restriction-reason="${escapeHtml(restrictionReason)}"` : ''}${bastionReplacement ? ` data-bastion-replacement="${escapeHtml(bastionReplacement)}"` : ''}${bastionLoyaltyWarning ? ` data-royal-loyalty-warning="${escapeHtml(bastionLoyaltyWarning)}"` : ''} role="button" tabindex="0" aria-label="${escapeHtml(c.name)}">
           <div class="simple-card-image">
             ${img ? `<img src="${img}" alt="" loading="lazy">` : `<div class="card-image-missing"></div>`}
-            <div class="simple-card-copy-count" data-count="${state.activeDeck === 'side' ? (state.side[c.id] || 0) : (selected ? 1 : 0)}" aria-hidden="true">${state.activeDeck === 'side' ? (state.side[c.id] || 0) : (selected ? 1 : 0)}</div>
+            <div class="simple-card-copy-count${builderCopyBadgeIsSplit(c.id) ? ' split-copy-count' : ''}" data-count="${totalDeckCopyCountFor(c.id)}" aria-label="${builderCopyBadgeIsSplit(c.id) ? `${deckZoneCopyBreakdownFor(c.id).main} Main, ${deckZoneCopyBreakdownFor(c.id).side} Side` : `${totalDeckCopyCountFor(c.id)} copies`}">${builderCopyBadgeMarkup(c.id, totalDeckCopyCountFor(c.id))}</div>
           </div>
           <div class="simple-card-info">
             <div class="card-name">${escapeHtml(c.name)}</div>
@@ -2982,28 +3341,14 @@ function renderBastion(){
 
     /* Side Deck view turns the Bastion browser into a Side Deck source. */
     if(state.activeDeck === 'side'){
-      if(card.classList.contains('restricted-card') && !confirmed){
-        const warning = [
-          card.dataset.restrictionReason,
-          card.dataset.bastionReplacement,
-          'Side Deck is open, so this will add the Bastion to your Side Deck instead of selecting it as your Bastion.'
-        ].filter(Boolean).join(' ');
-        const accepted = await confirmGreyedSelectableCard(warning, 'Add to Side Deck');
-        if(!accepted) return;
-      }
+      if(card.dataset.sideCopyCap === '1') return;
       if(changeSideDeckCard(id, 1)) renderAll();
       return;
     }
 
     const canUseAbandonedCastleReplacement = id === 'abandoned-castle' && state.royals.length >= 2;
     const canUseMixedLeaderGreyed = card.dataset.bastionSelectableGreyed === '1';
-
     if(canUseMixedLeaderGreyed && state.bastion !== id && !confirmed){
-      const accepted = await confirmGreyedSelectableCard(
-        card.dataset.restrictionReason || 'This Bastion is greyed out, but it can still be selected. Continue?',
-        'Select Bastion'
-      );
-      if(!accepted) return;
       return selectBastion(card, true);
     }
 
@@ -3085,7 +3430,7 @@ function renderBastion(){
     });
   });
 
-  collapseRestrictedCardsIn(grid, ".bastion-card-group");
+  if(state.activeDeck !== 'side') collapseRestrictedCardsIn(grid, ".bastion-card-group");
   setupCardHoverTooltip(grid);
 }
 
@@ -3094,13 +3439,41 @@ function renderBastion(){
    copy-count badge matching the pool's .simple-card-copy-count. */
 function deckThumbnail(card, count, kind = 'main', landscape = false, extraClass = ''){
   const image = cardImageUrl(card);
-  return `<figure class="deck-thumbnail${extraClass ? ` ${extraClass}` : ''}" data-card-id="${card.id}" data-deck-kind="${kind}" data-copies="${count}">
+
+  /* A deck-area thumbnail reports ONLY the number of copies physically in the
+     deck area being viewed. Main thumbnails show Main copies; Side thumbnails
+     show Side copies. The builder/pool badges can still show combined/split
+     information, but the deck itself should describe its own contents. */
+  const shownCount = Math.max(0, Number(count) || 0);
+  const badgeMarkup = `<span class="copy-total">${shownCount}</span>`;
+  const badgeLabel = `${shownCount} ${kind === 'side' ? 'Side Deck' : kind === 'main' ? 'Main Deck' : ''} ${shownCount === 1 ? 'copy' : 'copies'}`.replace(/\s+/g,' ').trim();
+
+  return `<figure class="deck-thumbnail${extraClass ? ` ${extraClass}` : ''}" data-card-id="${card.id}" data-deck-kind="${kind}" data-copies="${shownCount}">
     <div class="deck-thumbnail-art${landscape ? ' landscape' : ''}">
       ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(card.name)}" loading="lazy">` : '<div class="card-image-missing">Artwork unavailable</div>'}
-      <span class="deck-copy-count" aria-label="${count} copies">${count}</span>
+      <span class="deck-copy-count" aria-label="${escapeHtml(badgeLabel)}">${badgeMarkup}</span>
     </div>
     <figcaption>${escapeHtml(card.name)}</figcaption>
   </figure>`;
+}
+
+let mainDeckCopyWarningTimer = 0;
+function showMainDeckCopyWarning(card, cap = MAX_COPIES){
+  const list = document.getElementById('mainDeckList');
+  if(!list || !card) return;
+  let warning = list.querySelector('.main-copy-warning-live');
+  if(!warning){
+    warning = document.createElement('div');
+    warning.className = 'main-copy-warning-live';
+    warning.setAttribute('role','status');
+    const toolbar = list.querySelector('.deck-view-toolbar');
+    if(toolbar) toolbar.insertAdjacentElement('afterend', warning);
+    else list.prepend(warning);
+  }
+  warning.textContent = `${card.name} has reached the ${cap}-copy Main Deck limit.`;
+  warning.classList.add('show');
+  clearTimeout(mainDeckCopyWarningTimer);
+  mainDeckCopyWarningTimer = setTimeout(() => warning.classList.remove('show'), 2200);
 }
 
 /* ============================================================================
@@ -3246,8 +3619,65 @@ function renderDeckPanel(){
   const deckViewToggle = document.getElementById('deckViewToggle');
   if(deckViewToggle){
     deckViewToggle.addEventListener('click', () => {
+      /* Keep the card browser visually anchored while Main/Side mode re-renders.
+         Side Deck collapses the Royal browser, which used to pull everything below
+         it upward and make the builder appear to jump.  Preserve the first visible
+         pool card/group (when possible), then compensate the scroll position after
+         the new layout has settled. */
+      const page = document.querySelector('.page-content');
+      const previousScrollTop = page ? page.scrollTop : 0;
+      let anchor = null;
+
+      if(page){
+        const pageRect = page.getBoundingClientRect();
+        const visibleCard = [...page.querySelectorAll('#poolGrid .simple-card[data-card-id]')]
+          .find(el => {
+            const r = el.getBoundingClientRect();
+            return r.bottom > pageRect.top + 4 && r.top < pageRect.bottom - 4;
+          });
+
+        if(visibleCard){
+          anchor = {
+            type:'card',
+            key:visibleCard.dataset.cardId,
+            top:visibleCard.getBoundingClientRect().top
+          };
+        }else{
+          const visibleGroup = [...page.querySelectorAll('#poolGrid .pool-group[data-faction]')]
+            .find(el => {
+              const r = el.getBoundingClientRect();
+              return r.bottom > pageRect.top + 4 && r.top < pageRect.bottom - 4;
+            });
+          if(visibleGroup){
+            anchor = {
+              type:'group',
+              key:visibleGroup.dataset.faction,
+              top:visibleGroup.getBoundingClientRect().top
+            };
+          }
+        }
+      }
+
       state.activeDeck = showingSideDeck ? 'main' : 'side';
       renderAll();
+
+      if(page){
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          let freshAnchor = null;
+          if(anchor?.type === 'card'){
+            freshAnchor = page.querySelector(`#poolGrid .simple-card[data-card-id="${CSS.escape(anchor.key)}"]`);
+          }else if(anchor?.type === 'group'){
+            freshAnchor = page.querySelector(`#poolGrid .pool-group[data-faction="${CSS.escape(anchor.key)}"]`);
+          }
+
+          if(freshAnchor && anchor){
+            const delta = freshAnchor.getBoundingClientRect().top - anchor.top;
+            if(Math.abs(delta) > 0.5) page.scrollTop += delta;
+          }else{
+            page.scrollTop = previousScrollTop;
+          }
+        }));
+      }
     });
   }
 
@@ -3273,18 +3703,34 @@ function renderDeckPanel(){
       e.preventDefault();
       const card = deckCardById(id);
       if(!card) return;
-      const target = kind === 'side' ? state.side : state.main;
-      const cache = kind === 'side' ? state.cachedSide : state.cachedMain;
-      const cap = maxCopiesFor(card);
-      const current = target[id] || 0;
-      let next = Math.min(cap, current + 1);
       if(kind === 'side'){
-        const room = Math.max(0, MAX_SIDE_DECK - sideCount());
-        next = Math.min(next, current + room);
+        if(changeSideDeckCard(id, 1)) renderAll();
+        return;
       }
-      if(next === current) return;
+      const target = state.main;
+      const cache = state.cachedMain;
+      const cap = maxCopiesFor(card);
+      const current = Math.max(0, Number(target[id]) || 0);
+      const sideCurrent = Math.max(0, Number(state.side[id]) || 0);
+      const sharedCurrent = sharedDeckCopyCountFor(id);
       delete cache[id];
-      target[id] = next;
+
+      if(sharedCurrent >= cap){
+        if(sideCurrent <= 0) return;
+        if(sideCurrent === 1) delete state.side[id];
+        else state.side[id] = sideCurrent - 1;
+
+        const moved = Math.max(0, Number(state.sideFromMain?.[id]) || 0);
+        if(moved > 0){
+          if(moved === 1) delete state.sideFromMain[id];
+          else state.sideFromMain[id] = moved - 1;
+        }
+        target[id] = current + 1;
+        renderAll();
+        return;
+      }
+
+      target[id] = current + 1;
       renderAll();
     });
 
@@ -3297,10 +3743,14 @@ function renderDeckPanel(){
         const current = target[id] || 0;
         if(current <= 0) return;
         playDeckReturnAnimation(id, kind);
-        const next = current - 1;
-        if(next === 0) delete target[id];
-        else target[id] = next;
-        renderAll();
+        if(kind === 'side'){
+          if(changeSideDeckCard(id, -1)) renderAll();
+        }else{
+          const next = current - 1;
+          if(next === 0) delete target[id];
+          else target[id] = next;
+          renderAll();
+        }
       }else if(kind === 'royal'){
         e.preventDefault();
         removeSelectedRoyal(id);
@@ -3322,12 +3772,28 @@ function renderDeckPanel(){
 
 }
 
+function syncLeaderChooserForDeckMode(){
+  const bastionGrid = document.getElementById('bastionGrid');
+  const bastionSection = bastionGrid?.closest('section.block');
+  if(!bastionSection) return;
+  const title = bastionSection.querySelector('.block-title');
+  const sub = bastionSection.querySelector('.block-sub');
+  if(state.activeDeck === 'side'){
+    if(title) title.textContent = 'Add Bastions to side deck';
+    if(sub) sub.textContent = 'Click a Bastion to add it to the Side Deck instead of changing your active Bastion.';
+  }else{
+    if(title) title.textContent = 'Choose your bastion';
+    if(sub) sub.textContent = 'Choose exactly 1 Bastion. Colourless Bastions are available with up to one Royal; other Bastions must share a faction with a selected Royal. Abandoned Castle allows any faction but only one Royal.';
+  }
+}
+
 function renderAll(){
   reconcileBastionWithRoyals();
   renderRoyals();
   renderBastion();
   renderPool();
   renderDeckPanel();
+  syncLeaderChooserForDeckMode();
 }
 
 
@@ -3981,6 +4447,7 @@ function applyDeckToBuilder(rawDeck){
   state.cachedMain = {};
   state.side = {...deck.side};
   state.cachedSide = {};
+  state.sideFromMain = {};
   state.activeDeck = 'main';
   state.terra = deck.terra;
   state.terraDeck = {...deck.terraDeck};
@@ -4106,8 +4573,9 @@ function renderLocalDecks(){
     actions.className = 'saved-deck-actions';
     actions.append(
       savedDeckAction('Load','primary',() => loadLocalDeck(entry.id)),
-      savedDeckAction('Rename','',() => renameLocalDeck(entry.id)),
+      savedDeckAction('Export','',() => exportLocalDeck(entry.id)),
       savedDeckAction('Duplicate','',() => duplicateLocalDeck(entry.id)),
+      savedDeckAction('Rename','',() => renameLocalDeck(entry.id)),
       savedDeckAction('Delete','danger',() => deleteLocalDeck(entry.id))
     );
     row.append(identity,actions);
@@ -4197,6 +4665,65 @@ function duplicateLocalDeck(id){
   }
 }
 
+function exportLocalDeck(id){
+  const entry = readLocalDecks().find(item => item.id === id);
+  if(!entry) return setDeckStorageStatus('That saved deck could not be found.','err');
+  try{
+    const deck = {...entry.deck, name: entry.name || entry.deck.name || 'Kingdoms Deck'};
+    downloadDeckFile(deck);
+    setDeckStorageStatus(`Exported “${deck.name}”.`);
+  }catch(error){
+    setDeckStorageStatus(error && error.message ? error.message : 'That saved deck could not be exported.','err');
+  }
+}
+
+function resetBuilderDeckContent({newDeck = false} = {}){
+  state.royals = [];
+  state.bastion = null;
+  state.cachedBastion = null;
+  state.main = {};
+  state.cachedMain = {};
+  state.side = {};
+  state.cachedSide = {};
+  state.sideFromMain = {};
+  state.activeDeck = 'main';
+  state.terra = 10;
+  state.terraDeck = {};
+  state.poolFilter = 'all';
+
+  document.querySelectorAll('#poolFilters .filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.f === 'all');
+  });
+
+  communityNameChoice = null;
+  communityPendingSubmission = null;
+  const gameMode = document.getElementById('communityGameMode');
+  if(gameMode) gameMode.value = '';
+
+  if(newDeck){
+    activeLocalDeckId = null;
+    document.getElementById('deckName').value = '';
+    document.getElementById('pilotName').value = '';
+    setDeckTheme(DEFAULT_DECK_THEME);
+  }
+
+  renderAll();
+  renderLocalDecks();
+  updateCommunitySubmitSummary();
+}
+
+function startNewDeck(){
+  if(!window.confirm('Start a new deck? Unsaved changes in the current builder will be cleared.')) return;
+  resetBuilderDeckContent({newDeck:true});
+  setDeckStorageStatus('Started a new deck.');
+}
+
+function clearCurrentDeck(){
+  if(!window.confirm('Clear all Royals, Bastion, Main Deck, Side Deck, and Terra changes from the current deck? The deck name, player name, and colors will be kept.')) return;
+  resetBuilderDeckContent({newDeck:false});
+  setDeckStorageStatus('Cleared the current deck.');
+}
+
 function deleteLocalDeck(id){
   const decks = readLocalDecks();
   const entry = decks.find(item => item.id === id);
@@ -4228,6 +4755,7 @@ function communityDeckMarkdown(deck, description){
     `# ${deck.name || 'Kingdoms Deck'}`,
     '',
     `**Creator:** ${deck.pilot || 'Anonymous'}`,
+    ...(deck.gameMode ? [`**Game mode:** ${deck.gameMode}`] : []),
     `**Submitted from:** [Kingdoms TCG Deck Builder](https://blakeentertainmentstudiosinc.github.io/Odoo-embed/)`,
     ''
   ];
@@ -4262,7 +4790,10 @@ function updateCommunitySubmitSummary(){
   leaders.textContent = royalNames;
   const counts = document.createElement('span');
   counts.textContent = `${deck.mainCount} main · ${deck.sideCount} side · ${Number(deck.terra || 0) + terraExtra} terra`;
-  summary.append(name,leaders,counts);
+  const mode = document.createElement('span');
+  const gameMode = document.getElementById('communityGameMode')?.value.trim();
+  mode.textContent = `Game mode: ${gameMode || 'Not specified'}`;
+  summary.append(name,leaders,counts,mode);
 }
 
 function submitCurrentDeckToCommunity(){
@@ -4289,11 +4820,14 @@ function selectDeckStorageTab(tab){
 }
 
 document.getElementById('saveLocalDeckBtn').addEventListener('click',saveCurrentDeckLocally);
+document.getElementById('newDeckBtn').addEventListener('click',startNewDeck);
+document.getElementById('clearDeckBtn').addEventListener('click',clearCurrentDeck);
 document.getElementById('submitCommunityDeckBtn').addEventListener('click',submitCurrentDeckToCommunity);
 document.getElementById('myDecksTab').addEventListener('click',() => selectDeckStorageTab('local'));
 document.getElementById('submitDeckTab').addEventListener('click',() => selectDeckStorageTab('submit'));
 document.getElementById('deckName').addEventListener('input',updateCommunitySubmitSummary);
 document.getElementById('pilotName').addEventListener('input',updateCommunitySubmitSummary);
+document.getElementById('communityGameMode').addEventListener('input',updateCommunitySubmitSummary);
 renderLocalDecks();
 updateCommunitySubmitSummary();
 
@@ -4924,7 +5458,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
     const captionAllowance=22;
     const artHeight=Math.max(28,(viewportHeight-gap*(rows-1)-captionAllowance*rows)/rows);
     const widthByHeight=artHeight*5/7;
-    const maxUsefulWidth=Math.max(28,availableWidth);
+    const maxUsefulWidth=Math.max(28,width);
     const cardWidth=clamp(Math.floor(Math.min(widthByRow,widthByHeight)),28,maxUsefulWidth);
 
     /* Put variables on the persistent list, not on the disposable grid.
@@ -5352,6 +5886,802 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 })();
 </script>
 
+
+
+<style id="v76-sticky-height-responsive-type">
+/* Sticky inspector typography scales from the panel's real rendered height.
+   JS below updates these variables through ResizeObserver, so the text grows
+   whenever the sticky header has more vertical room and compresses on short screens. */
+#cardHoverTooltip.card-hover-tooltip{
+  --sticky-name-font:14px;
+  --sticky-meta-font:10px;
+  --sticky-label-font:9px;
+  --sticky-body-font:11px;
+  --sticky-warning-font:10px;
+  --sticky-placeholder-font:11px;
+  --sticky-body-leading:1.28;
+}
+#cardHoverTooltip .hover-card-name{
+  font-size:var(--sticky-name-font) !important;
+  line-height:1.14 !important;
+}
+#cardHoverTooltip .hover-meta{
+  font-size:var(--sticky-meta-font) !important;
+  line-height:1.28 !important;
+}
+#cardHoverTooltip .hover-rule-label{
+  font-size:var(--sticky-label-font) !important;
+  line-height:1.2 !important;
+}
+#cardHoverTooltip .hover-text{
+  font-size:var(--sticky-body-font) !important;
+  line-height:var(--sticky-body-leading) !important;
+}
+#cardHoverTooltip .sticky-hover-notice-message,
+#cardHoverTooltip .hover-royal-disclaimer{
+  font-size:var(--sticky-warning-font) !important;
+  line-height:1.28 !important;
+}
+#cardHoverTooltip .tooltip-placeholder{
+  font-size:var(--sticky-placeholder-font) !important;
+  line-height:1.35 !important;
+}
+</style>
+<script id="v76-sticky-height-responsive-type-script">
+(function setupStickyHeightResponsiveType(){
+  const tooltip=document.getElementById('cardHoverTooltip');
+  if(!tooltip) return;
+  return; /* disabled by v123 unified sticky shrink-to-fit */
+
+  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+  const mix=(a,b,t)=>a+(b-a)*t;
+  let frame=0;
+
+  function applyScale(){
+    frame=0;
+    const height=Math.max(0,tooltip.getBoundingClientRect().height||tooltip.clientHeight||0);
+    if(!height) return;
+
+    /* 180px behaves like the compact layout; by ~620px the inspector gets the
+       full large-text treatment. Values between those points scale smoothly. */
+    const t=clamp((height-180)/(620-180),0,1);
+    const eased=t*t*(3-2*t);
+
+    tooltip.style.setProperty('--sticky-name-font',mix(13,24,eased).toFixed(2)+'px');
+    tooltip.style.setProperty('--sticky-meta-font',mix(9.5,15,eased).toFixed(2)+'px');
+    tooltip.style.setProperty('--sticky-label-font',mix(8.5,12.5,eased).toFixed(2)+'px');
+    tooltip.style.setProperty('--sticky-body-font',mix(10.5,18,eased).toFixed(2)+'px');
+    tooltip.style.setProperty('--sticky-warning-font',mix(9.5,14.5,eased).toFixed(2)+'px');
+    tooltip.style.setProperty('--sticky-placeholder-font',mix(10.5,17,eased).toFixed(2)+'px');
+    tooltip.style.setProperty('--sticky-body-leading',mix(1.24,1.38,eased).toFixed(3));
+    tooltip.dataset.stickyMeasuredHeight=String(Math.round(height));
+  }
+
+  function schedule(){
+    if(frame) return;
+    frame=requestAnimationFrame(applyScale);
+  }
+
+  if('ResizeObserver' in window){
+    new ResizeObserver(schedule).observe(tooltip);
+  }
+  window.addEventListener('resize',schedule,{passive:true});
+  new MutationObserver(schedule).observe(tooltip,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+  requestAnimationFrame(()=>requestAnimationFrame(applyScale));
+})();
+</script>
+
+
+<!-- v79: Side Deck transfer UX, explicit card Info controls, and full-area sticky fit -->
+<style id="v79-side-transfer-info-and-sticky-fit">
+/* Main Deck cards at the ordinary 3-copy cap communicate the limit visually.
+   No extra MAX-3 badge or warning tooltip is needed. */
+.page-content .simple-card.main-copy-cap-reached{
+  opacity:.42 !important;
+  filter:grayscale(.78) saturate(.62) !important;
+  cursor:not-allowed !important;
+}
+.page-content .simple-card.main-copy-cap-reached:hover{
+  filter:grayscale(.68) saturate(.72) brightness(1.04) !important;
+}
+/* In Side Deck mode, grey means "not currently a Main Deck choice", not
+   "unclickable".  The gold edge makes that distinction explicit. */
+body.side-deck-active .page-content .simple-card.side-deck-selectable-greyed{
+  cursor:pointer !important;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--brass) 72%,transparent) !important;
+}
+body.side-deck-active .page-content .simple-card.side-deck-selectable-greyed:hover{
+  transform:translateY(-7px) scale(1.045) !important;
+}
+body.side-deck-active .page-content .simple-card.main-copy-cap-reached.side-deck-selectable-greyed{
+  cursor:pointer !important;
+}
+
+/* Large explicit card-information affordance. */
+.simple-card > .card-info-button,
+.deck-thumbnail > .card-info-button{
+  position:absolute;
+  z-index:90;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  border:1px solid color-mix(in srgb,var(--brass) 88%,white 12%);
+  background:rgba(10,9,8,.90);
+  color:#fff3cf;
+  box-shadow:0 3px 12px rgba(0,0,0,.55);
+  cursor:pointer;
+  font-family:'Work Sans',sans-serif;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.04em;
+  user-select:none;
+}
+.simple-card > .card-info-button{
+  top:7px;
+  right:7px;
+  min-width:58px;
+  height:32px;
+  padding:0 9px;
+  border-radius:999px;
+  font-size:10px;
+}
+.simple-card > .card-info-button span{font:900 17px/1 Georgia,serif;}
+.deck-thumbnail > .card-info-button{
+  top:4px;
+  right:4px;
+  width:30px;
+  height:30px;
+  padding:0;
+  border-radius:50%;
+}
+.deck-thumbnail > .card-info-button span{font:900 18px/1 Georgia,serif;}
+.deck-thumbnail > .card-info-button b{display:none;}
+.card-info-button:hover,.card-info-button:focus-visible{
+  transform:scale(1.08);
+  background:rgba(35,28,14,.96);
+  border-color:var(--brass);
+}
+
+/* The sticky data surface consumes the entire slot.  No legacy width/height
+   cap is allowed to leave unused panel space. */
+.left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  max-width:none !important;
+  max-height:none !important;
+  display:block !important;
+  overflow:hidden !important;
+}
+#cardHoverTooltip .sticky-card-preview{
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+}
+#cardHoverTooltip .sticky-card-warnings{flex:0 0 auto !important;}
+#cardHoverTooltip .sticky-card-description{
+  width:100% !important;
+  height:100% !important;
+  flex:1 1 0 !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+}
+</style>
+<script id="v79-maximize-sticky-type-no-arbitrary-cap">
+(function v79MaximizeStickyType(){
+  const tooltip=document.getElementById('cardHoverTooltip');
+  if(!tooltip) return;
+  return; /* disabled by v123 unified sticky shrink-to-fit */
+  let frame=0;
+
+  const fits=el => el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
+
+  function fit(){
+    frame=0;
+    const description=tooltip.querySelector('.sticky-card-description');
+    if(!description) return;
+    const w=description.clientWidth;
+    const h=description.clientHeight;
+    if(w < 20 || h < 20) return;
+
+    let low=6;
+    const maxStickyFont=20;
+    let high=Math.min(maxStickyFont, Math.max(24, Math.max(w,h) * 1.35));
+    let best=low;
+    description.style.setProperty('--v78-sticky-fill-font',low+'px');
+
+    if(fits(description)){
+      for(let i=0;i<16;i++){
+        const mid=(low+high)/2;
+        description.style.setProperty('--v78-sticky-fill-font',mid.toFixed(3)+'px');
+        if(fits(description)){ best=mid; low=mid; }
+        else high=mid;
+      }
+    }
+    description.style.setProperty('--v78-sticky-fill-font',best.toFixed(2)+'px');
+    description.dataset.fitWidth=Math.round(w);
+    description.dataset.fitHeight=Math.round(h);
+    description.dataset.fitFont=best.toFixed(2);
+  }
+
+  function schedule(){
+    if(frame) return;
+    frame=requestAnimationFrame(()=>requestAnimationFrame(fit));
+  }
+
+  if('ResizeObserver' in window){
+    const ro=new ResizeObserver(schedule);
+    ro.observe(tooltip);
+  }
+  new MutationObserver(schedule).observe(tooltip,{childList:true,subtree:true,characterData:true});
+  window.addEventListener('resize',schedule,{passive:true});
+  document.fonts?.ready.then(schedule);
+  requestAnimationFrame(()=>requestAnimationFrame(fit));
+})();
+</script>
+
+
+
+<!-- v81: +10% left rail and icon-only card information controls -->
+<style id="v81-left-rail-and-icon-info">
+/* The previous responsive pass capped the rail at 22% even after its measured
+   width increased. Raise that ceiling by the same ~10% so the increase is
+   visible while the builder still owns most of the screen. */
+body.v35-layout-locked{
+  grid-template-columns:min(var(--v35-left-rail-width,469px),24.2%) minmax(0,1fr) !important;
+}
+
+/* Keep the information control large and obvious without spelling out INFO. */
+.simple-card > .card-info-button{
+  width:38px !important;
+  min-width:38px !important;
+  height:38px !important;
+  padding:0 !important;
+  border-radius:50% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.simple-card > .card-info-button span{font:900 21px/1 Georgia,serif !important;}
+.deck-thumbnail > .card-info-button b,
+.simple-card > .card-info-button b{display:none !important;}
+</style>
+
+<style id="v91-royal-grey-lighten">
+/* v91: keep restricted Royal cards visibly greyed, but much easier to read. */
+#royalGrid .simple-card.restricted-card,
+#royalGrid .simple-card.royal-main-deck-blocked,
+#royalGrid .royal-category-disabled .simple-card{
+  opacity:.68 !important;
+  filter:grayscale(.42) saturate(.82) brightness(.92) !important;
+}
+#royalGrid .simple-card.restricted-card:hover,
+#royalGrid .simple-card.royal-main-deck-blocked:hover,
+#royalGrid .royal-category-disabled .simple-card:hover{
+  opacity:.78 !important;
+  filter:grayscale(.32) saturate(.9) brightness(1.02) !important;
+}
+</style>
+
+<!-- v99: selected Royal thumbnails remain sticky-header interactive -->
+<style id="v99-selected-royal-sticky-interaction">
+/* Selected Royals are blocked from being chosen again, but must remain fully interactive for card information. */
+.page-content .simple-royal-card.selected,
+.page-content .simple-royal-card.selected-royal-in-pool,
+.page-content .simple-royal-card.royal-main-deck-blocked.selected{
+  pointer-events:auto !important;
+}
+.page-content .simple-royal-card.selected > .card-info-button,
+.page-content .simple-royal-card.selected-royal-in-pool > .card-info-button,
+.page-content .simple-royal-card.royal-main-deck-blocked.selected > .card-info-button{
+  pointer-events:auto !important;
+  opacity:1 !important;
+}
+</style>
+<script id="v99-selected-royal-sticky-behavior">
+(function(){
+  function isSelectedRoyalCard(el){
+    if(!el) return false;
+    const id=el.dataset.id || el.dataset.cardId;
+    return !!id && Array.isArray(state?.royals) && state.royals.includes(id);
+  }
+
+  document.addEventListener('click', function(e){
+    const card=e.target.closest('.page-content .simple-royal-card');
+    if(!card || !isSelectedRoyalCard(card)) return;
+
+    /* Info button owns its own pin/inspector behavior. Do not interfere. */
+    if(e.target.closest('.card-info-button')) return;
+
+    /* A selected Royal should behave like a normal card for information: pin it.
+       Stop the chooser's click handler from trying to select/replace it again. */
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if(typeof renderStickyCardFromElement === 'function') renderStickyCardFromElement(card);
+  }, true);
+})();
+</script>
+
+<style id="v104-bastion-two-rows">
+/* Bastion browser: reserve enough vertical space for two full rows. */
+.page-content #bastionGrid .bastion-card-wall,
+.page-content .bastion-card-wall{
+  grid-auto-rows:auto !important;
+  align-content:start !important;
+  min-height:calc((var(--builder-bastion-w) * .7133333333 + 42px) * 2 + 22px) !important;
+}
+</style>
+
+<style id="v107-bastion-20pct-smaller">
+/* v107: reduce Bastion footprint by ~20% while preserving the two-row layout. */
+.page-content .bastion-card-wall{
+  --v106-bastion-scale:.8 !important;
+}
+.page-content .bastion-card-wall .simple-card,
+.page-content .bastion-card-wall .card-reveal-button{
+  width:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8) !important;
+  min-width:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8) !important;
+  max-width:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8) !important;
+  flex-basis:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8) !important;
+}
+.page-content .bastion-card-wall .simple-card-image,
+.page-content .bastion-card-wall .card-reveal-button .simple-card-image{
+  width:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8) !important;
+  height:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8 * .7133333333) !important;
+}
+.page-content .bastion-card-wall .simple-card-info{
+  width:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8) !important;
+}
+</style>
+
+<style id="v108-bastion-height-minus-20">
+/* v108: make Bastion cards 20% shorter while preserving current width/two-row flow. */
+.page-content .bastion-card-wall .simple-card-image,
+.page-content .bastion-card-wall .card-reveal-button .simple-card-image{
+  height:calc(var(--builder-bastion-w) * 0.5706666667) !important;
+}
+</style>
+
+<style id="v114-bastion-natural-wrap">
+/* Bastions no longer force a two-row starting layout. They remain at their
+   target size and wrap only when the available category width requires it. */
+.page-content .bastion-card-wall{
+  display:flex !important;
+  flex-flow:row wrap !important;
+  align-items:flex-start !important;
+  align-content:flex-start !important;
+  justify-content:flex-start !important;
+}
+.page-content .bastion-card-wall .simple-card{
+  flex:0 0 var(--v113-bastion-w,173px) !important;
+  width:var(--v113-bastion-w,173px) !important;
+  min-width:var(--v113-bastion-w,173px) !important;
+  max-width:var(--v113-bastion-w,173px) !important;
+}
+.page-content .bastion-card-wall .simple-card-image{
+  width:var(--v113-bastion-w,173px) !important;
+  height:var(--v113-bastion-h,123px) !important;
+}
+</style>
+
+<style id="v127-greyed-royals-not-selectable">
+/* Greyed Royals remain visible and inspectable, but are not valid Royal choices. */
+body:not(.side-deck-active) #royalGrid .simple-royal-card.restricted-card:not(.selected),
+body:not(.side-deck-active) #royalGrid .simple-royal-card.royal-main-deck-blocked:not(.selected),
+body:not(.side-deck-active) #royalGrid .royal-category-disabled .simple-royal-card:not(.selected){
+  cursor:not-allowed !important;
+}
+</style>
+
+<script id="v131-long-sticky-minus-2pt">
+(function(){
+  function adjustLongStickyText(){
+    const box = document.querySelector('.card-hover-tooltip .card-text, .card-hover-tooltip .sticky-card-text, .card-hover-tooltip [data-sticky-card-text]');
+    if(!box) return;
+
+    // Let the existing v127-era fitter establish its normal size first.
+    box.style.removeProperty('--v131-long-text-size');
+    box.classList.remove('v131-long-text-minus-2');
+
+    requestAnimationFrame(()=>{
+      const cs = getComputedStyle(box);
+      const currentPx = parseFloat(cs.fontSize) || 0;
+      if(!currentPx) return;
+
+      // If content would scroll/clip vertically at the existing fitted size,
+      // reduce only this card's rules text by 2pt (~2.6667px).
+      if(box.scrollHeight > box.clientHeight + 1){
+        const smaller = Math.max(6, currentPx - (2 * 96 / 72));
+        box.style.fontSize = smaller + 'px';
+      }
+    });
+  }
+
+  const schedule = ()=>requestAnimationFrame(()=>requestAnimationFrame(adjustLongStickyText));
+
+  const tooltip = document.querySelector('.card-hover-tooltip');
+  if(tooltip){
+    new MutationObserver(schedule).observe(tooltip,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','style']});
+  }
+  window.addEventListener('resize',schedule,{passive:true});
+  document.fonts?.ready.then(schedule);
+  schedule();
+})();
+</script>
+
+<style id="v140-top-right-actions">
+/* v140: keep the primary deck actions aligned together at the top-right. */
+.nav .wrap{
+  position:relative !important;
+}
+.nav-links{
+  margin-left:auto !important;
+  justify-content:flex-end !important;
+  align-items:flex-start !important;
+}
+/* Treat Save / Customize / New Deck as one right-aligned action group. */
+#saveDeckBtn,
+#customizeBtn,
+#newDeckBtn,
+[data-action="save-deck"],
+[data-action="customize"],
+[data-action="new-deck"]{
+  align-self:flex-start !important;
+}
+@media (min-width:901px){
+  .nav .wrap{
+    display:flex !important;
+    align-items:flex-start !important;
+  }
+  .nav-links{
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    gap:10px !important;
+  }
+}
+</style>
+
+<style id="v142-sticky-meet-bastion">
+/* Extend the sticky card header so its lower edge reaches the Bastion panel. */
+@media (min-width:901px){
+  .left-rail, .hover-panel-column{
+    display:flex !important;
+    flex-direction:column !important;
+  }
+  .left-rail .card-hover-tooltip,
+  .hover-panel-column .card-hover-tooltip{
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    height:auto !important;
+  }
+}
+</style>
+
+<style id="v143-royal-warning-cleanup">
+/* v143: greyed Royals are no longer selectable, so hide obsolete Royal faction-change warning text. */
+.royal-faction-warning,
+.royal-selection-warning,
+.royal-replacement-warning,
+[data-royal-warning],
+[data-royal-faction-warning]{
+  display:none !important;
+}
+</style>
+<script id="v143-disable-royal-faction-warning-text">
+(function(){
+  const ROYAL_WARNING_RE=/(selecting|choosing|this royal|new royal|replace).*?(faction|alignment|colour|color)|faction alignment|change your faction|restrict yourself/i;
+
+  function isRoyalWarningNode(el){
+    if(!el || el.nodeType!==1) return false;
+    const txt=(el.textContent||'').trim();
+    if(!txt || !ROYAL_WARNING_RE.test(txt)) return false;
+    // Only suppress warning/disclaimer-style UI, never card rules text.
+    const cls=(el.className||'').toString();
+    const id=el.id||'';
+    const role=el.getAttribute?.('role')||'';
+    const warningish=/warning|notice|disclaimer|hint|message|alert/i.test(cls+' '+id+' '+role);
+    const nearRoyal=!!el.closest?.('#royalOptions, #leaderOptions, .royal-card-wall, .royal-section, [data-section="royal"]');
+    return warningish || nearRoyal;
+  }
+
+  function clean(root=document){
+    root.querySelectorAll?.('*').forEach(el=>{
+      if(isRoyalWarningNode(el)) el.style.setProperty('display','none','important');
+    });
+  }
+
+  clean();
+  new MutationObserver(muts=>{
+    for(const m of muts){
+      for(const n of m.addedNodes){
+        if(n.nodeType===1){
+          if(isRoyalWarningNode(n)) n.style.setProperty('display','none','important');
+          clean(n);
+        }
+      }
+    }
+  }).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="v154-top-buttons-shadow-only">
+/* Restore pre-v153 button appearance; retain only a subtle drop shadow. */
+#topRightActionGroup button,
+.top-right-action-group button,
+#topRightActions button{
+  filter:none !important;
+  text-shadow:none !important;
+  box-shadow:0 3px 8px rgba(0,0,0,.28) !important;
+}
+</style>
+
+<style id="v155-bottom-left-top-padding">
+/* Add a little breathing room inside the lower-left Bastion/Royals panel. */
+.deck-list-mini,
+#deckListMini{
+  padding-top:12px !important;
+}
+</style>
+
+<style id="v162-main-side-copy-badge">
+/* Normal cards keep the original single-number badge. Only cards split between
+   Main and Side switch to a compact M/S badge, with no redundant total. */
+.simple-card-copy-count.split-copy-count{
+  width:auto !important;
+  min-width:54px !important;
+  height:30px !important;
+  min-height:30px !important;
+  padding:0 7px !important;
+  border-radius:15px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:1 !important;
+}
+.simple-card-copy-count.split-copy-count .copy-total{display:none !important;}
+.simple-card-copy-count.split-copy-count .copy-zone-split{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:7px !important;
+  font-size:10px !important;
+  font-weight:800 !important;
+  letter-spacing:.02em !important;
+  white-space:nowrap !important;
+  opacity:1 !important;
+}
+.simple-card-copy-count.split-copy-count .copy-zone-split span{display:block !important;}
+</style>
+
+<style id="v163-side-selected-royal-clickable">
+/* In Side Deck mode, selected Royals remain visually interactive as card-pool entries. */
+body.side-deck-active .simple-royal-card.selected,
+body.side-deck-active .simple-card.selected[data-royal-id]{
+  pointer-events:auto !important;
+  cursor:pointer !important;
+}
+</style>
+<script id="v163-side-selected-royal-extra-copies">
+(function(){
+  function getId(card){
+    return card?.dataset?.id || card?.dataset?.royalId || card?.dataset?.cardId || '';
+  }
+
+  function isSelectedRoyal(id){
+    if(!id) return false;
+    try{
+      const appState = window.KB?.state || window.state;
+      const royals = Array.isArray(appState?.royals) ? appState.royals : [];
+      return royals.some(r => (typeof r === 'string' ? r : r?.id) === id);
+    }catch(_){ return false; }
+  }
+
+  function getCardRecord(id){
+    if(!id) return null;
+    if(Array.isArray(window.cards)) return window.cards.find(c=>c?.id===id) || null;
+    if(Array.isArray(window.CARDS)) return window.CARDS.find(c=>c?.id===id) || null;
+    return null;
+  }
+
+  function sideCount(id){
+    try{return Number((window.KB?.state || window.state)?.side?.[id] || 0);}catch(_){return 0;}
+  }
+  function mainCount(id){
+    try{return Number((window.KB?.state || window.state)?.main?.[id] || 0);}catch(_){return 0;}
+  }
+
+  function maxCopies(card,id){
+    try{
+      if(typeof window.maxCopiesFor === 'function') return Number(window.maxCopiesFor(card || id)) || 3;
+    }catch(_){ }
+    return 3;
+  }
+
+  function addSelectedRoyalSideCopy(card){
+    const id=getId(card);
+    if(!id || !isSelectedRoyal(id)) return false;
+    const rec=getCardRecord(id);
+    const max=maxCopies(rec,id);
+    /* The active Royal slot is copy #1. Extra copies can only live in Side,
+       leaving at most max-1 extra Side Deck copies (normally 2). */
+    const total=1+mainCount(id)+sideCount(id);
+    if(total>=max) return true; // consume click; cap already reached
+    const appState = window.KB?.state || window.state;
+    if(!appState) return false;
+    if(!appState.side) appState.side={};
+    appState.side[id]=sideCount(id)+1;
+    try{ if(typeof window.renderAll==='function') window.renderAll(); }
+    catch(_){ }
+    return true;
+  }
+
+  document.addEventListener('click', function(e){
+    if(!document.body.classList.contains('side-deck-active')) return;
+    if(e.button!==0) return;
+    if(e.target.closest('.card-info-button')) return;
+    const card=e.target.closest('.simple-royal-card.side-deck-current-royal, .simple-royal-card.selected, .simple-card.selected[data-royal-id]');
+    if(!card) return;
+    if(!isSelectedRoyal(getId(card))) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    addSelectedRoyalSideCopy(card);
+  }, true);
+})();
+</script>
+
+<style id="v164-accurate-thumbnail-copy-badges">
+/* Deck thumbnails mirror the builder badge exactly. */
+.deck-copy-count.split-copy-count{
+  width:auto !important;
+  min-width:54px !important;
+  padding:0 7px !important;
+  border-radius:999px !important;
+}
+.deck-copy-count.split-copy-count .copy-total{display:none !important;}
+.deck-copy-count.split-copy-count .copy-zone-split{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:6px !important;
+  white-space:nowrap !important;
+  font-size:.72em !important;
+  font-weight:800 !important;
+  line-height:1 !important;
+}
+</style>
+
+<style id="v165-royal-copy-count-fix">
+/* Royal slots count as one visible copy. If a selected Royal is also split
+   between Main and Side, show R1 alongside the M/S split. */
+.simple-card-copy-count.split-copy-count .copy-zone-split:has(span:nth-child(3)),
+.deck-copy-count.split-copy-count .copy-zone-split:has(span:nth-child(3)){
+  gap:5px !important;
+}
+.simple-card-copy-count.split-copy-count:has(.copy-zone-split span:nth-child(3)),
+.deck-copy-count.split-copy-count:has(.copy-zone-split span:nth-child(3)){
+  min-width:72px !important;
+}
+</style>
+
+<script id="v168-selected-royal-copy-rules">
+(function(){
+  function selectedRoyalIds(){
+    try{
+      const appState=window.KB?.state || window.state;
+      const arr=Array.isArray(appState?.royals)?appState.royals:[];
+      return new Set(arr.filter(Boolean));
+    }catch(e){ return new Set(); }
+  }
+  function getCount(obj,id){ return Number((obj&&obj[id])||0)||0; }
+  function setCount(obj,id,n){ if(!obj) return; if(n>0) obj[id]=n; else delete obj[id]; }
+
+  // Active Royal counts as one of the normal 3 copies.
+  window.__kingdomsSelectedRoyalTotal = function(id){
+    const selected=selectedRoyalIds().has(id)?1:0;
+    return selected + getCount(state?.main,id) + getCount(state?.side,id);
+  };
+
+  // For selected Royals: no Main Deck copies; at most two extra copies in Side Deck.
+  window.__kingdomsNormalizeSelectedRoyalCopies = function(){
+    if(!window.state) return;
+    const sel=selectedRoyalIds();
+    for(const id of sel){
+      if(state.main && getCount(state.main,id)>0) setCount(state.main,id,0);
+      const side=getCount(state.side,id);
+      if(side>2) setCount(state.side,id,2);
+    }
+  };
+
+  // Patch max-copy helper if present so selected Royal total cap is 3 including leader slot.
+  if(typeof window.maxCopiesFor==='function' && !window.maxCopiesFor.__v168Wrapped){
+    const base=window.maxCopiesFor;
+    const wrapped=function(card){
+      const id=card?.id || card?.slug || card;
+      if(id && selectedRoyalIds().has(id)) return 3;
+      return base.apply(this,arguments);
+    };
+    wrapped.__v168Wrapped=true;
+    window.maxCopiesFor=wrapped;
+  }
+
+  // Capture card interactions so selected Royals behave correctly by deck mode.
+  document.addEventListener('click', function(e){
+    const card=e.target.closest?.('[data-id],[data-card-id]');
+    if(!card || e.target.closest('.card-info-button')) return;
+    const id=card.dataset.id || card.dataset.cardId;
+    if(!id || !selectedRoyalIds().has(id)) return;
+    const sideMode=document.body.classList.contains('side-deck-active');
+    if(sideMode){
+      // Allow at most two additional Side copies.
+      const cur=getCount(state?.side,id);
+      if(cur>=2){ e.preventDefault(); e.stopImmediatePropagation(); return; }
+      // Let existing side-deck handler add normally, then normalize.
+      setTimeout(()=>{ window.__kingdomsNormalizeSelectedRoyalCopies(); try{ renderAll?.(); }catch(_){} },0);
+    } else {
+      // Selected Royals cannot be added to Main. Preserve informational pinning.
+      e.preventDefault(); e.stopImmediatePropagation();
+      try{ if(typeof renderStickyCardFromElement==='function') renderStickyCardFromElement(card); }catch(_){}
+    }
+  }, true);
+
+  // Right-click in Side Deck removes extra side copies only; active Royal remains selected.
+  document.addEventListener('contextmenu', function(e){
+    const card=e.target.closest?.('[data-id],[data-card-id]');
+    if(!card) return;
+    const id=card.dataset.id || card.dataset.cardId;
+    if(!id || !selectedRoyalIds().has(id) || !document.body.classList.contains('side-deck-active')) return;
+    const cur=getCount(state?.side,id);
+    if(cur>0){
+      e.preventDefault(); e.stopImmediatePropagation();
+      setCount(state.side,id,cur-1);
+      window.__kingdomsNormalizeSelectedRoyalCopies();
+      try{ renderAll?.(); }catch(_){}
+    }
+  }, true);
+
+  // Keep stale state normalized after renders/loads.
+  const obs=new MutationObserver(()=>window.__kingdomsNormalizeSelectedRoyalCopies());
+  try{ obs.observe(document.body,{childList:true,subtree:true}); }catch(e){}
+  window.__kingdomsNormalizeSelectedRoyalCopies();
+})();
+</script>
+
+<style id="v169-side-deck-collapse-royals">
+/* Side Deck: collapse the Royal browser down to the currently selected Royals.
+   This keeps those Royals available as Side Deck copy sources without showing
+   every other Royal thumbnail/category. */
+body.side-deck-active #royalGrid .simple-royal-card:not(.side-deck-current-royal){
+  display:none !important;
+}
+body.side-deck-active #royalGrid .royal-simple-group:not(:has(.side-deck-current-royal)){
+  display:none !important;
+}
+body.side-deck-active #royalGrid .royal-simple-group:has(.side-deck-current-royal) .royal-card-wall{
+  min-height:0 !important;
+  grid-template-columns:repeat(auto-fit,minmax(var(--builder-card-w),var(--builder-card-w))) !important;
+  justify-content:start !important;
+  align-content:start !important;
+}
+body.side-deck-active #royalGrid .royal-category-castle-toggle{
+  display:none !important;
+}
+</style>
+
+<!-- v170: local deck counts + 50%-minimum wrapping thumbnails -->
+<style id="v170-deck-thumbnail-count-and-size-note">
+/* Main/Side deck-area badges intentionally show only the copies in that zone.
+   v148's fitter now uses 150px as full size and wraps before dropping below
+   75px (50%), allowing the deck panel to scroll vertically when necessary. */
+</style>
 </body>
 </html><style>
 /* Sticky tooltip masking: scrolling deck content disappears cleanly beneath it. */
@@ -6873,6 +8203,7 @@ body{
 
   function fitStickyText(){
     textFrame=0;
+    return; /* disabled by v123 unified sticky shrink-to-fit */
     const description=tooltip.querySelector('.sticky-card-description');
     if(!description || description.clientHeight<2 || description.clientWidth<2) return;
     /* v63: allow the sticky card data to use a larger readable range while
@@ -7290,9 +8621,9 @@ body.v35-layout-locked .main-deck-panel .main-deck-grid.is-scroll-menu{
        freeze that width BEFORE switching the leader area to the 30% band. */
     const current=rail.getBoundingClientRect().width;
     if(current>1){
-      /* v60: widen the already-enlarged v59 rail by another 10%.
-         1.10 × 1.10 = 1.21 relative to the original established width. */
-      const widened=current*1.21;
+      /* v81: widen the current v80 left rail by another ~10%.
+         1.331 × 1.10 = 1.4641 relative to the original established width. */
+      const widened=current*1.4641;
       lockedRatio=widened/Math.max(1,window.innerWidth);
       body.style.setProperty('--v35-left-rail-width',Math.round(widened)+'px');
     }
@@ -7303,7 +8634,7 @@ body.v35-layout-locked .main-deck-panel .main-deck-grid.is-scroll-menu{
   function relockForViewport(){
     frame=0;
     if(!lockedRatio) return;
-    const width=clamp(window.innerWidth*lockedRatio,182,387);
+    const width=clamp(window.innerWidth*lockedRatio,220,469);
     body.style.setProperty('--v35-left-rail-width',Math.round(width)+'px');
     requestAnimationFrame(setRoyalSlot);
   }
@@ -8343,7 +9674,6 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
   const configs=[
     ['#deckOptionsDialog','.deck-options-header'],
     ['#castleConfirm','h2'],
-    ['#greyedChoiceConfirm','h2'],
     ['#colorIdentityDialog','h2'],
     ['#themeColorPickerOverlay .theme-picker-dialog','.theme-picker-top'],
     ['#cardInspectorModal .card-inspector-window','.card-inspector-name']
@@ -8513,6 +9843,9 @@ async function communityRequest(path,options={}){
     if(!response.ok){
       let message=data?.message||data?.msg||data?.error_description||'Community service is unavailable.';
       if(['PGRST205','PGRST202','42P01'].includes(data?.code))message='Community database setup has not been installed yet.';
+      if(data?.code === 'PGRST203' || /Could not choose the best candidate function/i.test(message)){
+        message='Community submit RPC is duplicated in Supabase. Remove the legacy kingdoms_submit_deck overload, then retry.';
+      }
       const error=new Error(message);error.status=response.status;throw error;
     }
     return data;
@@ -8614,6 +9947,8 @@ async function publishCommunityDeck(){
   const name=communityEl('deckName').value.trim();
   const creator=communityEl('pilotName').value.trim();
   const description=communityEl('deckDescription').value.trim();
+  const gameMode=(communityEl('communityGameMode')?.value || '').trim().slice(0,80);
+  deck.gameMode=gameMode;
   if(!name||name.length>120||!creator||creator.length>80){setDeckStorageStatus('Enter a deck name (up to 120 characters) and a public creator name (up to 80).','err');return;}
   if(!deck.royals.length||!deck.bastion||deck.mainCount<1){setDeckStorageStatus('Choose your Royals and Bastion and add Main Deck cards first.','err');return;}
   if(!communityNameChoice||communityNameChoice.key!==communityLeadersKey(deck)||communityNameChoice.name!==name){
@@ -8622,7 +9957,7 @@ async function publishCommunityDeck(){
   if(!communityEl('communityConsent').checked){setDeckStorageStatus('Confirm that you want to publish this information publicly.','err');return;}
   const payload={p_name:name,p_creator:creator,p_description:description,p_deck:deck};
   // Exclude volatile timestamps/theme from the retry signature.
-  const signature=JSON.stringify([name,creator,description,[...deck.royals].sort(),deck.bastion,deck.main,deck.side,deck.terra,deck.terraDeck]);
+  const signature=JSON.stringify([name,creator,description,gameMode,[...deck.royals].sort(),deck.bastion,deck.main,deck.side,deck.terra,deck.terraDeck]);
   if(communityPendingSubmission?.signature!==signature)communityPendingSubmission={signature,id:crypto.randomUUID()};
   payload.p_request_id=communityPendingSubmission.id;
   button.disabled=true;button.textContent='Publishing…';
@@ -8646,6 +9981,7 @@ function communityDeckRow(row){
     if(id===row.deck.bastion)img.className='bastion';leaders.append(img);
   });
   card.append(leaders,communityText('p',[...row.deck.royals,row.deck.bastion].map(deckCardLabel).join(' · ')));
+  if(row.deck?.gameMode) card.append(communityText('p',`Game mode: ${row.deck.gameMode}`));
   if(row.description)card.append(communityText('p',row.description));
   const details=document.createElement('details');details.append(communityText('summary','View complete decklist'));
   details.append(communityText('pre',serializeDeckText(row.deck)));card.append(details);
@@ -8734,7 +10070,7 @@ html.kingdoms-scaled,html.kingdoms-scaled body{max-width:100%;overflow-x:hidden;
 /* Preserve the established 1920×1080 proportions while guaranteeing that
    the actual deck-builder workspace remains the dominant horizontal region. */
 body.v35-layout-locked{
-  grid-template-columns:min(var(--v35-left-rail-width,387px),20%) minmax(0,1fr) !important;
+  grid-template-columns:min(var(--v35-left-rail-width,426px),22%) minmax(0,1fr) !important;
 }
 /* Let the central builder consume every pixel assigned to it. */
 body.v35-layout-locked .builder-column,
@@ -9340,7 +10676,7 @@ html.kingdoms-force-landscape body{
 }
 </style>
 
-<script id="touch-sticky-card-actions-behavior">
+<script id="touch-sticky-card-actions-behavior" type="text/plain" data-disabled-by="v98-desktop-parity-touch">
 (() => {
   let touchCandidate = null;
   let touchSelection = null;
@@ -9419,7 +10755,7 @@ html.kingdoms-force-landscape body{
   function maxForSelection(sel, card){
     if(sel.kind === 'terra') return MAX_TERRA;
     if(sel.kind === 'royal' || sel.kind === 'bastion') return 1;
-    if(sel.kind === 'side' && typeof sideDeckCopyLimitFor === 'function') return sideDeckCopyLimitFor(sel.id);
+    if(sel.kind === 'side' && typeof sideDeckAbsoluteCopyLimitFor === 'function') return sideDeckAbsoluteCopyLimitFor(sel.id);
     return typeof maxCopiesFor === 'function' ? maxCopiesFor(card) : 4;
   }
 
@@ -9427,7 +10763,7 @@ html.kingdoms-force-landscape body{
     if(sel.kind === 'royal' || sel.kind === 'bastion') return false;
     if(sel.blocked) return false;
     if(sel.kind === 'main' && state.royals.includes(sel.id)) return false;
-    if(sel.kind === 'side' && typeof sideCount === 'function' && sideCount() >= MAX_SIDE_DECK) return false;
+    if(sel.kind === 'side') return typeof canAddSideDeckCard === 'function' ? canAddSideDeckCard(sel.id) : false;
     if(sel.kind === 'terra' && typeof terraDeckCount === 'function' && terraDeckCount() >= MAX_TERRA) return false;
     return selectionCount(sel) < maxForSelection(sel, card);
   }
@@ -9679,21 +11015,26 @@ html.kingdoms-force-landscape body{
       return;
     }
 
-    const target = sel.kind === 'side' ? state.side : state.main;
-    const cache = sel.kind === 'side' ? state.cachedSide : state.cachedMain;
+    if(sel.kind === 'side'){
+      if(delta < 0 && selectionCount(sel) > 0) playDeckReturnAnimation(sel.id, 'side');
+      const changed = typeof changeSideDeckCard === 'function' && changeSideDeckCard(sel.id, delta);
+      if(!changed){ renderTouchSelection(); return; }
+      renderAll();
+      renderTouchSelection();
+      if(replayAction){ requestAnimationFrame(() => replayStickyActionHover(delta > 0 ? 'add' : 'remove')); replayTouchedCardHover(sel); }
+      return;
+    }
+
+    const target = state.main;
+    const cache = state.cachedMain;
     const current = target[sel.id] || 0;
     const cap = maxForSelection(sel, card);
-    let next = Math.max(0, Math.min(cap, current + delta));
-
-    if(sel.kind === 'side' && delta > 0){
-      const room = Math.max(0, MAX_SIDE_DECK - sideCount());
-      next = Math.min(next, current + room);
-    }
+    const next = Math.max(0, Math.min(cap, current + delta));
     if(next === current){ renderTouchSelection(); return; }
     if(delta < 0 && next < current) playDeckReturnAnimation(sel.id, sel.kind);
     delete cache[sel.id];
     if(next === 0) delete target[sel.id]; else target[sel.id] = next;
-    if(sel.kind === 'main' && typeof enforceSideDeckSharedCopyLimits === 'function') enforceSideDeckSharedCopyLimits();
+    if(typeof enforceSideDeckSharedCopyLimits === 'function') enforceSideDeckSharedCopyLimits();
     renderAll();
     renderTouchSelection();
     if(replayAction){ requestAnimationFrame(() => replayStickyActionHover(delta > 0 ? 'add' : 'remove')); replayTouchedCardHover(sel); }
@@ -9711,7 +11052,7 @@ html.kingdoms-force-landscape body{
     return {
       id,
       kind,
-      blocked: !!el.dataset.restrictionReason || el.getAttribute('aria-disabled') === 'true',
+      blocked: kind !== 'side' && (!!el.dataset.restrictionReason || el.getAttribute('aria-disabled') === 'true'),
       warningMessages: context.messages || [],
       warningVariant: context.variant || 'warning'
     };
@@ -9895,3 +11236,1586 @@ html.kingdoms-force-landscape body{
   }, true);
 })();
 </script>
+
+
+<!-- v75: Side Deck Bastions, Main Deck copy warnings, deck-library controls, and dynamic Main Deck fill -->
+<style id="v75-feature-pass">
+/* Side Deck uses the existing Bastion-sideboard logic; only the Bastion chooser
+   is exposed while Side Deck mode is active. */
+body.side-deck-active .page-content #leaderOptions{display:block !important;}
+body.side-deck-active .page-content #leaderOptions > section.block:first-child{display:none !important;}
+body.side-deck-active .page-content #leaderOptions > section.block:nth-child(2){display:block !important;}
+body.side-deck-active .page-content #leaderSelectionPreview,
+body.side-deck-active .page-content .leader-toggle-bar{display:none !important;}
+
+/* Current-deck actions are visible together instead of hiding New/Clear in a submenu. */
+.deck-library-primary-actions{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.deck-library-primary-actions .action-btn{margin-top:0 !important;}
+.deck-library-primary-actions .deck-secondary-btn{
+  background:var(--panel-raised) !important;color:var(--parchment) !important;border-color:var(--line) !important;
+}
+.deck-library-primary-actions .deck-secondary-btn:hover{border-color:var(--profile-outline,var(--brass)) !important;}
+#communityGameMode{width:100%;background:var(--panel-raised);border:1px solid var(--line);border-radius:5px;padding:8px 10px;color:var(--parchment);font-size:13.5px;}
+
+/* 3-copy feedback: the card itself is marked at the normal Main Deck cap and
+   an attempted fourth copy produces a short inline warning. Levy cards keep 9. */
+.main-deck-panel .main-copy-limit-marker{
+  position:absolute;right:3px;top:3px;z-index:4;padding:3px 5px;border:1px solid rgba(255,190,92,.82);border-radius:5px;
+  background:rgba(74,37,5,.9);color:#ffd79b;font:800 8px/1 'Work Sans',sans-serif;letter-spacing:.04em;pointer-events:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.45);
+}
+.main-deck-panel .main-copy-limit-reached .deck-thumbnail-art{box-shadow:0 0 0 1px rgba(255,190,92,.62);}
+.main-copy-warning-live{
+  flex:0 0 auto;max-height:0;overflow:hidden;margin:0;padding:0 8px;border:0 solid rgba(255,190,92,.58);border-radius:6px;
+  background:rgba(92,49,12,.72);color:#ffd79b;font:700 10px/1.3 'Work Sans',sans-serif;opacity:0;
+  transition:max-height .16s ease,opacity .16s ease,padding .16s ease,margin .16s ease,border-width .16s ease;
+}
+.main-copy-warning-live.show{max-height:48px;margin:0 0 7px;padding:7px 8px;border-width:1px;opacity:1;}
+
+/* Final Main Deck geometry: remove the old hard 12-column break. Cards fill
+   left-to-right for as many columns as the viewport can comfortably support,
+   then wrap and scroll inside the panel. */
+body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid,
+.main-deck-panel:not(.terra-deck-panel) .main-deck-grid{
+  display:flex !important;flex-flow:row wrap !important;align-items:flex-start !important;align-content:flex-start !important;
+  justify-content:flex-start !important;column-gap:var(--v75-main-gap,5px) !important;row-gap:var(--v75-main-gap,5px) !important;
+  overflow-x:hidden !important;overflow-y:auto !important;scrollbar-gutter:stable !important;
+}
+body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid > .deck-thumbnail,
+.main-deck-panel:not(.terra-deck-panel) .main-deck-grid > .deck-thumbnail{
+  flex:0 0 var(--v75-main-card-width,48px) !important;width:var(--v75-main-card-width,48px) !important;
+  min-width:var(--v75-main-card-width,48px) !important;max-width:var(--v75-main-card-width,48px) !important;height:auto !important;
+}
+body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid > .deck-thumbnail .deck-thumbnail-art,
+.main-deck-panel:not(.terra-deck-panel) .main-deck-grid > .deck-thumbnail .deck-thumbnail-art{
+  width:100% !important;height:auto !important;aspect-ratio:5/7 !important;
+}
+.main-deck-panel:not(.terra-deck-panel) .main-deck-grid .deck-copy-count{
+  width:var(--v75-main-badge,20px) !important;height:var(--v75-main-badge,20px) !important;min-width:var(--v75-main-badge,20px) !important;
+  font-size:var(--v75-main-count-font,12px) !important;
+}
+@media(max-width:720px){.deck-library-primary-actions{grid-template-columns:1fr;}}
+</style>
+<script id="v75-dynamic-main-deck-fill">
+(function v75DynamicMainDeckFill(){
+  const list=document.getElementById('mainDeckList');
+  if(!list) return;
+  let frame=0;
+  function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+  function fit(){
+    frame=0;
+    const grid=list.querySelector('.main-deck-grid');
+    if(!grid) return;
+    const cards=[...grid.children].filter(el=>el.classList.contains('deck-thumbnail'));
+    if(!cards.length) return;
+    const width=Math.max(1,grid.clientWidth||list.clientWidth);
+    const gap=width<650?4:5;
+    /* Comfortable minimum is deliberately smaller than the old 12-column
+       breakpoint so 13+ unique cards keep consuming the available row. */
+    const minCard=clamp(width*0.043,38,54);
+    const maxColumns=Math.max(1,Math.floor((width+gap)/(minCard+gap)));
+    const columns=Math.max(1,Math.min(cards.length,maxColumns));
+    const cardWidth=clamp(Math.floor((width-gap*(columns-1))/columns),38,150);
+    list.style.setProperty('--v75-main-card-width',cardWidth+'px');
+    list.style.setProperty('--v75-main-gap',gap+'px');
+    list.style.setProperty('--v75-main-badge',clamp(cardWidth*.40,16,28)+'px');
+    list.style.setProperty('--v75-main-count-font',clamp(cardWidth*.22,9,16)+'px');
+  }
+  function schedule(){if(!frame)frame=requestAnimationFrame(()=>requestAnimationFrame(fit));}
+  new MutationObserver(schedule).observe(list,{childList:true,subtree:true});
+  window.addEventListener('resize',schedule,{passive:true});
+  document.fonts?.ready.then(schedule);
+  requestAnimationFrame(()=>requestAnimationFrame(schedule));
+})();
+</script>
+
+<!-- v78: bottom-anchored Royal slots + sticky header text that maximizes both dimensions -->
+<style id="v78-bottom-royals-and-full-sticky-type">
+/* Keep the Bastion section at the top, but use the free middle band as a
+   spacer so the Royal heading and both Royal slots sit flush at the bottom
+   of the selected-leader panel. This overrides the older fixed pixel offsets. */
+body.v35-layout-locked .left-deck-rail #deckListMini{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) !important;
+  grid-template-rows:auto auto minmax(0,1fr) auto auto !important;
+  align-content:stretch !important;
+  align-items:start !important;
+  justify-items:center !important;
+  row-gap:4px !important;
+}
+body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(1){
+  grid-column:1 !important;grid-row:1 !important;margin-top:0 !important;
+}
+body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(2){
+  grid-column:1 !important;grid-row:2 !important;margin-top:0 !important;
+}
+body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3){
+  grid-column:1 !important;grid-row:4 !important;margin-top:0 !important;
+  align-self:end !important;
+}
+body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
+  grid-column:1 !important;grid-row:5 !important;margin-top:0 !important;
+  align-self:end !important;
+}
+
+/* Sticky header owns every usable pixel in its rail cell. The text region also
+   stretches to the full remaining rectangle. The fitter below increases type
+   until either width OR height becomes the limiting dimension. */
+.left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
+  width:100% !important;
+  max-width:100% !important;
+  height:100% !important;
+  max-height:none !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  align-self:stretch !important;
+  justify-self:stretch !important;
+  box-sizing:border-box !important;
+}
+#cardHoverTooltip .sticky-card-preview{
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  box-sizing:border-box !important;
+}
+#cardHoverTooltip .sticky-card-description{
+  --v78-sticky-fill-font:12px;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  flex:1 1 0 !important;
+  min-height:0 !important;
+  box-sizing:border-box !important;
+  font-size:var(--v78-sticky-fill-font) !important;
+  overflow:auto !important;
+  scrollbar-width:none !important;
+}
+#cardHoverTooltip .sticky-card-description::-webkit-scrollbar{display:none !important;}
+#cardHoverTooltip .hover-card-name{
+  font-size:1.42em !important;
+  line-height:1.12 !important;
+  margin:0 0 .30em !important;
+}
+#cardHoverTooltip .hover-meta{
+  font-size:.92em !important;
+  line-height:1.22 !important;
+  margin:0 0 .52em !important;
+}
+#cardHoverTooltip .hover-rule-label{
+  font-size:.76em !important;
+  line-height:1.12 !important;
+  margin:0 0 .30em !important;
+}
+#cardHoverTooltip .hover-text{
+  font-size:1em !important;
+  line-height:1.27 !important;
+  padding:0 !important;
+  margin:0 !important;
+  white-space:pre-wrap !important;
+  overflow-wrap:break-word !important;
+}
+#cardHoverTooltip .tooltip-placeholder{
+  width:100% !important;
+  height:100% !important;
+  font-size:var(--v78-sticky-fill-font) !important;
+}
+</style>
+<script id="v78-maximize-sticky-text-both-axes">
+(function v78MaximizeStickyTextBothAxes(){
+  const tooltip=document.getElementById('cardHoverTooltip');
+  if(!tooltip) return;
+  return; /* disabled by v123 unified sticky shrink-to-fit */
+
+  let frame=0;
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+
+  function fits(description){
+    return description.scrollHeight <= description.clientHeight + 1 &&
+           description.scrollWidth  <= description.clientWidth  + 1;
+  }
+
+  function fit(){
+    frame=0;
+    const description=tooltip.querySelector('.sticky-card-description');
+    if(!description) return;
+
+    const width=description.clientWidth;
+    const height=description.clientHeight;
+    if(width < 20 || height < 20) return;
+
+    /* Search a deliberately broad range. Width is accounted for naturally by
+       wrapping; height is checked at the same time. The result is therefore the
+       largest type that fits the complete available rectangle. */
+    const minFont=7;
+    /* Keep genuinely short cards restrained around 13px, but do not make that
+       a global ceiling. Longer rules text can once again grow to fill the
+       available sticky-header rectangle, up to the earlier ~20px maximum. */
+    const textLength=(description.innerText || description.textContent || '').replace(/\s+/g,' ').trim().length;
+    const contentCeiling=textLength <= 260 ? 13 : 20;
+    const dynamicCeiling=Math.min(contentCeiling, clamp(Math.min(width * .38, height * .34), 10, contentCeiling));
+    let low=minFont;
+    let high=dynamicCeiling;
+    let best=minFont;
+
+    description.style.setProperty('--v78-sticky-fill-font',minFont+'px');
+    const minimumFits=fits(description);
+
+    if(minimumFits){
+      for(let i=0;i<13;i++){
+        const mid=(low+high)/2;
+        description.style.setProperty('--v78-sticky-fill-font',mid.toFixed(3)+'px');
+        if(fits(description)){
+          best=mid;
+          low=mid;
+        }else{
+          high=mid;
+        }
+      }
+    }
+
+    description.style.setProperty('--v78-sticky-fill-font',best.toFixed(2)+'px');
+    description.dataset.fitWidth=String(Math.round(width));
+    description.dataset.fitHeight=String(Math.round(height));
+    description.dataset.fitFont=best.toFixed(2);
+  }
+
+  function schedule(){
+    if(frame) return;
+    frame=requestAnimationFrame(()=>requestAnimationFrame(fit));
+  }
+
+  if('ResizeObserver' in window){
+    const observer=new ResizeObserver(schedule);
+    observer.observe(tooltip);
+  }
+  new MutationObserver(schedule).observe(tooltip,{childList:true,subtree:true,characterData:true});
+  window.addEventListener('resize',schedule,{passive:true});
+  document.fonts?.ready.then(schedule);
+  requestAnimationFrame(()=>requestAnimationFrame(fit));
+})();
+</script>
+
+
+<!-- v80: hide legacy sticky-header +/- controls on touch-capable layouts -->
+<style id="v80-hide-touch-sticky-add-remove">
+/* Card mutation on touch is handled directly from the card surfaces.
+   The sticky header is informational/inspect-only on touch, so its old + / -
+   control strip is intentionally removed to give the card data all available space. */
+@media (hover:none), (pointer:coarse){
+  #cardHoverTooltip .touch-card-actions{
+    display:none !important;
+  }
+  #cardHoverTooltip.touch-card-selected .sticky-card-description{
+    flex:1 1 100% !important;
+    min-height:0 !important;
+  }
+}
+</style>
+
+
+<!-- v83: shorter info controls, lower Royal slots, Side Deck Royal browser restored -->
+<style id="v83-info-royal-side-deck-refine">
+/* Make the icon-only info control about 20% smaller than the previous 38px button.
+   Keep a predictable hit target and let the existing hover animation work normally. */
+.simple-card > .card-info-button{
+  width:30px !important;
+  min-width:30px !important;
+  height:30px !important;
+  min-height:30px !important;
+  padding:0 !important;
+  transform:none !important;
+  border-radius:50% !important;
+}
+.simple-card > .card-info-button span{font-size:17px !important;}
+.deck-thumbnail > .card-info-button{
+  width:24px !important;
+  min-width:24px !important;
+  height:24px !important;
+  min-height:24px !important;
+  transform:none !important;
+}
+.deck-thumbnail > .card-info-button span{font-size:15px !important;}
+.card-info-button:hover,.card-info-button:focus-visible{transform:scale(1.08) !important;}
+
+/* Give the Bastion more of the selected-leader panel's vertical band so the
+   Royal row begins lower in the left column instead of crowding the Bastion.
+   This stays proportional across viewport sizes rather than using a fixed pixel offset. */
+body.v35-layout-locked .left-deck-rail #deckListMini{
+  grid-template-rows:auto minmax(0,1.55fr) auto minmax(0,.8fr) !important;
+}
+body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
+  align-self:end !important;
+}
+
+/* Side Deck already treats Royal cards as Side Deck sources in renderRoyals().
+   Keep that Royal browser visible alongside the Bastion browser. */
+body.side-deck-active .page-content #leaderOptions > section.block:first-child,
+body.side-deck-active .page-content #leaderOptions > section.block:nth-child(2){
+  display:block !important;
+}
+</style>
+
+<!-- v84: raise selected Royal slots 40px within the left leader panel -->
+<style id="v84-royal-slots-up-40">
+body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
+  transform:translateY(-40px) !important;
+}
+</style>
+
+
+<!-- v88: always-expanded categories + one-more-card-per-row browser density -->
+<style id="v88-expanded-categories-and-denser-rows">
+/* Never hide restricted cards/categories behind legacy reveal controls. */
+.page-content .restricted-card.restricted-collapsed{display:block !important;}
+.page-content .card-reveal-button,
+.page-content .other-cards-toggle,
+.page-content .other-card-groups{display:none !important;}
+
+/* Slightly denser card browser: roughly one extra card per row in normal
+   faction categories while preserving the existing responsive scaling. */
+.page-content{
+  --builder-card-w:clamp(44px,10.8cqw,118px) !important;
+  --builder-bastion-w:clamp(58px,15.2cqw,152px) !important;
+}
+.page-content .card-wall-test,
+.page-content .royal-card-wall{
+  column-gap:clamp(3px,.48cqw,7px) !important;
+}
+
+/* Royal chooser previously forced ten cards per row; make it eleven. */
+.page-content .royal-card-wall:not(.bastion-card-wall){
+  grid-template-columns:repeat(11,minmax(0,1fr)) !important;
+}
+</style>
+
+<!-- v96: keep short sticky-card rules text compact -->
+<style id="v96-sticky-short-text-cap">
+/* The sticky text fitter now caps its base rules-text size at 13px. Card names
+   remain proportionally larger, while longer cards can still shrink below 13px. */
+#cardHoverTooltip .sticky-card-description{--v96-sticky-max-font:20px;}
+</style>
+
+
+<!-- v97: selected Royal info interaction + 25% larger Info controls -->
+<style id="v97-selected-royal-info-and-button-size">
+/* Selected/restricted Royals must still expose their information controls. */
+.simple-card.selected > .card-info-button,
+.simple-card.selected-royal-in-pool > .card-info-button,
+.simple-card.restricted-card > .card-info-button,
+.simple-card.royal-main-deck-blocked > .card-info-button{
+  pointer-events:auto !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  cursor:pointer !important;
+  z-index:250 !important;
+}
+
+/* 25% larger than the v83 30px / 24px controls. */
+.simple-card > .card-info-button{
+  width:38px !important;
+  min-width:38px !important;
+  height:38px !important;
+  min-height:38px !important;
+}
+.simple-card > .card-info-button span{font-size:21px !important;}
+.deck-thumbnail > .card-info-button{
+  width:30px !important;
+  min-width:30px !important;
+  height:30px !important;
+  min-height:30px !important;
+}
+.deck-thumbnail > .card-info-button span{font-size:19px !important;}
+</style>
+
+
+<!-- v98: touch uses desktop semantics + on-card +/- controls + drag Main Deck back to builder to remove -->
+<style id="v98-touch-desktop-parity-controls">
+@media (hover:none), (pointer:coarse){
+  /* Touch uses the normal desktop card click handlers. The explicit +/- controls
+     replace desktop right-click for copy changes without changing tap semantics. */
+  .simple-card-image,
+  .deck-thumbnail-art{position:relative !important;}
+
+  .touch-card-stepper-btn{
+    position:absolute;
+    left:50%;
+    z-index:120;
+    width:38px;
+    height:38px;
+    min-width:38px;
+    padding:0;
+    display:grid;
+    place-items:center;
+    transform:translateX(-50%);
+    border:1px solid color-mix(in srgb,var(--brass) 82%,white 18%);
+    border-radius:999px;
+    background:rgba(10,9,8,.90);
+    color:#fff3cf;
+    box-shadow:0 3px 12px rgba(0,0,0,.55);
+    font:900 24px/1 'Work Sans',sans-serif;
+    cursor:pointer;
+    user-select:none;
+    -webkit-user-select:none;
+    touch-action:manipulation;
+  }
+  .touch-card-stepper-btn.touch-add{top:calc(50% - 66px);}
+  .touch-card-stepper-btn.touch-remove{top:calc(50% + 30px);}
+  .touch-card-stepper-btn:active{transform:translateX(-50%) scale(.92);}
+  .touch-card-stepper-btn:disabled{opacity:.28;filter:grayscale(1);}
+
+  /* A zero is still useful on touch because the +/- controls are arranged around it. */
+  .simple-card-copy-count[data-count="0"]{
+    opacity:.9 !important;
+    transform:translate(-50%,-50%) scale(.92) !important;
+  }
+  .deck-copy-count[data-count="0"]{opacity:.9 !important;}
+
+  /* Starting a drag on a Main Deck card means "take one copy out". */
+  #mainDeckList .deck-thumbnail[data-deck-kind="main"]{touch-action:none;}
+  #mainDeckList .deck-thumbnail.touch-main-dragging{opacity:.58 !important;}
+  body.touch-main-drag-active .page-content{
+    outline:2px dashed color-mix(in srgb,var(--brass) 78%,transparent);
+    outline-offset:-5px;
+  }
+  body.touch-main-drag-over .page-content{
+    outline-style:solid;
+    background:color-mix(in srgb,var(--brass) 5%,transparent) !important;
+  }
+  .touch-main-drag-ghost{
+    position:fixed;
+    z-index:999999;
+    width:58px;
+    aspect-ratio:5/7;
+    pointer-events:none;
+    opacity:.86;
+    transform:translate(-50%,-50%) scale(.96);
+    border:1px solid var(--brass);
+    border-radius:6px;
+    overflow:hidden;
+    background:var(--panel-raised);
+    box-shadow:0 12px 28px rgba(0,0,0,.55);
+  }
+  .touch-main-drag-ghost img{width:100%;height:100%;object-fit:cover;display:block;}
+}
+</style>
+<script id="v98-touch-desktop-parity-behavior" type="text/plain" data-disabled-by="v119-exact-desktop-touch">
+(() => {
+  const coarse = () => window.matchMedia('(hover:none), (pointer:coarse)').matches;
+  const CARD_SURFACE = '.simple-card[data-card-id], .simple-royal-card[data-id], .simple-card[data-bastion-id], .deck-thumbnail[data-card-id]';
+
+  function cardId(el){
+    return el?.dataset?.cardId || el?.dataset?.id || el?.dataset?.bastionId || el?.dataset?.terraId || '';
+  }
+
+  function cardKind(el){
+    if(!el) return '';
+    if(el.dataset.bastionId) return 'bastion';
+    if(el.dataset.id && el.classList.contains('simple-royal-card')) return 'royal';
+    if(el.classList.contains('deck-thumbnail')) return el.dataset.deckKind || 'main';
+    return state.activeDeck === 'side' ? 'side' : 'main';
+  }
+
+  function directCount(el){
+    const id=cardId(el), kind=cardKind(el);
+    if(!id) return 0;
+    if(kind==='royal') return state.royals.includes(id) ? 1 : 0;
+    if(kind==='bastion') return state.bastion===id ? 1 : 0;
+    if(kind==='terra') return typeof terraCardCount==='function' ? terraCardCount(id) : 0;
+    const pile = kind==='side' ? state.side : state.main;
+    return Number(pile?.[id] || 0);
+  }
+
+  function canPlus(el){
+    const id=cardId(el), kind=cardKind(el);
+    if(!id) return false;
+    if(kind==='royal'){
+      /* Clicking a selected Royal on desktop pins its data instead of selecting again. */
+      return !state.royals.includes(id);
+    }
+    if(kind==='bastion') return state.bastion!==id || state.activeDeck==='side';
+    if(kind==='side') return typeof canAddSideDeckCard==='function' ? canAddSideDeckCard(id) : true;
+    if(kind==='terra') return typeof terraDeckCount!=='function' || terraDeckCount() < MAX_TERRA;
+    const card = typeof deckCardById==='function' ? deckCardById(id) : null;
+    if(state.royals.includes(id)) return false;
+    return !card || directCount(el) < (typeof maxCopiesFor==='function' ? maxCopiesFor(card) : 3);
+  }
+
+  function canMinus(el){ return directCount(el) > 0; }
+
+  function desktopAction(el, add){
+    if(!el) return;
+    const type = add ? 'click' : 'contextmenu';
+    const evt = new MouseEvent(type, {
+      bubbles:true,
+      cancelable:true,
+      composed:true,
+      button:add ? 0 : 2,
+      buttons:0,
+      view:window
+    });
+    el.dispatchEvent(evt);
+  }
+
+  function addStepper(el){
+    if(!coarse() || !el || el.dataset.touchStepperReady==='1') return;
+    const art = el.querySelector(':scope > .simple-card-image, :scope > .deck-thumbnail-art');
+    if(!art) return;
+    el.dataset.touchStepperReady='1';
+
+    const plus=document.createElement('button');
+    plus.type='button';
+    plus.className='touch-card-stepper-btn touch-add';
+    plus.textContent='+';
+    plus.setAttribute('aria-label','Add one copy');
+
+    const minus=document.createElement('button');
+    minus.type='button';
+    minus.className='touch-card-stepper-btn touch-remove';
+    minus.textContent='−';
+    minus.setAttribute('aria-label','Remove one copy');
+
+    const isolate = ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+    };
+    ['pointerdown','pointerup','mousedown','mouseup','contextmenu'].forEach(type => {
+      plus.addEventListener(type,isolate,{capture:true});
+      minus.addEventListener(type,isolate,{capture:true});
+    });
+    plus.addEventListener('click', ev => {
+      isolate(ev);
+      if(!plus.disabled) desktopAction(el,true);
+      requestAnimationFrame(syncTouchSteppers);
+    }, true);
+    minus.addEventListener('click', ev => {
+      isolate(ev);
+      if(!minus.disabled) desktopAction(el,false);
+      requestAnimationFrame(syncTouchSteppers);
+    }, true);
+
+    art.append(plus,minus);
+  }
+
+  function syncTouchSteppers(){
+    if(!coarse()) return;
+    document.querySelectorAll(CARD_SURFACE).forEach(el => {
+      addStepper(el);
+      const plus=el.querySelector(':scope > .simple-card-image > .touch-add, :scope > .deck-thumbnail-art > .touch-add');
+      const minus=el.querySelector(':scope > .simple-card-image > .touch-remove, :scope > .deck-thumbnail-art > .touch-remove');
+      if(plus) plus.disabled=!canPlus(el);
+      if(minus) minus.disabled=!canMinus(el);
+    });
+  }
+
+  /* Keep controls attached across every render path, including filters that call
+     renderPool/renderRoyals directly instead of renderAll. */
+  const observer = new MutationObserver(() => requestAnimationFrame(syncTouchSteppers));
+  observer.observe(document.body,{childList:true,subtree:true});
+  window.addEventListener('resize',syncTouchSteppers,{passive:true});
+  requestAnimationFrame(syncTouchSteppers);
+
+  /* Main Deck -> builder drag removes exactly one Main Deck copy. This is the
+     only touch-only mutation gesture; ordinary taps are left untouched and use
+     the same desktop click handlers already attached by the app. */
+  let drag=null;
+  let suppressClickUntil=0;
+
+  function dragSourceFromEvent(ev){
+    if(!coarse() || (ev.pointerType && ev.pointerType!=='touch' && ev.pointerType!=='pen')) return null;
+    if(ev.target.closest('.card-info-button,.touch-card-stepper-btn')) return null;
+    return ev.target.closest('#mainDeckList .deck-thumbnail[data-deck-kind="main"]');
+  }
+
+  function makeGhost(source,x,y){
+    const ghost=document.createElement('div');
+    ghost.className='touch-main-drag-ghost';
+    const img=source.querySelector('.deck-thumbnail-art img');
+    if(img){ const copy=img.cloneNode(false); ghost.appendChild(copy); }
+    ghost.style.left=x+'px'; ghost.style.top=y+'px';
+    document.body.appendChild(ghost);
+    return ghost;
+  }
+
+  function overBuilder(x,y){
+    const hit=document.elementFromPoint(x,y);
+    return !!hit?.closest('.page-content');
+  }
+
+  function finishDrag(ev,cancelled=false){
+    if(!drag || drag.pointerId!==ev.pointerId) return;
+    const current=drag;
+    drag=null;
+    current.source.classList.remove('touch-main-dragging');
+    current.ghost?.remove();
+    document.body.classList.remove('touch-main-drag-active','touch-main-drag-over');
+
+    if(current.dragging){
+      suppressClickUntil=performance.now()+800;
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+      if(!cancelled && overBuilder(ev.clientX,ev.clientY)){
+        desktopAction(current.source,false);
+      }
+    }
+  }
+
+  document.addEventListener('pointerdown', ev => {
+    const source=dragSourceFromEvent(ev);
+    if(!source) return;
+    drag={
+      pointerId:ev.pointerId,
+      source,
+      startX:ev.clientX,
+      startY:ev.clientY,
+      dragging:false,
+      ghost:null
+    };
+  },true);
+
+  document.addEventListener('pointermove', ev => {
+    if(!drag || drag.pointerId!==ev.pointerId) return;
+    const dx=ev.clientX-drag.startX, dy=ev.clientY-drag.startY;
+    if(!drag.dragging && Math.hypot(dx,dy)>16){
+      drag.dragging=true;
+      drag.source.classList.add('touch-main-dragging');
+      drag.ghost=makeGhost(drag.source,ev.clientX,ev.clientY);
+      document.body.classList.add('touch-main-drag-active');
+    }
+    if(!drag.dragging) return;
+    ev.preventDefault();
+    drag.ghost.style.left=ev.clientX+'px';
+    drag.ghost.style.top=ev.clientY+'px';
+    document.body.classList.toggle('touch-main-drag-over',overBuilder(ev.clientX,ev.clientY));
+  },{capture:true,passive:false});
+
+  document.addEventListener('pointerup', ev => finishDrag(ev,false),true);
+  document.addEventListener('pointercancel', ev => finishDrag(ev,true),true);
+  document.addEventListener('click', ev => {
+    if(performance.now()>=suppressClickUntil) return;
+    if(!ev.target.closest('#mainDeckList .deck-thumbnail[data-deck-kind="main"]')) return;
+    ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
+  },true);
+})();
+</script>
+
+
+<style id="v100-colourless-and-royal-category-castles">
+/* v100: category-end castle buttons replace the detached hide control while open. */
+#leaderOptions:not([hidden]) ~ .leader-toggle-bar{display:none !important;}
+#leaderOptions[hidden] ~ .leader-toggle-bar{display:flex !important;}
+
+.page-content .royal-category-castle-toggle{
+  appearance:none !important;
+  -webkit-appearance:none !important;
+  border:0 !important;
+  background:transparent !important;
+  color:var(--parchment) !important;
+  text-align:left !important;
+  font:inherit !important;
+  padding:0 !important;
+  cursor:pointer !important;
+}
+.page-content .royal-category-castle-toggle .royal-category-castle-art{
+  display:grid !important;
+  place-items:center !important;
+  border:1px dashed color-mix(in srgb,var(--brass) 74%,var(--line)) !important;
+  background:color-mix(in srgb,var(--profile-builder-raised,var(--panel-raised)) 86%,transparent) !important;
+}
+.page-content .royal-category-castle-toggle svg{
+  width:54% !important;
+  height:54% !important;
+  overflow:visible;
+  color:var(--brass);
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,.45));
+}
+.page-content .royal-category-castle-toggle svg>path:first-child{
+  fill:var(--panel-raised);
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linejoin:round;
+}
+.page-content .royal-category-castle-toggle .castle-detail{
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linejoin:round;
+}
+.page-content .royal-category-castle-toggle:hover .royal-category-castle-art,
+.page-content .royal-category-castle-toggle:focus-visible .royal-category-castle-art{
+  border-color:var(--brass) !important;
+  filter:brightness(1.08);
+}
+</style>
+
+<!-- v106: larger Bastion browser cards arranged across two rows -->
+<style id="v106-bastion-two-row-size">
+.page-content #bastionGrid .bastion-card-wall{
+  align-items:start !important;
+  align-content:start !important;
+  row-gap:clamp(10px,1.1cqw,18px) !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button{
+  width:var(--v106-bastion-card-w,var(--builder-bastion-w)) !important;
+  min-width:var(--v106-bastion-card-w,var(--builder-bastion-w)) !important;
+  max-width:var(--v106-bastion-card-w,var(--builder-bastion-w)) !important;
+  flex-basis:var(--v106-bastion-card-w,var(--builder-bastion-w)) !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-image,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-image{
+  width:100% !important;
+  height:auto !important;
+  aspect-ratio:7 / 5 !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-info,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-info{
+  width:100% !important;
+}
+</style>
+<script id="v106-bastion-two-row-fit">
+(function v106BastionTwoRowFit(){
+  const page=document.querySelector('.page-content');
+  const wall=document.querySelector('#bastionGrid .bastion-card-wall');
+  if(!page || !wall) return;
+
+  let frame=0;
+  function fit(){
+    frame=0;
+    const cards=[...wall.children].filter(el => el.matches('.simple-card,.card-reveal-button'));
+    const count=cards.length;
+    if(!count || wall.clientWidth<2) return;
+
+    // Size the Bastions so the complete category naturally occupies two rows.
+    // For an odd count, the first row gets the extra card.
+    const columns=Math.max(1,Math.ceil(count/2));
+    const style=getComputedStyle(wall);
+    const gap=parseFloat(style.columnGap)||parseFloat(style.gap)||6;
+    const width=Math.max(72,Math.floor((wall.clientWidth-gap*(columns-1))/columns));
+
+    wall.style.setProperty('grid-template-columns',`repeat(${columns},minmax(0,1fr))`,'important');
+    page.style.setProperty('--v106-bastion-card-w',width+'px');
+  }
+
+  function schedule(){
+    if(frame) cancelAnimationFrame(frame);
+    frame=requestAnimationFrame(fit);
+  }
+
+  if('ResizeObserver' in window) new ResizeObserver(schedule).observe(wall);
+  new MutationObserver(schedule).observe(wall,{childList:true,subtree:false});
+  window.addEventListener('resize',schedule,{passive:true});
+  requestAnimationFrame(()=>requestAnimationFrame(fit));
+})();
+</script>
+
+<!-- v110: Bastion browser uses the same compact card width as Side Deck thumbnails -->
+<style id="v110-bastion-side-deck-size">
+.page-content #bastionGrid .bastion-card-wall{
+  grid-template-columns:repeat(auto-fill,var(--v110-side-deck-card-w,48px)) !important;
+  column-gap:var(--v110-side-deck-gap,5px) !important;
+  row-gap:var(--v110-side-deck-gap,5px) !important;
+  min-height:0 !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button{
+  width:var(--v110-side-deck-card-w,48px) !important;
+  min-width:var(--v110-side-deck-card-w,48px) !important;
+  max-width:var(--v110-side-deck-card-w,48px) !important;
+  flex-basis:var(--v110-side-deck-card-w,48px) !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-image,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-image{
+  width:100% !important;
+  height:auto !important;
+  aspect-ratio:7 / 5 !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-info,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-info{
+  width:100% !important;
+}
+</style>
+<script id="v110-sync-bastion-side-deck-size">
+(function v110SyncBastionSideDeckSize(){
+  const wall=document.querySelector('#bastionGrid .bastion-card-wall');
+  const mainList=document.getElementById('mainDeckList');
+  if(!wall || !mainList) return;
+
+  let frame=0;
+  function sync(){
+    frame=0;
+    const style=getComputedStyle(mainList);
+    const cardWidth=parseFloat(style.getPropertyValue('--v75-main-card-width')) || 48;
+    const gap=parseFloat(style.getPropertyValue('--v75-main-gap')) || 5;
+    wall.style.setProperty('--v110-side-deck-card-w',cardWidth+'px');
+    wall.style.setProperty('--v110-side-deck-gap',gap+'px');
+    wall.style.setProperty('grid-template-columns',`repeat(auto-fill,${cardWidth}px)`,'important');
+  }
+  function schedule(){
+    if(frame) return;
+    frame=requestAnimationFrame(()=>requestAnimationFrame(sync));
+  }
+
+  if('ResizeObserver' in window){
+    new ResizeObserver(schedule).observe(mainList);
+    new ResizeObserver(schedule).observe(wall);
+  }
+  new MutationObserver(schedule).observe(mainList,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+  window.addEventListener('resize',schedule,{passive:true});
+  requestAnimationFrame(()=>requestAnimationFrame(sync));
+})();
+</script>
+
+<!-- v112: fixed-pixel Bastion browser sizing -->
+<style id="v112-fixed-bastion-pixels">
+.page-content #bastionGrid .bastion-card-wall{
+  grid-template-columns:repeat(auto-fill,150px) !important;
+  column-gap:10px !important;
+  row-gap:18px !important;
+  align-items:start !important;
+  justify-content:start !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button{
+  width:150px !important;
+  min-width:150px !important;
+  max-width:150px !important;
+  flex-basis:150px !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-image,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-image{
+  width:150px !important;
+  min-width:150px !important;
+  max-width:150px !important;
+  height:107px !important;
+  min-height:107px !important;
+  max-height:107px !important;
+  aspect-ratio:auto !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-info,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-info{
+  width:150px !important;
+}
+</style>
+
+<!-- v113: +15% Bastions with responsive two-row category fitting -->
+<style id="v113-responsive-bastion-fit">
+.page-content #bastionGrid .bastion-card-wall{
+  --v113-bastion-w:173px;
+  --v113-bastion-h:123px;
+  display:grid !important;
+  column-gap:10px !important;
+  row-gap:18px !important;
+  align-items:start !important;
+  align-content:start !important;
+  justify-content:start !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button{
+  width:var(--v113-bastion-w) !important;
+  min-width:var(--v113-bastion-w) !important;
+  max-width:var(--v113-bastion-w) !important;
+  flex-basis:var(--v113-bastion-w) !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-image,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-image{
+  width:var(--v113-bastion-w) !important;
+  min-width:var(--v113-bastion-w) !important;
+  max-width:var(--v113-bastion-w) !important;
+  height:var(--v113-bastion-h) !important;
+  min-height:var(--v113-bastion-h) !important;
+  max-height:var(--v113-bastion-h) !important;
+  aspect-ratio:auto !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-info,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-info{
+  width:var(--v113-bastion-w) !important;
+}
+</style>
+<script id="v113-responsive-bastion-fit-script">
+(function v113ResponsiveBastionFit(){
+  const wall=document.querySelector('#bastionGrid .bastion-card-wall');
+  if(!wall) return;
+
+  let frame=0;
+  function fit(){
+    frame=0;
+    const cards=[...wall.children].filter(el=>el.matches('.simple-card,.card-reveal-button'));
+    const count=cards.length;
+    const available=wall.clientWidth;
+    if(!count || available<2) return;
+
+    // Preserve the requested two-row layout. 173x123 is the preferred size
+    // (+15% from v112's 150x107), but shrink smoothly when the category is narrow.
+    const columns=Math.max(1,Math.ceil(count/2));
+    const style=getComputedStyle(wall);
+    const gap=parseFloat(style.columnGap)||10;
+    const fitWidth=Math.floor((available-gap*(columns-1))/columns);
+    const width=Math.max(90,Math.min(173,fitWidth));
+    const height=Math.round(width*(107/150));
+
+    wall.style.setProperty('--v113-bastion-w',width+'px');
+    wall.style.setProperty('--v113-bastion-h',height+'px');
+    wall.style.setProperty('grid-template-columns',`repeat(${columns},${width}px)`,'important');
+  }
+
+  function schedule(){
+    if(frame) cancelAnimationFrame(frame);
+    frame=requestAnimationFrame(fit);
+  }
+
+  if('ResizeObserver' in window) new ResizeObserver(schedule).observe(wall);
+  new MutationObserver(schedule).observe(wall,{childList:true,subtree:false});
+  window.addEventListener('resize',schedule,{passive:true});
+  requestAnimationFrame(()=>requestAnimationFrame(fit));
+})();
+</script>
+
+<!-- v115: Bastions render in natural single-row flow immediately; no startup two-row snap -->
+<style id="v115-bastion-first-paint-natural-flow">
+.page-content #bastionGrid .bastion-card-wall{
+  display:flex !important;
+  flex-flow:row wrap !important;
+  grid-template-columns:none !important;
+  gap:18px 10px !important;
+  min-height:0 !important;
+  align-items:flex-start !important;
+  align-content:flex-start !important;
+  justify-content:flex-start !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button{
+  flex:0 0 173px !important;
+  width:173px !important;
+  min-width:173px !important;
+  max-width:173px !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-image,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-image{
+  width:173px !important;
+  min-width:173px !important;
+  max-width:173px !important;
+  height:123px !important;
+  min-height:123px !important;
+  max-height:123px !important;
+  aspect-ratio:auto !important;
+}
+.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-info,
+.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-info{
+  width:173px !important;
+}
+</style>
+
+<!-- v122: sticky-header adaptive fill with a hard 36px ceiling -->
+<style id="v122-sticky-adaptive-36px">
+#cardHoverTooltip .sticky-card-description,
+#cardHoverTooltip .hover-text{
+  --v121-sticky-max-font:36px;
+}
+</style>
+<script id="v121-sticky-adaptive-fit">
+(function v121StickyAdaptiveFit(){
+  const tooltip=document.getElementById('cardHoverTooltip');
+  if(!tooltip) return;
+  return; /* disabled by v123 unified sticky shrink-to-fit */
+  let frame=0;
+
+  function fits(el){
+    /* Reserve a few physical pixels inside the padded text box. scrollHeight /
+       scrollWidth include padding and can round down at fractional font sizes,
+       which previously let the last line sit partially underneath the edge. */
+    const style=getComputedStyle(el);
+    const borderY=(parseFloat(style.borderTopWidth)||0)+(parseFloat(style.borderBottomWidth)||0);
+    const borderX=(parseFloat(style.borderLeftWidth)||0)+(parseFloat(style.borderRightWidth)||0);
+    const safetyY=Math.max(5,borderY+3);
+    const safetyX=Math.max(3,borderX+2);
+    return el.scrollHeight <= Math.max(0,el.clientHeight-safetyY) &&
+           el.scrollWidth <= Math.max(0,el.clientWidth-safetyX);
+  }
+
+  function fit(){
+    frame=0;
+    const description=tooltip.querySelector('.sticky-card-description') || tooltip.querySelector('.hover-text');
+    if(!description) return;
+    const w=description.clientWidth;
+    const h=description.clientHeight;
+    if(w < 20 || h < 20) return;
+
+    let low=6;
+    let high=40;
+    let best=low;
+
+    description.style.setProperty('--v78-sticky-fill-font',low+'px');
+    description.style.fontSize=low+'px';
+    if(fits(description)){
+      for(let i=0;i<18;i++){
+        const mid=(low+high)/2;
+        description.style.setProperty('--v78-sticky-fill-font',mid.toFixed(3)+'px');
+        description.style.fontSize=mid.toFixed(3)+'px';
+        if(fits(description)){ best=mid; low=mid; }
+        else high=mid;
+      }
+    }
+
+    const finalSize=Math.min(best,40);
+    description.style.setProperty('--v78-sticky-fill-font',finalSize.toFixed(2)+'px');
+    description.style.fontSize=finalSize.toFixed(2)+'px';
+    description.dataset.fitFont=finalSize.toFixed(2);
+  }
+
+  function schedule(){
+    if(frame) return;
+    frame=requestAnimationFrame(()=>requestAnimationFrame(fit));
+  }
+
+  if('ResizeObserver' in window) new ResizeObserver(schedule).observe(tooltip);
+  new MutationObserver(schedule).observe(tooltip,{childList:true,subtree:true,characterData:true});
+  window.addEventListener('resize',schedule,{passive:true});
+  document.fonts?.ready.then(schedule);
+  requestAnimationFrame(()=>requestAnimationFrame(fit));
+})();
+</script>
+
+<!-- v119: touch is exactly the desktop interaction surface -->
+<style id="v119-exact-desktop-touch-controls">
+@media (hover:none), (pointer:coarse){
+  /* No touch-only +/- controls or drag affordances. Touch uses the same
+     click/info/selection handlers and visual controls as desktop. */
+  .touch-card-stepper-btn,
+  .touch-main-drag-ghost,
+  #cardHoverTooltip .touch-card-actions{
+    display:none !important;
+  }
+  #mainDeckList .deck-thumbnail[data-deck-kind="main"]{
+    touch-action:auto !important;
+  }
+  .page-content{
+    outline:none !important;
+  }
+  body.touch-main-drag-active .page-content,
+  body.touch-main-drag-over .page-content{
+    outline:none !important;
+    background:inherit !important;
+  }
+}
+</style>
+
+<style id="v120-touch-only-info-button">
+/* v120: Info buttons are a touch affordance only. Desktop mouse/trackpad users
+   still get the same sticky-header/card interactions without the extra icon. */
+.card-info-button,
+.simple-card > .card-info-button,
+.deck-thumbnail > .card-info-button{
+  display:none !important;
+}
+
+/* Show on devices that expose a coarse/touch pointer, including hybrid devices
+   that have both touch and a mouse/trackpad. */
+@media (any-pointer:coarse), (hover:none) and (pointer:coarse){
+  .card-info-button,
+  .simple-card > .card-info-button,
+  .deck-thumbnail > .card-info-button{
+    display:flex !important;
+  }
+}
+</style>
+
+
+<!-- v126: sticky text fit includes padding/border safety so no edge clipping -->
+<style id="v123-sticky-shrink-no-scroll">
+#cardHoverTooltip .sticky-card-description,
+#cardHoverTooltip .hover-text,
+#cardHoverTooltip .sticky-card-preview{
+  overflow:hidden !important;
+  scrollbar-width:none !important;
+}
+#cardHoverTooltip .sticky-card-description::-webkit-scrollbar,
+#cardHoverTooltip .hover-text::-webkit-scrollbar,
+#cardHoverTooltip .sticky-card-preview::-webkit-scrollbar{
+  display:none !important;
+}
+</style>
+<script id="v126-sticky-shrink-to-fit">
+(function v126StickyShrinkToFit(){
+  const tooltip=document.getElementById('cardHoverTooltip');
+  if(!tooltip) return;
+  let frame=0;
+
+  function fits(el){
+    return el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1;
+  }
+
+  function fit(){
+    frame=0;
+    const description=tooltip.querySelector('.sticky-card-description') || tooltip.querySelector('.hover-text');
+    if(!description) return;
+    const w=description.clientWidth;
+    const h=description.clientHeight;
+    if(w < 20 || h < 20) return;
+
+    const maxFont=24;
+    const minFont=4.5;
+    let low=minFont;
+    let high=maxFont;
+    let best=minFont;
+
+    description.style.overflow='hidden';
+    description.style.setProperty('--v78-sticky-fill-font',minFont+'px');
+    description.style.fontSize=minFont+'px';
+
+    if(fits(description)){
+      for(let i=0;i<20;i++){
+        const mid=(low+high)/2;
+        description.style.setProperty('--v78-sticky-fill-font',mid.toFixed(3)+'px');
+        description.style.fontSize=mid.toFixed(3)+'px';
+        if(fits(description)){
+          best=mid;
+          low=mid;
+        }else{
+          high=mid;
+        }
+      }
+    }
+
+    description.style.setProperty('--v78-sticky-fill-font',best.toFixed(2)+'px');
+    description.style.fontSize=best.toFixed(2)+'px';
+    description.dataset.fitFont=best.toFixed(2);
+    description.scrollTop=0;
+    description.scrollLeft=0;
+  }
+
+  function schedule(){
+    if(frame) return;
+    frame=requestAnimationFrame(()=>requestAnimationFrame(fit));
+  }
+
+  if('ResizeObserver' in window) new ResizeObserver(schedule).observe(tooltip);
+  new MutationObserver(schedule).observe(tooltip,{childList:true,subtree:true,characterData:true});
+  window.addEventListener('resize',schedule,{passive:true});
+  document.fonts?.ready.then(schedule);
+  requestAnimationFrame(()=>requestAnimationFrame(fit));
+})();
+</script>
+
+<style id="v137-left-panel-plus-10">
+/* Increase the left/sticky panel width by 10% while preserving the remaining layout. */
+:root{ --v137-left-panel-scale:1.10; }
+/* Common explicit left-column widths used by earlier layout passes. */
+body{
+  grid-template-columns:calc(300px * var(--v137-left-panel-scale)) minmax(0,1fr) 340px;
+}
+@media(max-width:1200px){
+  body{grid-template-columns:calc(250px * var(--v137-left-panel-scale)) minmax(0,1fr) 300px;}
+}
+/* Later wide-layout variants collapse the middle structure to two columns; widen the
+   sticky/left rail itself so those layouts also gain the same 10%. */
+.card-hover-tooltip,
+.hover-panel-column,
+.left-column,
+.left-panel{
+  width:110% !important;
+  max-width:none !important;
+}
+</style>
+
+<style id="v138-sticky-card-name-max-minus-10">
+/* v138: reduce the sticky-header card-name size ceiling by 10% while
+   leaving the v131 rules-text fitter and all other proportions unchanged.
+   Previous active name scale: 1.42em -> 1.278em. */
+#cardHoverTooltip .hover-card-name{
+  font-size:1.278em !important;
+}
+</style>
+
+<style id="v141-actual-top-right-actions">
+/* v141: actual persistent top-right deck controls. */
+#v141TopRightActions{
+  position:fixed !important;
+  top:max(10px, env(safe-area-inset-top)) !important;
+  right:max(14px, env(safe-area-inset-right)) !important;
+  z-index:12000 !important;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:8px !important;
+  width:auto !important;
+  max-width:calc(100vw - 28px) !important;
+  pointer-events:auto !important;
+}
+#v141TopRightActions > button{
+  width:auto !important;
+  min-width:0 !important;
+  margin:0 !important;
+  flex:0 0 auto !important;
+  white-space:nowrap !important;
+}
+@media (max-width:700px){
+  #v141TopRightActions{
+    gap:5px !important;
+    top:max(6px, env(safe-area-inset-top)) !important;
+    right:max(6px, env(safe-area-inset-right)) !important;
+  }
+  #v141TopRightActions > button{
+    padding:7px 9px !important;
+    font-size:11px !important;
+  }
+}
+</style>
+<script id="v141-move-live-actions-top-right">
+(function moveDeckActionsToActualTopRight(){
+  function install(){
+    const save=document.getElementById('openDeckFilePanel');
+    const customize=document.getElementById('openCustomizeUiPanel');
+    const newDeck=document.getElementById('newDeckBtn');
+    if(!save || !customize || !newDeck) return;
+
+    let bar=document.getElementById('v141TopRightActions');
+    if(!bar){
+      bar=document.createElement('div');
+      bar.id='v141TopRightActions';
+      bar.setAttribute('aria-label','Deck actions');
+      document.body.appendChild(bar);
+    }
+
+    /* Move the existing live controls instead of cloning them so all listeners
+       and current functionality stay attached. */
+    [save, customize, newDeck].forEach(btn=>bar.appendChild(btn));
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+})();
+</script>
+
+<style id="v144-sticky-name-half-max">
+/* v144: halve the current sticky-header card-name maximum size. */
+.card-hover-tooltip .card-name{
+  font-size:12px !important;
+  max-font-size:12px;
+}
+</style>
+
+
+<style id="v146-sticky-real-padding">
+/* Keep v144's font fitting unchanged. Reserve breathing room with real padding
+   instead of scaling the entire sticky text target down. */
+#cardHoverTooltip .sticky-card-description,
+#cardHoverTooltip .hover-text{
+  box-sizing:border-box !important;
+  padding:5% !important;
+}
+</style>
+
+<style id="v147-sticky-horizontal-padding-reset">
+/* v147: keep v146 vertical breathing room, but remove extra left/right padding. */
+.card-hover-tooltip,
+.card-hover-tooltip .sticky-card-content,
+.card-hover-tooltip .sticky-card-text,
+.card-hover-tooltip .card-text,
+.card-hover-tooltip [data-sticky-card-text],
+#cardHoverTooltip,
+#cardHoverTooltip .sticky-card-content,
+#cardHoverTooltip .sticky-card-text,
+#cardHoverTooltip .card-text{
+  padding-left:0 !important;
+  padding-right:0 !important;
+}
+</style>
+
+<!-- v148: flush-left sticky header, meet Bastion panel, and maximize Main Deck card size -->
+<style id="v148-sticky-and-main-deck-fit">
+/* Remove the remaining left inset from the sticky header only. */
+body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip,
+#cardHoverTooltip,
+#cardHoverTooltip > *,
+#cardHoverTooltip .sticky-card-preview,
+#cardHoverTooltip .sticky-card-description,
+#cardHoverTooltip .sticky-card-content,
+#cardHoverTooltip .sticky-card-text,
+#cardHoverTooltip .card-text,
+#cardHoverTooltip .hover-text,
+#cardHoverTooltip .tooltip-placeholder{
+  padding-left:0 !important;
+}
+
+/* The top-right buttons have been moved out of the rail, so collapse their old
+   empty row and let the sticky header consume everything down to the selected
+   Bastion/Royal panel. */
+body.v35-layout-locked .deck-panel.left-deck-rail{
+  grid-template-rows:minmax(0,1fr) 0 auto !important;
+  row-gap:0 !important;
+}
+body.v35-layout-locked .left-deck-rail > .left-deck-actions{
+  min-height:0 !important;
+  height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+}
+body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
+  margin-bottom:0 !important;
+  height:100% !important;
+  min-height:0 !important;
+  max-height:none !important;
+  align-self:stretch !important;
+}
+body.v35-layout-locked .left-deck-rail > .deck-details{
+  margin-top:0 !important;
+}
+
+/* v148 JS owns Main Deck card dimensions. */
+body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid,
+.main-deck-panel:not(.terra-deck-panel) .main-deck-grid{
+  align-content:flex-start !important;
+  justify-content:flex-start !important;
+}
+body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid > .deck-thumbnail,
+.main-deck-panel:not(.terra-deck-panel) .main-deck-grid > .deck-thumbnail{
+  flex:0 0 var(--v148-main-card-width,var(--v75-main-card-width,48px)) !important;
+  width:var(--v148-main-card-width,var(--v75-main-card-width,48px)) !important;
+  min-width:var(--v148-main-card-width,var(--v75-main-card-width,48px)) !important;
+  max-width:var(--v148-main-card-width,var(--v75-main-card-width,48px)) !important;
+}
+.main-deck-panel:not(.terra-deck-panel) .main-deck-grid{
+  column-gap:var(--v148-main-gap,5px) !important;
+  row-gap:var(--v148-main-gap,5px) !important;
+}
+</style>
+<script id="v148-maximize-main-deck-cards">
+(function v148MaximizeMainDeckCards(){
+  const list=document.getElementById('mainDeckList');
+  if(!list) return;
+
+  let frame=0;
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+
+  function fit(){
+    frame=0;
+    const grid=list.querySelector('.main-deck-grid');
+    if(!grid) return;
+    const cards=[...grid.children].filter(el=>el.classList.contains('deck-thumbnail'));
+    if(!cards.length) return;
+
+    const availW=Math.max(1,grid.clientWidth || grid.getBoundingClientRect().width || list.clientWidth);
+    const gap=availW < 650 ? 4 : 5;
+    const count=cards.length;
+
+    /* Full deck-thumbnail art is designed around a 150px-wide card. Never
+       compress it below 50% (75px) merely to keep more cards on the same row.
+       Instead, reduce the column count and let the cards wrap; if there are
+       more rows than the panel can display, the existing vertical scrolling
+       handles them. Sparse decks can grow all the way back to 150px. */
+    const FULL_CARD_WIDTH=150;
+    const MIN_CARD_WIDTH=FULL_CARD_WIDTH*.5;
+    const maxColumnsAtMinimum=Math.max(1,Math.floor((availW+gap)/(MIN_CARD_WIDTH+gap)));
+    const columns=Math.max(1,Math.min(count,maxColumnsAtMinimum));
+    const widthForColumns=(availW-gap*(columns-1))/columns;
+    const cardWidth=Math.max(1,Math.floor(Math.min(FULL_CARD_WIDTH,widthForColumns)));
+
+    list.style.setProperty('--v148-main-card-width',cardWidth+'px');
+    list.style.setProperty('--v148-main-gap',gap+'px');
+    list.style.setProperty('--v75-main-badge',clamp(cardWidth*.40,16,34)+'px');
+    list.style.setProperty('--v75-main-count-font',clamp(cardWidth*.22,9,20)+'px');
+    grid.dataset.v148Columns=String(columns);
+    grid.dataset.v148CardWidth=String(cardWidth);
+  }
+
+  function schedule(){
+    if(frame) return;
+    frame=requestAnimationFrame(()=>requestAnimationFrame(fit));
+  }
+
+  new MutationObserver(schedule).observe(list,{childList:true,subtree:true});
+  if('ResizeObserver' in window){
+    const ro=new ResizeObserver(schedule);
+    ro.observe(list);
+  }
+  window.addEventListener('resize',schedule,{passive:true});
+  document.fonts?.ready.then(schedule);
+  requestAnimationFrame(()=>requestAnimationFrame(schedule));
+})();
+</script>
+
+<!-- v149: restore stable Bastion/Main Deck alignment + normal sticky left inset -->
+<style id="v149-restore-stable-rail-geometry">
+/* Restore the stable rail split: the lower Bastion/Royals panel occupies the
+   same 30% vertical band as the Main Deck, so their top/bottom edges align. */
+body.v35-layout-locked .deck-panel.left-deck-rail{
+  grid-template-rows:minmax(0,70%) minmax(0,30%) !important;
+  row-gap:0 !important;
+  overflow:hidden !important;
+}
+body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  height:100% !important;
+  min-height:0 !important;
+  max-height:none !important;
+  margin:0 !important;
+  align-self:stretch !important;
+}
+body.v35-layout-locked .left-deck-rail > .deck-details{
+  grid-column:1 !important;
+  grid-row:2 !important;
+  height:100% !important;
+  min-height:0 !important;
+  max-height:100% !important;
+  margin-top:0 !important;
+  align-self:stretch !important;
+}
+/* The old rail action container is empty now that its live controls are in the
+   top-right action group; do not let it consume a grid row. */
+body.v35-layout-locked .left-deck-rail > .left-deck-actions{
+  display:none !important;
+}
+
+/* Restore only the sticky panel's ordinary left inset. v146's extra 5%
+   horizontal padding remains suppressed; this is the normal panel padding. */
+body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
+  padding-left:clamp(10px,1.2vw,18px) !important;
+}
+/* Keep inner sticky content flush to the panel's normal inset rather than
+   adding another nested left inset. */
+#cardHoverTooltip > *,
+#cardHoverTooltip .sticky-card-preview,
+#cardHoverTooltip .sticky-card-description,
+#cardHoverTooltip .sticky-card-content,
+#cardHoverTooltip .sticky-card-text,
+#cardHoverTooltip .card-text,
+#cardHoverTooltip .hover-text,
+#cardHoverTooltip .tooltip-placeholder{
+  padding-left:0 !important;
+}
+
+/* Main Deck card scaling is contained inside the already-sized Main Deck panel.
+   It may change thumbnail size, but never the panel/grid track geometry. */
+body.v35-layout-locked .builder-column > .main-deck-panel:not(.terra-deck-panel){
+  min-height:0 !important;
+  height:auto !important;
+  overflow:hidden !important;
+}
+body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) > .deck-list-mini{
+  height:100% !important;
+  min-height:0 !important;
+  overflow:hidden !important;
+}
+body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid{
+  flex:1 1 0 !important;
+  min-height:0 !important;
+  max-height:100% !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  align-content:flex-start !important;
+  justify-content:flex-start !important;
+}
+</style>
+
+<style id="v150-sticky-remove-extra-top-padding">
+/* Keep the sticky header's normal horizontal inset, but remove the extra top padding. */
+.card-hover-tooltip,
+.sticky-card-panel,
+#cardHoverTooltip{
+  padding-top:0 !important;
+}
+</style>
+
+<style id="v151-sticky-stats-plus-20">
+/* v151: make the stats/meta strip between the card name and rules text
+   about 20% larger without changing the name or rules-text sizing. */
+#cardHoverTooltip .hover-meta{
+  font-size:1.104em !important;
+  line-height:1.28 !important;
+  margin-bottom:.62em !important;
+}
+</style>
+
+<style id="v153-bastion-spacing-and-top-actions-polish">
+/* Add a little breathing room above the selected Bastion/Royals area without
+   changing the stable 70/30 rail split or its alignment with Main Deck. */
+body.v35-layout-locked .left-deck-rail > .deck-details{
+  box-sizing:border-box !important;
+  padding-top:clamp(6px,.55vw,10px) !important;
+}
+
+/* Match the persistent top-right actions to the raised/highlighted UI chrome. */
+#v141TopRightActions > button{
+  border:1px solid var(--line, rgba(176,129,79,.72)) !important;
+  background:linear-gradient(180deg,
+    color-mix(in srgb, var(--panel-raised, #252525) 88%, white 12%),
+    var(--panel-raised, #252525)) !important;
+  box-shadow:
+    0 5px 12px rgba(0,0,0,.32),
+    0 1px 0 rgba(255,255,255,.10) inset,
+    0 0 0 1px rgba(255,255,255,.025) !important;
+  text-shadow:0 1px 1px rgba(0,0,0,.38) !important;
+  transition:transform .14s ease, box-shadow .14s ease, filter .14s ease !important;
+}
+#v141TopRightActions > button:hover{
+  transform:translateY(-1px) !important;
+  filter:brightness(1.09) !important;
+  box-shadow:
+    0 7px 16px rgba(0,0,0,.38),
+    0 1px 0 rgba(255,255,255,.14) inset,
+    0 0 10px color-mix(in srgb, var(--brass, #c9a03c) 30%, transparent) !important;
+}
+#v141TopRightActions > button:active{
+  transform:translateY(0) !important;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.32),
+    0 1px 0 rgba(255,255,255,.08) inset !important;
+}
+</style>
+
+<style id="v156-sticky-spacing-and-action-colors">
+/* Sticky description: keep the v146 vertical breathing room, but halve only
+   the space above the rules text. Horizontal padding remains governed by the
+   later reset rules. */
+#cardHoverTooltip .sticky-card-description,
+#cardHoverTooltip .hover-text{
+  padding-top:2.5% !important;
+}
+
+/* Put the requested spacing OUTSIDE the bottom of the sticky panel. Keep the
+   stable 70/30 rail tracks intact by subtracting the gap from the sticky
+   panel's own height instead of adding internal bottom padding. */
+body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
+  --v156-sticky-bottom-gap:clamp(6px,.55vw,10px);
+  height:calc(100% - var(--v156-sticky-bottom-gap)) !important;
+  margin-bottom:var(--v156-sticky-bottom-gap) !important;
+}
+
+/* Save / Customize / New Deck all use the same base color treatment that the
+   Customize button had in the left rail. Keep only the subtle shared shadow
+   requested for the top-right group. */
+#v141TopRightActions > #openDeckFilePanel,
+#v141TopRightActions > #openCustomizeUiPanel,
+#v141TopRightActions > #newDeckBtn{
+  border:1px solid var(--profile-outline,var(--line)) !important;
+  border-radius:7px !important;
+  background:var(--profile-deck-panel,var(--panel)) !important;
+  color:var(--parchment) !important;
+  text-shadow:none !important;
+  box-shadow:0 4px 10px rgba(0,0,0,.28) !important;
+  filter:none !important;
+}
+#v141TopRightActions > #openDeckFilePanel:hover,
+#v141TopRightActions > #openDeckFilePanel:focus-visible,
+#v141TopRightActions > #openCustomizeUiPanel:hover,
+#v141TopRightActions > #openCustomizeUiPanel:focus-visible,
+#v141TopRightActions > #newDeckBtn:hover,
+#v141TopRightActions > #newDeckBtn:focus-visible{
+  border-color:var(--brass) !important;
+  background:var(--profile-deck-raised,var(--panel-raised)) !important;
+  color:var(--parchment) !important;
+  filter:none !important;
+  box-shadow:0 5px 12px rgba(0,0,0,.32) !important;
+}
+#v141TopRightActions > #openDeckFilePanel:active,
+#v141TopRightActions > #openCustomizeUiPanel:active,
+#v141TopRightActions > #newDeckBtn:active{
+  box-shadow:0 2px 6px rgba(0,0,0,.30) !important;
+}
+</style>
