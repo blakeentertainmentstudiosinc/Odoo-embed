@@ -1,31 +1,25 @@
 <!DOCTYPE html>
 <!--
-==============================================================================
 KINGDOMS TCG DECK BUILDER — SOURCE GUIDE
-==============================================================================
 
-This is intentionally a single-file app so it can be opened locally.
+Single-file app for local use and embedding. Card data, artwork, application
+logic, and responsive styles remain bundled together.
 
-Major sections:
-  1. Base styles and responsive layout
-  2. Deck-builder / card-wall styles
-  3. Deck panel + sticky card tooltip
-  4. Theme customizer and color picker
-  5. Card metadata, embedded card artwork, and audited card rules
-  6. Deck state and faction/replacement rules
-  7. Rendering for Royals, Bastions, card pool, Terra, and deck panel
-  8. Hover warnings, sticky tooltip, and middle-click card inspector
-  9. Plain-text deck save/load
- 10. Small compatibility/UI fixes and responsive viewport scaling
- 11. Separate Main/Side deck views and stacked copy indicators
- 12. Atomic zone transfers, pointer dragging, and add/remove card flights
- 13. Touch hover replay and fullscreen requests for inverted touch viewports
+CSS CLEANUP (2026-09-18)
+Removed 523 superseded declarations, 132 empty rules, and 11
+empty style blocks. Surviving declarations retain their original source order,
+selector specificity, importance, and media/container conditions. A declaration
+is removed only when later rules cover every selector and the same property.
+Conditional and state-specific rules remain where they can still affect
+another viewport or interaction state. Vendor-specific fallbacks are retained.
+Cleanup never crosses a script block: scripts can measure intermediate styles
+before later styles load, so those earlier declarations are not dead weight.
 
-The very large LOCAL_CARD_IMAGES object is deliberately kept compact because it
-contains embedded base64 artwork. Keeping those image strings on single lines
-prevents the source file from becoming dramatically larger without making the
-application logic easier to understand.
-==============================================================================
+Search style IDs to locate feature sections; IDs remain for traceability.
+Royal grid: final top offset -9px. Royal heading: top -4px.
+JavaScript and embedded card images are unchanged. Historical patch scripts
+remain; this pass consolidates CSS, not application behavior.
+The obsolete line-number map and superseded patch comments were removed.
 -->
 <html lang="en">
 <head>
@@ -35,8 +29,8 @@ application logic easier to understand.
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    /* Core interface colors. Live theme controls override the profile variables later. */
+/* base styles — surviving rules in original cascade order. */
+:root{
     --ink:#12151B;
     --panel:#1A1F28;
     --panel-raised:#20262F;
@@ -48,20 +42,16 @@ application logic easier to understand.
     --parchment:#EDE6D3;
     --muted:#9AA1AC;
     --muted-dim:#6B7280;
-
-    /* Faction colors used for labels and deck statistics. */
     --f-yellow:#D9A93B;
     --f-red:#B23A3A;
     --f-blue:#4779A8;
     --f-green:#4C8C5C;
     --f-colourless:#6B7280;
-
-    /* Status colors. */
     --good:#5C9A6E;
     --bad:#B23A3A;
   }
   *{ box-sizing:border-box; }
-  body{ margin:0; background:var(--ink); color:var(--parchment); font-family:'Work Sans', sans-serif; line-height:1.5; }
+  body{ margin:0; color:var(--parchment); font-family:'Work Sans', sans-serif; line-height:1.5; }
   h1,h2,h3{ font-family:'Cinzel', serif; margin:0; font-weight:600; letter-spacing:0.01em; }
   a{ color:inherit; text-decoration:none; }
   button, input{ font-family:inherit; }
@@ -74,7 +64,7 @@ application logic easier to understand.
   .brand-mark{ width:30px; height:30px; border-radius:4px; background:linear-gradient(135deg, var(--brass), var(--brass-dim)); display:flex; align-items:center; justify-content:center; font-family:'Cinzel', serif; font-weight:700; color:#181305; font-size:15px; }
   .brand-name{ font-family:'Cinzel', serif; font-size:17px; }
   .brand-name span{ color:var(--muted); font-family:'Work Sans', sans-serif; font-weight:400; font-size:13px; margin-left:2px; }
-  .nav-links{ display:flex; gap:28px; font-size:14px; color:var(--muted); }
+  .nav-links{ display:flex; font-size:14px; color:var(--muted); }
   .nav-links a:hover{ color:var(--parchment); }
   .nav-links a.current{ color:var(--brass); }
   @media (max-width:720px){ .nav-links{ display:none; } }
@@ -100,38 +90,22 @@ application logic easier to understand.
   .stepper button:hover{ border-color:var(--brass-dim); }
   .stepper button:disabled{ opacity:0.3; cursor:not-allowed; }
   .stepper .n{ font-size:12.5px; min-width:14px; text-align:center; }
-
-  /* Deck panel — full-width bottom bar */
   .deck-panel{
     position:relative;
     z-index:100;
-    display:flex;
-    flex-direction:row;
-    gap:20px;
-    width:100%;
-    min-width:0;
-    min-height:0;
     margin:0;
     border:1px solid var(--line);
-    border-radius:8px;
-    background:var(--panel);
-    padding:18px;
     box-shadow:0 8px 30px rgba(0,0,0,.3);
-    overflow-y:auto;
     overscroll-behavior:contain;
     scrollbar-gutter:stable;
   }
-  .deck-summary{ flex:none; width:220px; display:flex; flex-direction:column; gap:10px; }
+  .deck-summary{ display:flex; flex-direction:column; gap:10px; }
   .deck-summary .field{ min-width:0; }
-  .deck-details{ flex:1; min-width:0; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; display:flex; flex-direction:column; gap:12px; }
+  .deck-details{ min-width:0; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; display:flex; flex-direction:column; gap:12px; }
   @media (max-width:900px){
     .deck-panel{
-      flex-direction:column;
-      border-radius:0;
-      padding:10px 16px max(10px,env(safe-area-inset-bottom));
       margin:0;
     }
-    .deck-summary{ width:100%; }
     .deck-summary{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:16px; }
     .deck-summary h3{ grid-column:1 / -1; margin-bottom:4px; }
     .deck-details{ border-top:1px solid var(--line); margin-top:6px; }
@@ -180,8 +154,6 @@ application logic easier to understand.
   .deck-thumbnail.terra-placeholder{opacity:.42;filter:grayscale(1);cursor:pointer;}
   .deck-thumbnail.terra-placeholder:hover{opacity:.72;filter:grayscale(.55);}
   .deck-thumbnail.terra-placeholder .deck-thumbnail-art{outline:1px dashed rgba(255,255,255,.2);outline-offset:2px;}
-
-  /* Centered copy-count badge, mirroring the pool's .simple-card-copy-count. */
   .deck-copy-count{
     position:absolute;
     left:50%;
@@ -238,10 +210,6 @@ application logic easier to understand.
   .foot-row{ display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; font-size:13px; color:var(--muted-dim); }
   .foot-links{ display:flex; gap:18px; }
   .foot-links a:hover{ color:var(--brass); }
-
-/* =========================================================
-   KINGDOMS CARD WALL — one layout system only
-   ========================================================= */
 .pool-grid,.royal-grid{display:block;width:100%;min-width:0;}
 .pool-group{display:block;width:100%;box-sizing:border-box;margin:18px 0 0;border-top:1px solid var(--line);padding-top:12px;}
 .pool-group:first-child{margin-top:0;border-top:0;padding-top:0;}
@@ -332,8 +300,6 @@ application logic easier to understand.
 .simple-card-info .card-name{width:100%;height:28px;overflow:hidden;font-family:'Work Sans',sans-serif;font-size:10.5px;line-height:1.25;color:var(--parchment);font-weight:600;}
 .simple-card-info .card-type{width:100%;height:14px;margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted-dim);font-size:8.5px;line-height:14px;}
 .simple-card-info .card-stats{height:13px;margin-top:1px;color:var(--muted);font-size:8.5px;line-height:13px;}
-
-/* Copy count displayed over the center of the card artwork */
 .simple-card-copy-count{
   position:absolute;
   left:50%;
@@ -362,12 +328,9 @@ application logic easier to understand.
 }
 .simple-card:hover .simple-card-copy-count{transform:translate(-50%,-50%) scale(1.08);background:rgba(10,9,8,.82);border-color:rgba(201,160,60,.8);opacity:1;}
 .simple-card-copy-count[data-count="0"]{opacity:0;transform:translate(-50%,-50%) scale(.7);}
-
-/* Card rules tooltip — dedicated column (shared by pool, royals, bastions, deck thumbnails) */
 .card-hover-tooltip{
   min-width:0;
   min-height:0;
-  overflow-y:auto;
   overscroll-behavior:contain;
   scrollbar-gutter:stable;
   box-sizing:border-box;
@@ -384,8 +347,6 @@ application logic easier to understand.
 .card-hover-tooltip .hover-text{font-size:15px;line-height:1.65;color:#eee8d8;white-space:pre-line;}
 .card-hover-tooltip .hover-unavailable{color:var(--muted-dim);font-style:italic;}
 .card-hover-tooltip .hover-royal-disclaimer{margin:-2px 0 14px;padding:10px 14px;border:1px solid rgba(185,76,76,.55);border-radius:6px;background:rgba(120,38,38,.20);color:#e7a2a2;font-size:13px;line-height:1.45;font-weight:700;}
-
-/* Cache change notification */
 .cache-change-popup{
   position:fixed;
   right:24px;
@@ -412,10 +373,6 @@ application logic easier to understand.
 .cache-change-popup-section:first-of-type{margin-top:0;}
 .cache-change-popup-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.72;margin-bottom:3px;}
 .cache-change-popup-list{font-size:13px;line-height:1.45;}
-
-/* Card-image corrections from supplied reference art */
-
-/* Deck file metadata: used only for local .txt save/load. */
 .deck-file-meta{
   margin-top:12px;
   padding-top:12px;
@@ -424,39 +381,29 @@ application logic easier to understand.
 .deck-file-meta .field:last-child{ margin-bottom:4px; }
 .field-optional{ color:var(--muted-dim); font-size:10px; font-weight:400; }
 .deck-file-actions{ margin-top:10px; }
-
 </style>
 
 <style>
-/* Layout: hover panel top-left | deck builder center | deck panel far right. */
-body{display:grid;grid-template-columns:300px minmax(0,1fr) 340px;grid-template-rows:auto minmax(0,1fr);gap:16px;height:100vh;height:100dvh;overflow:hidden;padding:0 16px;}
-.nav{grid-column:1 / -1;grid-row:1;}
-.card-hover-tooltip{grid-column:1;grid-row:2;align-self:start;max-height:calc(100dvh - 100px);}
-.page-content{grid-column:2;grid-row:2;min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;}
-.deck-panel{grid-column:3;grid-row:2;min-width:0;min-height:0;display:flex;flex-direction:column;gap:16px;overflow-y:auto;}
+/* base styles — surviving rules in original cascade order. */
+body{display:grid;}
+.card-hover-tooltip{grid-column:1;grid-row:2;align-self:start;}
+.page-content{overflow-x:hidden;scrollbar-gutter:stable;}
+.deck-panel{display:flex;flex-direction:column;gap:16px;}
 .deck-summary{width:100%;flex:none;}
 .deck-details{width:100%;flex:none;overflow:visible;}
 .page-content .layout,.page-content .layout > div,.page-content .block{min-width:0;max-width:100%;}
 .nav .wrap,.nav-links{flex-wrap:wrap;gap:16px;}
-@media(max-width:1200px){body{grid-template-columns:250px minmax(0,1fr) 300px;}}
 @media(max-width:900px){
- body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;gap:0;padding:0;overflow:auto;height:auto;min-height:100dvh;}
- .nav{grid-column:1;grid-row:1;}
- .card-hover-tooltip{grid-column:1;grid-row:2;border-radius:0;max-height:190px;}
- .page-content{grid-column:1;grid-row:3;max-height:none;overflow:visible;}
- .deck-panel{grid-column:1;grid-row:4;border-radius:0;overflow:visible;}
+ .card-hover-tooltip{grid-column:1;grid-row:2;border-radius:0;}
+ .page-content{max-height:none;overflow:visible;}
+ .deck-panel{overflow:visible;}
 }
-
-/* Left column: deck-builder intro sits above the hover/rules panel. */
-.hover-panel-column{grid-column:1;grid-row:2;min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;overflow:hidden;}
+.hover-panel-column{grid-column:1;grid-row:2;min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;}
 .hover-panel-column .hover-panel-hero{flex:0 0 auto;padding:0 4px 12px;border-bottom:1px solid var(--line);}
-.hover-panel-column .card-hover-tooltip{flex:1 1 auto;min-height:0;overflow-y:auto;}
+.hover-panel-column .card-hover-tooltip{overflow-y:auto;}
 @media(max-width:900px){
-  .hover-panel-column{grid-column:1;grid-row:2;overflow:visible;padding:12px 16px 0;}
-  .hover-panel-column .card-hover-tooltip{min-height:180px;}
+  .hover-panel-column{grid-column:1;grid-row:2;}
 }
-
-/* Floating card tooltip: the old hover panel now follows the mouse. */
 .card-hover-tooltip{
   position:fixed !important;
   z-index:99998 !important;
@@ -476,108 +423,56 @@ body{display:grid;grid-template-columns:300px minmax(0,1fr) 340px;grid-template-
   .hover-panel-column{padding:12px 16px !important;}
   .hover-panel-column .card-hover-tooltip{min-height:0 !important;}
 }
-
-/* Wide builder layout: builder takes the left/center, deck stays fixed on the right. */
-body{grid-template-columns:minmax(0,1fr) 340px !important;grid-template-rows:auto minmax(0,1fr) !important;}
-.page-content{grid-column:1 !important;grid-row:2 !important;}
-.deck-panel{grid-column:2 !important;grid-row:2 !important;}
 .builder-intro{margin:0 0 22px;padding:2px 0 16px;}
 .builder-intro p{max-width:78ch;}
-@media(max-width:1200px){body{grid-template-columns:minmax(0,1fr) 300px !important;}}
-@media(max-width:900px){
- body{grid-template-columns:minmax(0,1fr) !important;grid-template-rows:auto minmax(0,1fr) auto !important;}
- .page-content{grid-column:1 !important;grid-row:2 !important;}
- .deck-panel{grid-column:1 !important;grid-row:3 !important;}
-}
-
-/* Max-space builder: remove the old centered 1180px cap and reserve only a compact deck rail. */
-body{grid-template-columns:minmax(0,1fr) 300px !important;gap:10px !important;padding-right:10px !important;}
+body{padding-right:10px !important;}
 .page-content>.wrap{max-width:none !important;width:100% !important;margin:0 !important;padding:0 18px !important;}
 .page-content .layout{width:100% !important;}
 .deck-panel{width:100% !important;padding:14px !important;}
-@media(max-width:1200px){body{grid-template-columns:minmax(0,1fr) 280px !important;}}
-@media(max-width:900px){
- body{grid-template-columns:minmax(0,1fr) !important;gap:0 !important;padding:0 !important;}
- .page-content>.wrap{padding:0 16px !important;}
-}
 </style>
 
 <style>
-/* Requested sizing pass: larger builder cards, compact deck-panel thumbnails. */
-.page-content .simple-card{flex-basis:156px !important;width:156px !important;min-width:156px !important;max-width:156px !important;}
-.page-content .simple-card-image{width:156px !important;height:218px !important;}
-.page-content .simple-card-info{width:156px !important;height:48px;}
-.page-content .simple-card-info .card-name{font-size:12px;height:31px;}
-.page-content .simple-card-info .card-type,.page-content .simple-card-info .card-stats{font-size:9px;}
-.page-content .card-wall-test,.page-content .royal-card-wall{gap:22px 14px !important;}
+/* base styles — surviving rules in original cascade order. */
+.page-content .simple-card{flex-basis:156px !important;}
 .page-content .bastion-card-wall{gap:22px 14px !important;}
-.page-content .bastion-card-wall .simple-card{flex-basis:190px !important;width:190px !important;min-width:190px !important;max-width:190px !important;}
-.page-content .bastion-card-wall .simple-card-image{width:190px !important;height:136px !important;}
-.page-content .bastion-card-wall .simple-card-info{width:190px !important;}
-
-.deck-panel .deck-thumbnail-grid{grid-template-columns:repeat(auto-fill,minmax(48px,58px));gap:8px 6px;}
-.deck-panel .deck-bastion-grid{grid-template-columns:74px;}
-.deck-panel .deck-thumbnail figcaption{font-size:8px;line-height:1.15;margin-top:3px;}
-.deck-panel .deck-copy-count{min-width:25px;height:25px;padding:0 6px;font-size:12px;}
+.page-content .bastion-card-wall .simple-card{flex-basis:190px !important;}
 .deck-panel .deck-thumbnail:hover{transform:scale(1.08);}
 </style>
 
 <style>
-/* Deck-panel readability: keep thumbnails compact, make their labels much easier to read. */
+/* base styles — surviving rules in original cascade order. */
 .deck-panel .deck-thumbnail figcaption{
-  font-size:15px !important;
   line-height:1.2 !important;
   font-weight:700 !important;
-  margin-top:7px !important;
   color:var(--parchment) !important;
 }
 .deck-panel .deck-visual-heading{font-size:14px !important;}
 .deck-panel .deck-visual-heading span{font-size:12px !important;}
 .deck-panel .deck-copy-count{
-  font-size:18px !important;
-  min-width:34px !important;
-  height:34px !important;
   padding:0 8px !important;
 }
 </style>
 
 <style>
-/* Deck rail refinement: 25% larger deck cards + sticky rules tooltip at the top. */
-.deck-panel .deck-thumbnail-grid{
-  grid-template-columns:repeat(auto-fill,minmax(60px,73px)) !important;
-  gap:10px 8px !important;
-}
-.deck-panel .deck-bastion-grid{grid-template-columns:93px !important;}
+/* base styles — surviving rules in original cascade order. */
 .deck-panel .deck-sticky-tooltip{
-  position:sticky !important;
   left:auto !important;
-  top:0 !important;
-  z-index:200 !important;
   width:100% !important;
-  max-height:260px !important;
-  flex:0 0 auto !important;
-  overflow-y:auto !important;
   pointer-events:auto !important;
   opacity:1 !important;
   visibility:visible !important;
-  margin:0 0 4px !important;
   padding:14px 16px !important;
-  box-shadow:0 10px 24px rgba(0,0,0,.38) !important;
-  background:var(--panel) !important;
 }
 .deck-panel .deck-sticky-tooltip[aria-hidden="true"]{opacity:1 !important;visibility:visible !important;}
-.deck-panel .deck-sticky-tooltip .tooltip-placeholder{padding:18px 10px !important;}
 </style>
 
 <style>
-/* Always-visible deck rail + fixed-size persistent sticky tooltip. */
+/* base styles — surviving rules in original cascade order. */
 body{
   grid-template-columns:clamp(230px,28vw,340px) minmax(0,1fr) !important;
   grid-template-rows:auto minmax(0,1fr) !important;
-  gap:10px !important;
   height:100dvh !important;
   overflow:hidden !important;
-  padding:0 0 0 10px !important;
 }
 .nav{grid-column:1 / -1 !important;grid-row:1 !important;}
 .page-content{grid-column:2 !important;grid-row:2 !important;min-width:0 !important;min-height:0 !important;overflow-y:auto !important;}
@@ -608,16 +503,13 @@ body{
   justify-content:center !important;
   padding:16px !important;
 }
-/* Never stack the deck rail below the builder: it stays visible at every viewport width. */
 @media(max-width:900px){
   body{
     grid-template-columns:clamp(220px,42vw,280px) minmax(0,1fr) !important;
     grid-template-rows:auto minmax(0,1fr) !important;
-    gap:6px !important;
     height:100dvh !important;
     min-height:0 !important;
     overflow:hidden !important;
-    padding:0 0 0 6px !important;
   }
   .nav{grid-column:1 / -1 !important;grid-row:1 !important;}
   .page-content{grid-column:2 !important;grid-row:2 !important;}
@@ -632,7 +524,7 @@ body{
 
 
 <style>
-/* Responsive card sizing: main builder cards scale with available viewport width. */
+/* base styles — surviving rules in original cascade order. */
 :root{
   --builder-card-w: clamp(92px, 8.7vw, 172px);
   --builder-card-h: calc(var(--builder-card-w) * 1.4032258065);
@@ -683,45 +575,25 @@ body{
   width:var(--builder-bastion-w) !important;
 }
 
-/* Keep the right deck-panel thumbnail sizing independent from builder scaling. */
-.deck-panel .deck-thumbnail-grid{
-  grid-template-columns:repeat(auto-fill,minmax(72px,1fr));
-}
-
 @media (max-width:1100px){
   :root{ --builder-card-w:clamp(84px,10.5vw,132px); --builder-bastion-w:clamp(104px,12.5vw,160px); }
 }
 @media (max-width:760px){
   :root{ --builder-card-w:clamp(72px,13vw,108px); --builder-bastion-w:clamp(90px,16vw,132px); }
 }
-
 </style>
 
 <style>
-/* Responsive sticky tooltip sizing */
+/* base styles — surviving rules in original cascade order. */
 #cardHoverTooltip.card-hover-tooltip{
   position:sticky !important;
   top:0 !important;
   z-index:120 !important;
-  height:clamp(150px, 24vh, 250px) !important;
-  min-height:clamp(150px, 24vh, 250px) !important;
-  max-height:clamp(150px, 24vh, 250px) !important;
-  padding:clamp(10px, 1.2vw, 18px) !important;
-  overflow-y:auto !important;
   flex:none !important;
 }
-#cardHoverTooltip .hover-meta{font-size:clamp(10px, .85vw, 13px) !important;margin-bottom:clamp(6px, .8vw, 12px) !important;}
-#cardHoverTooltip .hover-rule-label{font-size:clamp(8px, .7vw, 10px) !important;margin-bottom:clamp(3px, .5vw, 6px) !important;}
-#cardHoverTooltip .hover-text{font-size:clamp(11px, 1vw, 15px) !important;line-height:1.45 !important;}
-#cardHoverTooltip .hover-royal-disclaimer{font-size:clamp(10px, .85vw, 13px) !important;padding:clamp(6px, .8vw, 10px) clamp(8px, 1vw, 14px) !important;margin-bottom:clamp(7px, 1vw, 14px) !important;}
+#cardHoverTooltip .hover-rule-label{font-size:clamp(8px, .7vw, 10px) !important;}
+#cardHoverTooltip .hover-royal-disclaimer{font-size:clamp(10px, .85vw, 13px) !important;padding:clamp(6px, .8vw, 10px) clamp(8px, 1vw, 14px) !important;}
 #cardHoverTooltip .tooltip-placeholder{font-size:clamp(10px, .9vw, 14px) !important;padding:clamp(18px, 3vh, 40px) 10px !important;}
-@media(max-height:700px){
-  #cardHoverTooltip.card-hover-tooltip{height:140px !important;min-height:140px !important;max-height:140px !important;}
-}
-@media(max-height:560px){
-  #cardHoverTooltip.card-hover-tooltip{height:112px !important;min-height:112px !important;max-height:112px !important;padding:8px 10px !important;}
-  #cardHoverTooltip .hover-text{font-size:10px !important;line-height:1.3 !important;}
-}
 </style>
 
 <style>
@@ -762,13 +634,7 @@ body{
 </style>
 
 <style>
-/* Sticky card tooltip: ~25% taller, with denser text layout so more rules text fits. */
-#cardHoverTooltip.card-hover-tooltip{
-  height:clamp(188px,30vh,313px) !important;
-  min-height:clamp(188px,30vh,313px) !important;
-  max-height:clamp(188px,30vh,313px) !important;
-  padding:clamp(9px,1vw,15px) !important;
-}
+/* base styles — surviving rules in original cascade order. */
 #cardHoverTooltip .hover-card-name{
   font-size:clamp(13px,1vw,17px) !important;
   line-height:1.15 !important;
@@ -782,56 +648,14 @@ body{
 #cardHoverTooltip .hover-rule-label{
   margin-bottom:3px !important;
 }
-#cardHoverTooltip .hover-text{
-  font-size:clamp(10.5px,.9vw,14px) !important;
-  line-height:1.34 !important;
-}
 #cardHoverTooltip .hover-royal-disclaimer{
   margin-bottom:7px !important;
 }
-@media(max-height:700px){
-  #cardHoverTooltip.card-hover-tooltip{height:175px !important;min-height:175px !important;max-height:175px !important;}
-}
-@media(max-height:560px){
-  #cardHoverTooltip.card-hover-tooltip{height:140px !important;min-height:140px !important;max-height:140px !important;padding:7px 9px !important;}
-  #cardHoverTooltip .hover-text{font-size:9.5px !important;line-height:1.24 !important;}
-}
 </style>
 <style>
-/* Expanded sticky card tooltip: more room and no clipped text. */
+/* base styles — surviving rules in original cascade order. */
 #cardHoverTooltip.card-hover-tooltip{
   box-sizing:border-box !important;
-  height:clamp(245px,40vh,420px) !important;
-  min-height:clamp(245px,40vh,420px) !important;
-  max-height:clamp(245px,40vh,420px) !important;
-  padding:clamp(10px,1vw,16px) !important;
-  overflow-x:hidden !important;
-  overflow-y:auto !important;
-}
-#cardHoverTooltip .hover-card-name,
-#cardHoverTooltip .hover-meta,
-#cardHoverTooltip .hover-rule-label,
-#cardHoverTooltip .hover-text,
-#cardHoverTooltip .hover-royal-disclaimer{
-  max-width:100% !important;
-  overflow:visible !important;
-  text-overflow:clip !important;
-  overflow-wrap:anywhere !important;
-  word-break:normal !important;
-}
-#cardHoverTooltip .hover-card-name{white-space:normal !important;}
-#cardHoverTooltip .hover-meta{white-space:normal !important;}
-#cardHoverTooltip .hover-text{
-  white-space:pre-wrap !important;
-  font-size:clamp(10px,.86vw,13.5px) !important;
-  line-height:1.3 !important;
-}
-@media(max-height:700px){
-  #cardHoverTooltip.card-hover-tooltip{height:220px !important;min-height:220px !important;max-height:220px !important;}
-}
-@media(max-height:560px){
-  #cardHoverTooltip.card-hover-tooltip{height:180px !important;min-height:180px !important;max-height:180px !important;padding:7px 9px !important;}
-  #cardHoverTooltip .hover-text{font-size:9.25px !important;line-height:1.22 !important;}
 }
 </style>
 
@@ -1090,6 +914,7 @@ body{
 </style>
 
 <style id="custom-theme-color-picker-style">
+/* Custom theme color picker style. */
 .theme-picker-overlay{
   position:fixed; inset:0; z-index:12000;
   display:grid; place-items:center;
@@ -1179,7 +1004,7 @@ body{
 </style>
 
 
-<!-- v-final: Royal slot/label spacing + correct Main/Side deck drag highlight -->
+
 <style id="v-final-royal-spacing-and-main-deck-drop-highlight">
 /* Move the actual Royal slots another 5px upward from their current -6px. */
 body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
@@ -5290,6 +5115,7 @@ body{column-gap:6px !important;}
 </style>
 
 <script id="terra-responsive-columns">
+// Terra responsive columns.
 (function keepTerraTracksStable(){
   const grid=document.querySelector('.builder-column > .terra-deck-panel .terra-deck-grid');
   if(grid) grid.style.setProperty('--terra-zone-columns','2');
@@ -5446,6 +5272,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 </style>
 
 <script id="v40-persistent-main-deck-row-major-controller">
+// Persistent main deck row major controller.
 (function v40PersistentMainDeckController(){
   const list=document.getElementById('mainDeckList');
   if(!list) return;
@@ -5515,8 +5342,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 </script>
 
 <style id="v43-bastion-scale-and-greyed-choice">
-/* Bastion cards use the 25%-larger width written by the responsive fitter.
-   These end-of-file rules make every browser/reveal element follow that size. */
+/* v43 bastion scale and greyed choice — surviving rules in original cascade order. */
 .page-content .bastion-card-wall{
   grid-template-columns:repeat(auto-fill,var(--builder-bastion-w)) !important;
 }
@@ -5535,11 +5361,8 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 .page-content .bastion-card-wall .simple-card-info{
   width:var(--builder-bastion-w) !important;
 }
-
-/* The selected Bastion and paired Royals remain centered after the 25% pass. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
-  justify-content:center !important;
   justify-items:center !important;
   margin-inline:auto !important;
 }
@@ -5678,6 +5501,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 </style>
 
 <script id="v46-main-deck-final-fit">
+// Main deck final fit.
 (function v46MainDeckFinalFit(){
   const list=document.getElementById('mainDeckList');
   if(!list) return;
@@ -5741,36 +5565,11 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v47: final selected-Bastion edge fill, Harshlands orientation, and explicit deck-view labels -->
 <style id="v47-left-bastion-final-and-harshlands-preview">
-/* The selected Bastion should use the entire usable width of the left leader
-   panel. This is deliberately last so the older v37 measurement variables
-   cannot shrink it back after v46. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid{
-  width:100% !important;
-  max-width:none !important;
-  grid-template-columns:minmax(0,1fr) !important;
-  justify-content:stretch !important;
-  justify-items:stretch !important;
-  overflow:hidden !important;
-}
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .deck-thumbnail,
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .leader-empty-slot{
-  width:100% !important;
-  min-width:100% !important;
-  max-width:100% !important;
-  justify-self:stretch !important;
-  margin-inline:0 !important;
-}
+/* v47 left bastion final and harshlands preview — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .deck-thumbnail-art.landscape,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .leader-empty-slot.landscape{
-  width:100% !important;
   min-width:100% !important;
-  max-width:100% !important;
-  height:auto !important;
-  aspect-ratio:7 / 5 !important;
 }
-
-/* The Harshlands source artwork is stored sideways. The builder chooser already
-   corrects it; mirror that correction in the selected-Bastion previews too. */
 .left-deck-rail #deckListMini .deck-bastion-grid .deck-thumbnail[data-card-id="the-harshlands"] .deck-thumbnail-art img,
 #leaderSelectionCards .deck-bastion-grid .deck-thumbnail[data-card-id="the-harshlands"] .deck-thumbnail-art img{
   transform:rotate(-90deg) scale(1.43) !important;
@@ -5845,6 +5644,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini .deck-bastion-grid .deck-th
 </style>
 
 <script id="v49-persistent-bastion-preview-width">
+// Persistent bastion preview width.
 (function v49PersistentBastionPreviewWidth(){
   const list=document.getElementById('deckListMini');
   if(!list) return;
@@ -5880,6 +5680,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini .deck-bastion-grid .deck-th
 
 <!-- v54: move selected Royal preview slots down 50px -->
 <style id="v54-royal-preview-offset">
+/* Royal preview offset. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
   margin-top:50px !important;
 }
@@ -5899,6 +5700,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 }
 </style>
 <script id="v58-initial-leader-panel-sync">
+// Initial leader panel sync.
 (function v58InitialLeaderPanelSync(){
   function sync(){
     /* renderDeckPanel is what a Royal/Bastion click eventually invokes through
@@ -5957,6 +5759,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 }
 </style>
 <script id="v76-sticky-height-responsive-type-script">
+// Sticky height responsive type script.
 (function setupStickyHeightResponsiveType(){
   const tooltip=document.getElementById('cardHoverTooltip');
   if(!tooltip) return;
@@ -6105,6 +5908,7 @@ body.side-deck-active .page-content .simple-card.main-copy-cap-reached.side-deck
 }
 </style>
 <script id="v79-maximize-sticky-type-no-arbitrary-cap">
+// Maximize sticky type no arbitrary cap.
 (function v79MaximizeStickyType(){
   const tooltip=document.getElementById('cardHoverTooltip');
   if(!tooltip) return;
@@ -6228,7 +6032,7 @@ body.v35-layout-locked{
 </style>
 
 <style id="v107-bastion-20pct-smaller">
-/* v107: reduce Bastion footprint by ~20% while preserving the two-row layout. */
+/* v107 bastion 20pct smaller — surviving rules in original cascade order. */
 .page-content .bastion-card-wall{
   --v106-bastion-scale:.8 !important;
 }
@@ -6242,7 +6046,6 @@ body.v35-layout-locked{
 .page-content .bastion-card-wall .simple-card-image,
 .page-content .bastion-card-wall .card-reveal-button .simple-card-image{
   width:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8) !important;
-  height:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8 * .7133333333) !important;
 }
 .page-content .bastion-card-wall .simple-card-info{
   width:calc(var(--v106-bastion-w, var(--builder-bastion-w)) * .8) !important;
@@ -6289,6 +6092,7 @@ body:not(.side-deck-active) #royalGrid .royal-category-disabled .simple-royal-ca
 </style>
 
 <script id="v131-long-sticky-minus-2pt">
+// Long sticky minus 2pt.
 (function(){
   function adjustLongStickyText(){
     const box = document.querySelector('.card-hover-tooltip .card-text, .card-hover-tooltip .sticky-card-text, .card-hover-tooltip [data-sticky-card-text]');
@@ -6384,6 +6188,7 @@ body:not(.side-deck-active) #royalGrid .royal-category-disabled .simple-royal-ca
 }
 </style>
 <script id="v143-disable-royal-faction-warning-text">
+// Disable royal faction warning text.
 (function(){
   const ROYAL_WARNING_RE=/(selecting|choosing|this royal|new royal|replace).*?(faction|alignment|colour|color)|faction alignment|change your faction|restrict yourself/i;
 
@@ -6517,11 +6322,7 @@ body.side-deck-active .simple-card.selected[data-royal-id]{
 
 
 <!-- v170: local deck counts + 50%-minimum wrapping thumbnails -->
-<style id="v170-deck-thumbnail-count-and-size-note">
-/* Main/Side deck-area badges intentionally show only the copies in that zone.
-   v148's fitter now uses 150px as full size and wraps before dropping below
-   75px (50%), allowing the deck panel to scroll vertically when necessary. */
-</style>
+
 
 <style id="shared-copy-warning-indicators">
 /* A compact warning mark says "there is a reason this add is blocked"; the full
@@ -6537,6 +6338,7 @@ body.side-deck-active .simple-card.selected[data-royal-id]{
 
 <!-- v-final4: exact Faction Loyalty copy once the two-Royal cap is reached -->
 <script id="v-final4-two-royal-loyalty-copy">
+// Two royal loyalty copy.
 (function normalizeTwoRoyalFactionLoyaltyCopy(){
   if(typeof stickyCardContext !== 'function') return;
   const baseStickyCardContext = stickyCardContext;
@@ -6566,6 +6368,7 @@ body.side-deck-active .simple-card.selected[data-royal-id]{
 
 <!-- v-final5: additive Bastion off-colour faction-loyalty hover notice -->
 <script id="v-final5-bastion-faction-loyalty-hover">
+// Bastion faction loyalty hover.
 (function addBastionFactionLoyaltyHoverNotice(){
   if(typeof stickyCardContext !== 'function') return;
 
@@ -6677,6 +6480,7 @@ body.side-deck-active .page-content .simple-card.side-deck-selectable-greyed:not
 }
 </style>
 <script id="v-final-side-deck-faction-identity-warning">
+// Side deck faction identity warning.
 (function addSideDeckFactionIdentityWarning(){
   if(typeof stickyCardContext !== 'function') return;
   const previousStickyCardContext = stickyCardContext;
@@ -6734,44 +6538,17 @@ body.v35-layout-locked .left-deck-rail #deckListMini .leader-slot-warning{
 
 <!-- v104: Side Deck Royal label + Main Deck Bastion orientation -->
 <style id="v104-side-royals-label-side-bastion-rotation">
-/* Side Deck Bastion copies use a portrait card footprint with their landscape
-   artwork turned 90deg clockwise. Main Deck Bastions are intentionally left
-   completely untouched. The Harshlands keeps its existing orientation. */
-#mainDeckList .main-deck-grid.side-deck-grid
-> .deck-thumbnail.deck-bastion-card
-> .deck-thumbnail-art{
-  position:relative !important;
-  overflow:hidden !important;
-  aspect-ratio:5 / 7 !important;
-}
-
+/* v104 side royals label side bastion rotation — surviving rules in original cascade order. */
 #mainDeckList .main-deck-grid.side-deck-grid
 > .deck-thumbnail.deck-bastion-card:not([data-card-id="the-harshlands"])
 > .deck-thumbnail-art > img{
-  position:absolute !important;
-  left:50% !important;
-  top:50% !important;
-  width:140% !important;
-  height:71.4286% !important;
-  max-width:none !important;
-  max-height:none !important;
-  object-fit:contain !important;
   object-position:center !important;
-  transform:translate(-50%,-50%) rotate(90deg) !important;
-  transform-origin:center center !important;
 }
 
 #mainDeckList .main-deck-grid.side-deck-grid
 > .deck-thumbnail.deck-bastion-card[data-card-id="the-harshlands"]
 > .deck-thumbnail-art > img{
-  position:static !important;
-  width:100% !important;
-  height:100% !important;
-  max-width:100% !important;
-  max-height:100% !important;
-  object-fit:contain !important;
   object-position:center !important;
-  transform:none !important;
 }
 </style>
 
@@ -6844,24 +6621,18 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-th
   top:-7px !important;
 }
 </style>
-</body>
-</html><style>
-/* Sticky tooltip masking: scrolling deck content disappears cleanly beneath it. */
+<style>
+/* base styles — surviving rules in original cascade order. */
 #cardHoverTooltip.card-hover-tooltip{
   position:sticky !important;
   top:0 !important;
-  z-index:1000 !important;
-  isolation:isolate;
-  background:var(--panel) !important;
   opacity:1 !important;
-  box-shadow:0 10px 18px rgba(18,21,27,.96), 0 1px 0 var(--line);
 }
 #cardHoverTooltip.card-hover-tooltip::before{
   content:"";
   position:absolute;
   z-index:-1;
   inset:-12px -12px 0;
-  background:var(--panel);
   pointer-events:none;
 }
 .deck-panel{
@@ -6870,7 +6641,7 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-th
 </style>
 
 <style>
-/* Full sticky-tooltip mask: keep every deck thumbnail/image below the sticky layer. */
+/* base styles — surviving rules in original cascade order. */
 .deck-panel .deck-details{
   position:relative !important;
   z-index:0 !important;
@@ -6889,10 +6660,8 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-th
 #cardHoverTooltip.card-hover-tooltip{
   z-index:2147483646 !important;
   isolation:isolate !important;
-  background:#1A1F28 !important;
   overflow:auto !important;
 }
-/* Opaque apron covers the small gap below the sticky box while content scrolls underneath. */
 #cardHoverTooltip.card-hover-tooltip::after{
   content:"";
   position:absolute;
@@ -6900,18 +6669,15 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-th
   right:-14px;
   bottom:-10px;
   height:12px;
-  background:#1A1F28;
   pointer-events:none;
   z-index:2147483647;
 }
-
-/* Keep scrolling functional while hiding visible scrollbars. */
 .deck-panel,
 .card-hover-tooltip,
 .page-content,
 body {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Legacy Edge/IE */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .deck-panel::-webkit-scrollbar,
 .card-hover-tooltip::-webkit-scrollbar,
@@ -6923,20 +6689,10 @@ body::-webkit-scrollbar {
 }
 </style>
 
-<style>
-/* Mask the deck-rail area above the sticky tooltip as well. The solid upward
-   shadow fills the deck panel's top padding while preserving tooltip scrolling. */
-#cardHoverTooltip.card-hover-tooltip{
-  box-shadow:
-    0 -28px 0 28px #1A1F28,
-    0 10px 18px rgba(18,21,27,.96),
-    0 1px 0 var(--line) !important;
-}
-</style>
+
 
 <style>
-/* Disclaimer-only tooltips are true cursor-attached overlays.
-   They are deliberately outside the sticky deck column layout. */
+/* base styles — surviving rules in original cascade order. */
 #mouseDisclaimerTooltip.mouse-disclaimer-tooltip{
   position:fixed !important;
   z-index:2147483647 !important;
@@ -6973,7 +6729,6 @@ body::-webkit-scrollbar {
   padding-top:8px;
   border-top:1px solid rgba(255,190,84,.20);
 }
-/* A selected Royal is informational, not an error: keep it noticeable but quiet. */
 #mouseDisclaimerTooltip.mouse-disclaimer-tooltip.selected-royal-notice,
 #mouseDisclaimerTooltip.mouse-disclaimer-tooltip.royal-loyalty-notice{
   width:auto;
@@ -6981,9 +6736,7 @@ body::-webkit-scrollbar {
   padding:7px 10px 8px;
   border:1px solid rgba(207,177,116,.62);
   border-left:3px solid var(--brass);
-  background:linear-gradient(180deg,#252a32 0%,#1c2027 100%);
   box-shadow:0 8px 20px rgba(0,0,0,.46);
-  color:#e7dfcf;
   font-size:11px;
   font-weight:650;
 }
@@ -7005,8 +6758,7 @@ body::-webkit-scrollbar {
 </style>
 
 <style id="sticky-hover-warning-mirror">
-/* Mirror hover-triggered warnings into the sticky deck-panel tooltip while
-   keeping the existing mouse-bound warning intact. */
+/* sticky hover warning mirror — surviving rules in original cascade order. */
 #cardHoverTooltip .sticky-hover-notice{
   margin:0 0 10px;
   padding:9px 11px 10px;
@@ -7042,7 +6794,6 @@ body::-webkit-scrollbar {
   padding:6px 9px 7px;
   border:1px solid rgba(207,177,116,.50);
   border-left:3px solid var(--brass);
-  background:linear-gradient(180deg,rgba(46,51,60,.96),rgba(31,35,42,.96));
   box-shadow:none;
 }
 #cardHoverTooltip .sticky-hover-notice-selected .sticky-hover-notice-label{
@@ -7085,31 +6836,16 @@ body{
 
 
 <style id="deck-panel-sizing-and-inspector-radius">
-/* Requested deck-panel sizing pass. */
-.deck-panel .deck-bastion-grid{
-  grid-template-columns:minmax(clamp(102px,11.06vw,154px),clamp(102px,11.06vw,154px)) !important;
-}
-.deck-panel .main-deck-grid{
-  grid-template-columns:repeat(auto-fill,minmax(clamp(45px,4.91vw,68px),1fr)) !important;
-}
-/* Match the inspector artwork corner radius to the normal deck-builder cards. */
+/* deck panel sizing and inspector radius — surviving rules in original cascade order. */
 .card-inspector-image{
   border-radius:10px !important;
   clip-path:inset(0 round 10px) !important;
-}
-@media (max-height:760px){
-  .deck-panel .deck-bastion-grid{grid-template-columns:116px !important;}
-  .deck-panel .main-deck-grid{grid-template-columns:repeat(auto-fill,minmax(45px,57px)) !important;}
-}
-@media (max-height:620px){
-  .deck-panel .deck-bastion-grid{grid-template-columns:99px !important;}
-  .deck-panel .main-deck-grid{grid-template-columns:repeat(auto-fill,minmax(40px,49px)) !important;gap:6px 5px !important;}
 }
 </style>
 
 
 <style id="burgundy-bronze-theme">
-/* Kingdoms theme pass: near-black burgundy builder + deep bronze deck rail. */
+/* burgundy bronze theme — surviving rules in original cascade order. */
 :root{
   --ink:#0d0508;
   --panel:#19090f;
@@ -7125,52 +6861,10 @@ body{
   --good:#719a73;
   --bad:#b94d58;
 }
-html{background:#090305;}
 body{
-  background:
-    radial-gradient(circle at 75% 8%,rgba(92,24,39,.16),transparent 34%),
-    linear-gradient(145deg,#120609 0%,#0c0407 48%,#17070c 100%) !important;
   color:var(--parchment);
 }
-.page-content{
-  background:
-    linear-gradient(180deg,rgba(28,8,14,.38),rgba(11,4,7,.12)) !important;
-}
-.page-content .hero{
-  border-color:#48222b !important;
-}
-.page-content .pool-group{
-  border-color:#3c1b23 !important;
-}
-.page-content .filter-btn,
-.page-content .other-cards-toggle,
-.page-content .deck-save-btn,
-.page-content .field input,
-.page-content .castle-confirm{
-  background:#1c0b12 !important;
-  border-color:#4b2430 !important;
-}
-.page-content .filter-btn:hover,
-.page-content .other-cards-toggle:hover,
-.page-content .deck-download-btn:hover{
-  background:#271019 !important;
-  border-color:#9b6d3b !important;
-}
-.page-content .filter-btn.active{
-  background:rgba(177,91,78,.12) !important;
-  border-color:#c69a52 !important;
-}
-.page-content .simple-card-image,
-.page-content .card-image-missing{
-  background:#210d14 !important;
-}
-
-/* Scope the entire left deck rail to a deep bronze palette. */
 .deck-panel{
-  --panel:#2b1b0f;
-  --panel-raised:#382516;
-  --line:#704d2a;
-  --line-soft:#4e351f;
   --brass:#d2a158;
   --brass-dim:#8e652f;
   --crimson:#bd5e4f;
@@ -7178,13 +6872,6 @@ body{
   --muted:#c8b592;
   --muted-dim:#9e805e;
   --good:#90aa77;
-  background:
-    radial-gradient(circle at 20% 0%,rgba(197,145,72,.10),transparent 33%),
-    linear-gradient(180deg,#312010 0%,#24170c 48%,#1b1109 100%) !important;
-  border-color:#76522c !important;
-  box-shadow:
-    inset -1px 0 0 rgba(225,179,101,.07),
-    8px 0 28px rgba(0,0,0,.34) !important;
 }
 .deck-panel .deck-details{
   color:var(--parchment);
@@ -7192,39 +6879,11 @@ body{
 .deck-panel .field input,
 .deck-panel .deck-save-btn,
 .deck-panel .other-cards-toggle{
-  background:#332112 !important;
-  border-color:#684725 !important;
   color:#f1e5cf !important;
 }
-.deck-panel .deck-thumbnail-art,
-.deck-panel .deck-thumbnail-empty{
-  background:#342214 !important;
-  border-color:#684824 !important;
-}
-.deck-panel .deck-thumbnail:hover .deck-thumbnail-art{
-  box-shadow:0 0 0 1px rgba(218,165,89,.72),0 0 18px rgba(189,127,52,.28) !important;
-}
-.deck-panel .deck-copy-count{
-  background:rgba(33,19,9,.86) !important;
-  border-color:rgba(225,183,108,.62) !important;
-}
-
-/* The sticky info panel belongs visually to the bronze rail, including its mask. */
 #cardHoverTooltip.card-hover-tooltip,
 .deck-panel .deck-sticky-tooltip{
-  background:linear-gradient(180deg,#2a1a0f 0%,#21140b 100%) !important;
-  border-color:#72502b !important;
   color:#f1e5cf !important;
-  box-shadow:
-    0 -28px 0 28px #2a1a0f,
-    0 12px 22px rgba(10,5,2,.78),
-    0 1px 0 #72502b !important;
-}
-#cardHoverTooltip.card-hover-tooltip::before{
-  background:#2a1a0f !important;
-}
-#cardHoverTooltip.card-hover-tooltip::after{
-  background:#21140b !important;
 }
 #cardHoverTooltip .hover-card-name,
 #cardHoverTooltip .hover-rule-label{
@@ -7236,28 +6895,22 @@ body{
 #cardHoverTooltip .hover-text{
   color:#eadbc2 !important;
 }
-
-/* Inspector follows the same dark burgundy / bronze visual language. */
 .card-inspector-dialog,
 .card-inspector-modal,
 .card-inspector-shell,
 .card-inspector-panel{
   background:#18090f !important;
-  border-color:#694426 !important;
 }
 .card-inspector-data{
   background:linear-gradient(180deg,#1d0b12,#12070b) !important;
 }
 .card-inspector-image-wrap{
   background:linear-gradient(145deg,#2e1d10,#16090d) !important;
-  border-color:#684526 !important;
 }
 .card-inspector-rules,
 .card-inspector-meta{
   color:#d9c9ba !important;
 }
-
-/* Keep subtle Royal notices brass-toned; reserve red for actual restrictions. */
 #mouseDisclaimerTooltip.mouse-disclaimer-tooltip.selected-royal-notice,
 #mouseDisclaimerTooltip.mouse-disclaimer-tooltip.royal-loyalty-notice{
   background:linear-gradient(180deg,#302114 0%,#20150d 100%) !important;
@@ -7273,8 +6926,7 @@ body{
 </style>
 
 <style id="live-theme-final-overrides">
-/* Live theme controls must come after the fixed burgundy/bronze theme pass.
-   These rules intentionally win the cascade so slider changes are visible immediately. */
+/* live theme final overrides — surviving rules in original cascade order. */
 html{
   background:var(--profile-builder-bg-1,#090305) !important;
 }
@@ -7283,8 +6935,6 @@ body{
     radial-gradient(circle at 76% 8%,color-mix(in srgb,var(--profile-builder-bg-3,#17070c) 72%,transparent),transparent 34%),
     linear-gradient(145deg,var(--profile-builder-bg-2,#120609),var(--profile-builder-bg-1,#0c0407) 52%,var(--profile-builder-bg-2,#17070c)) !important;
 }
-
-/* Main builder palette */
 .page-content{
   --panel:var(--profile-builder-panel,#19090f);
   --panel-raised:var(--profile-builder-raised,#241018);
@@ -7294,15 +6944,12 @@ body{
     color-mix(in srgb,var(--profile-builder-panel,#19090f) 76%,transparent),
     color-mix(in srgb,var(--profile-builder-bg-1,#0c0407) 88%,transparent)) !important;
 }
-.page-content .hero{border-color:var(--profile-builder-line,#4a232d) !important;}
-.page-content .pool-group{border-color:var(--profile-builder-line-soft,#32171f) !important;}
 .page-content .filter-btn,
 .page-content .other-cards-toggle,
 .page-content .deck-save-btn,
 .page-content .field input,
 .page-content .castle-confirm{
   background:var(--profile-builder-panel,#19090f) !important;
-  border-color:var(--profile-builder-line,#4a232d) !important;
 }
 .page-content .filter-btn:hover,
 .page-content .other-cards-toggle:hover,
@@ -7318,8 +6965,6 @@ body{
 .page-content .card-image-missing{
   background:var(--profile-builder-raised,#241018) !important;
 }
-
-/* Deck panel palette */
 .deck-panel{
   --panel:var(--profile-deck-panel,#2b1b0f);
   --panel-raised:var(--profile-deck-raised,#382516);
@@ -7328,7 +6973,6 @@ body{
   background:
     radial-gradient(circle at 20% 0%,color-mix(in srgb,var(--profile-deck-line,#704d2a) 22%,transparent),transparent 34%),
     linear-gradient(180deg,var(--profile-deck-bg-1,#312010),var(--profile-deck-bg-2,#24170c) 50%,var(--profile-deck-bg-3,#1b1109)) !important;
-  border-color:var(--profile-deck-line,#704d2a) !important;
   box-shadow:
     inset -1px 0 0 color-mix(in srgb,var(--profile-deck-line,#704d2a) 26%,transparent),
     8px 0 28px rgba(0,0,0,.40) !important;
@@ -7337,12 +6981,10 @@ body{
 .deck-panel .deck-save-btn,
 .deck-panel .other-cards-toggle{
   background:var(--profile-deck-panel,#2b1b0f) !important;
-  border-color:var(--profile-deck-line,#704d2a) !important;
 }
 .deck-panel .deck-thumbnail-art,
 .deck-panel .deck-thumbnail-empty{
   background:var(--profile-deck-raised,#382516) !important;
-  border-color:var(--profile-deck-line-soft,#4e351f) !important;
 }
 .deck-panel .deck-thumbnail:hover .deck-thumbnail-art{
   box-shadow:
@@ -7351,29 +6993,15 @@ body{
 }
 .deck-panel .deck-copy-count{
   background:color-mix(in srgb,var(--profile-deck-bg-3,#1b1109) 90%,transparent) !important;
-  border-color:color-mix(in srgb,var(--profile-deck-line,#704d2a) 74%,white 10%) !important;
 }
-
-/* Sticky tooltip follows the deck-panel sliders too. */
 #cardHoverTooltip.card-hover-tooltip,
 .deck-panel .deck-sticky-tooltip{
   background:linear-gradient(180deg,var(--profile-deck-bg-1,#312010),var(--profile-deck-bg-3,#1b1109)) !important;
-  border-color:var(--profile-deck-line,#704d2a) !important;
-  box-shadow:
-    0 -28px 0 28px var(--profile-deck-bg-1,#312010),
-    0 12px 22px rgba(0,0,0,.82),
-    0 1px 0 var(--profile-deck-line,#704d2a) !important;
 }
 #cardHoverTooltip.card-hover-tooltip::before{background:var(--profile-deck-bg-1,#312010) !important;}
 #cardHoverTooltip.card-hover-tooltip::after{background:var(--profile-deck-bg-3,#1b1109) !important;}
-
-/* The profile controls themselves should visibly track the deck-panel color. */
 .deck-theme-customizer{
   background:color-mix(in srgb,var(--profile-deck-bg-3,#1b1109) 76%,transparent) !important;
-  border-color:var(--profile-deck-line-soft,#4e351f) !important;
-}
-.theme-control-group + .theme-control-group{
-  border-top-color:color-mix(in srgb,var(--profile-deck-line-soft,#4e351f) 70%,transparent) !important;
 }
 </style>
 
@@ -7417,8 +7045,7 @@ body{
 }
 </style>
 <style id="quarter-width-deck-layout">
-/* Keep the deck visible in one quarter of the available width at every size.
-   Zero minimum tracks prevent long labels or card art widening either column. */
+/* quarter width deck layout — surviving rules in original cascade order. */
 body{grid-template-columns:minmax(0,1fr) minmax(0,3fr) !important;}
 .deck-panel,.page-content{container-type:inline-size;}
 .deck-panel{
@@ -7432,8 +7059,6 @@ body{grid-template-columns:minmax(0,1fr) minmax(0,3fr) !important;}
 .deck-panel .deck-file-meta,
 .deck-panel .deck-file-actions{min-width:0;max-width:100%;box-sizing:border-box;}
 .deck-panel .deck-details{padding:0 !important;}
-
-/* Cards scale relative to their column, retaining the artwork's aspect ratio. */
 .deck-panel .deck-thumbnail-grid,
 .deck-panel .main-deck-grid,
 .deck-panel .deck-thumbnail-grid.terra-deck-grid{
@@ -7462,13 +7087,9 @@ body{grid-template-columns:minmax(0,1fr) minmax(0,3fr) !important;}
 .deck-panel .action-btn{white-space:normal;overflow-wrap:anywhere;padding:8px 4px;font-size:clamp(10px,3.5cqw,14px);}
 .deck-panel .deck-theme-customizer{padding:clamp(4px,2cqw,12px);overflow-wrap:anywhere;}
 .deck-panel #cardHoverTooltip{width:100% !important;box-sizing:border-box;}
-
-/* Builder cards follow the remaining three-quarters, not the full viewport. */
 .page-content{
-  --builder-card-w:clamp(54px,19cqw,172px);
   --builder-card-h:calc(var(--builder-card-w) * 1.4032258065);
   --builder-card-info-w:var(--builder-card-w);
-  --builder-bastion-w:clamp(68px,25cqw,205px);
   --builder-bastion-h:calc(var(--builder-bastion-w) * .7133333333);
 }
 .page-content>.wrap{padding-inline:clamp(4px,2cqw,20px) !important;}
@@ -7481,20 +7102,19 @@ body{grid-template-columns:minmax(0,1fr) minmax(0,3fr) !important;}
 </style>
 
 <style id="nested-main-deck-layout">
-/* The left rail remains one quarter wide. The right column contains the
-   builder and main deck, each with its own scroll area so both stay visible. */
+/* nested main deck layout — surviving rules in original cascade order. */
 .builder-column{
   grid-column:2;grid-row:1;min-width:0;min-height:0;height:100%;
-  display:grid;grid-template-columns:minmax(0,1fr);
+  display:grid;
   grid-template-rows:minmax(0,1fr) minmax(110px,30%);gap:10px;
 }
-.builder-column > .page-content{grid-column:1 !important;grid-row:1 !important;height:auto !important;}
+.builder-column > .page-content{grid-row:1 !important;height:auto !important;}
 .builder-column > .main-deck-panel{
   grid-column:1 !important;grid-row:2 !important;
   position:relative !important;top:auto !important;bottom:auto !important;
   width:auto !important;max-width:none !important;margin:0 !important;
   height:auto !important;max-height:none !important;
-  display:block !important;overflow:auto !important;
+  display:block !important;
   padding:10px 14px !important;
 }
 .main-deck-panel .deck-list-mini{margin:0;border-top:0;}
@@ -7505,8 +7125,6 @@ body{grid-template-columns:minmax(0,1fr) minmax(0,3fr) !important;}
   gap:10px !important;
 }
 .main-deck-panel .deck-copy-count{width:24px !important;height:24px !important;font-size:13px !important;}
-/* Smaller cards and tighter gutters let each faction show more cards per row.
-   Container units keep the sizing tied to the actual browsing column. */
 .page-content{
   --builder-card-w:clamp(48px,12cqw,130px);
   --builder-bastion-w:clamp(62px,17cqw,170px);
@@ -7686,6 +7304,7 @@ function fitMainDeckCardGrid(width){
 .deck-options-content .theme-control-heading{flex-wrap:wrap;}
 </style>
 <script id="deck-options-screen-behavior">
+// Deck options screen behavior.
 (function setupDeckQuickActions(){
   const dialog=document.getElementById('deckOptionsDialog');
   const title=document.getElementById('deckOptionsTitle');
@@ -7772,6 +7391,7 @@ function fitMainDeckCardGrid(width){
 .leader-toggle-bar + .layout{margin-top:10px;}
 </style>
 <script id="castle-leader-toggle-behavior">
+// Castle leader toggle behavior.
 (function setupLeaderOptionsToggle(){
   const button=document.getElementById('leaderOptionsToggle');
   const options=document.getElementById('leaderOptions');
@@ -7800,7 +7420,7 @@ function fitMainDeckCardGrid(width){
 </script>
 
 <style id="fixed-leaders-and-hq-preview">
-/* Artwork uses the inspector's existing embedded HQ source beside the rules. */
+/* fixed leaders and hq preview — surviving rules in original cascade order. */
 #cardHoverTooltip.card-hover-tooltip{
   height:clamp(170px,36dvh,340px) !important;
   min-height:0 !important;max-height:none !important;
@@ -7812,27 +7432,22 @@ function fitMainDeckCardGrid(width){
   height:100%;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:10px;
 }
 #cardHoverTooltip .sticky-card-art{min-width:0;min-height:0;display:flex;align-items:flex-start;justify-content:center;}
-#cardHoverTooltip .sticky-card-art img{display:block;width:100%;height:100%;object-fit:contain;object-position:top;border-radius:6px;}
+#cardHoverTooltip .sticky-card-art img{display:block;object-position:top;}
 #cardHoverTooltip .sticky-card-description{min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;}
 #cardHoverTooltip .hover-card-name{font-size:clamp(11px,1vw,16px) !important;}
 #cardHoverTooltip .hover-meta{font-size:10px !important;}
 #cardHoverTooltip .tooltip-placeholder{min-height:0 !important;height:100%;box-sizing:border-box;}
-/* The selected leaders fit into their fixed panel instead of scrolling.
-   Only the card browser and lengthy rules text retain scrolling. */
 .deck-panel.left-deck-rail{overflow:hidden !important;}
 .left-deck-rail > .deck-details{
-  display:flex;flex-direction:column;flex:1 1 0 !important;min-height:0;
-  gap:8px;overflow:hidden !important;margin:0 !important;border:0;
+  display:flex;flex-direction:column;min-height:0;overflow:hidden !important;margin:0 !important;
 }
 .left-deck-rail .royal-bastion-panel{
-  display:flex;flex-direction:column;flex:1 1 0;min-height:0;overflow:hidden;
+  display:flex;flex-direction:column;flex:1 1 0;overflow:hidden;
 }
 .left-deck-rail .royal-bastion-panel h2{flex:none;margin-bottom:4px;}
 .left-deck-rail #deckListMini{
   flex:1 1 0;min-height:0;display:grid;
-  grid-template-rows:auto minmax(0,1fr) auto minmax(0,1.4fr);gap:4px;
 }
-.left-deck-rail #deckListMini .deck-visual-heading{margin:2px 0;font-size:12px !important;}
 .left-deck-rail #deckListMini .deck-thumbnail-grid{
   min-height:0;grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   grid-template-rows:minmax(0,1fr);gap:6px !important;align-items:stretch;
@@ -7841,24 +7456,20 @@ function fitMainDeckCardGrid(width){
 .left-deck-rail #deckListMini .deck-thumbnail{
   display:flex;justify-content:center;min-height:0;height:100%;max-width:100%;
 }
-.left-deck-rail #deckListMini .deck-thumbnail-art{
-  width:auto !important;height:100%;max-width:100% !important;max-height:100%;
+.left-deck-rail #deckListMini .deck-thumbnail-art{max-width:100% !important;
   min-height:0;box-sizing:border-box;aspect-ratio:5 / 7;
 }
 .left-deck-rail #deckListMini .deck-thumbnail-art.landscape{aspect-ratio:7 / 5;}
 .left-deck-rail #deckListMini .deck-thumbnail:hover{transform:none !important;}
 .left-deck-rail #deckListMini .deck-thumbnail-empty{min-height:0;padding:4px;font-size:11px;}
 .left-deck-rail .curve{flex:none;margin:0;}
-.left-deck-rail .curve-bars{height:44px;}
 @media(max-height:560px){
   #cardHoverTooltip.card-hover-tooltip{height:30dvh !important;flex-basis:30dvh !important;}
-  .left-deck-rail .royal-bastion-panel{padding:4px;}
 }
 </style>
 
 <style id="aligned-tall-sticky-header">
-/* Both left-column panels share exactly the same outer width. Remove the
-   legacy scrollbar gutter so the leader panel cannot be narrower. */
+/* aligned tall sticky header — surviving rules in original cascade order. */
 .deck-panel.left-deck-rail{
   box-sizing:border-box;align-items:stretch;scrollbar-gutter:auto;
   gap:10px !important;
@@ -7869,33 +7480,24 @@ function fitMainDeckCardGrid(width){
   width:100% !important;max-width:100% !important;min-width:0;
   box-sizing:border-box;scrollbar-gutter:auto !important;margin-inline:0 !important;
 }
-/* Give the HQ artwork and rules over half the rail's height. The leader
-   panel takes the remaining space and its card rows shrink to fit. */
-.left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
-  height:55% !important;flex:0 0 55% !important;
-  min-height:0 !important;max-height:none !important;
+.left-deck-rail > #cardHoverTooltip.card-hover-tooltip{max-height:none !important;
   margin:0 !important;align-self:stretch !important;
   box-shadow:0 4px 12px #0005 !important;
 }
-.left-deck-rail > .deck-details{flex:1 1 0 !important;gap:6px;}
-.left-deck-rail .royal-bastion-panel{padding:clamp(4px,2cqw,10px);}
 .left-deck-rail .royal-bastion-panel h2{font-size:clamp(11px,3.6cqw,15px);margin:0 0 3px;}
 .left-deck-rail #deckListMini{gap:3px;}
 .left-deck-rail #deckListMini .deck-visual-heading{font-size:11px !important;margin:0;}
 .left-deck-rail #deckListMini .deck-visual-heading span{font-size:10px !important;}
 .left-deck-rail .curve .deck-stat-row{padding-top:2px;}
 @media(max-height:600px){
-  .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{height:50% !important;flex-basis:50% !important;}
-  .left-deck-rail .curve-bars{height:30px;}
-  .left-deck-rail .curve-bars .bar{max-height:20px;}
+  .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{flex-basis:50% !important;}
 }
 </style>
 
 <style id="sticky-card-information-layout">
-/* Warning -> HQ artwork -> identifying details, with effects alongside. */
-#cardHoverTooltip .sticky-card-identity{
-  display:grid;grid-template-rows:auto minmax(0,1fr) auto;
-  min-width:0;min-height:0;gap:8px;
+/* sticky card information layout — surviving rules in original cascade order. */
+#cardHoverTooltip .sticky-card-identity{grid-template-rows:auto minmax(0,1fr) auto;
+  min-width:0;min-height:0;
 }
 #cardHoverTooltip .sticky-card-warnings{min-height:0;max-height:140px;overflow-y:auto;}
 #cardHoverTooltip .sticky-card-warnings:empty{display:none;}
@@ -7904,7 +7506,6 @@ function fitMainDeckCardGrid(width){
 #cardHoverTooltip .sticky-card-details .hover-meta{margin:3px 0 !important;line-height:1.3;}
 #cardHoverTooltip .sticky-card-warnings .sticky-hover-notice{margin:0;padding:6px;}
 #cardHoverTooltip .sticky-card-warnings .sticky-hover-notice-message{font-size:10px;}
-/* The entire lower-left section shares the Main Deck's measured height. */
 .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
   height:auto !important;flex:1 1 0 !important;min-height:0 !important;
 }
@@ -7982,19 +7583,15 @@ function fitMainDeckCardGrid(width){
 </script>
 
 <style id="stacked-leaders-empty-slots-and-curve">
-/* Bastion above two Royal positions, retaining the current fixed panel height. */
+/* stacked leaders empty slots and curve — surviving rules in original cascade order. */
 .left-deck-rail #deckListMini{
   grid-template-columns:minmax(0,1fr);
-  /* Bastion and Royal rows get an equal height share so the single landscape
-     Bastion card is free to grow to the same width as the two Royal cards
-     beneath it, instead of being squeezed by a smaller row. */
   grid-template-rows:auto minmax(0,1fr) auto minmax(0,1fr);
 }
 .left-deck-rail #deckListMini > :nth-child(1){grid-column:1;grid-row:1;}
 .left-deck-rail #deckListMini > :nth-child(2){grid-column:1;grid-row:2;}
 .left-deck-rail #deckListMini > :nth-child(3){grid-column:1;grid-row:3;}
 .left-deck-rail #deckListMini > :nth-child(4){grid-column:1;grid-row:4;}
-/* Subtle inset card frames remain visible until a card occupies each slot. */
 .leader-empty-slot{
   box-sizing:border-box;aspect-ratio:5/7;width:100%;max-width:140px;
   justify-self:center;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -8017,12 +7614,8 @@ function fitMainDeckCardGrid(width){
 .left-deck-rail #deckListMini .deck-thumbnail-art.landscape{
   width:min(100%,calc(100cqh * 7 / 5)) !important;
 }
-/* Terra and its separate cost curve occupy the right-hand lower column. */
-.builder-column{grid-template-rows:minmax(0,1fr) minmax(60px,18%) minmax(52px,12%);}
-.builder-column > .main-deck-panel:not(.terra-deck-panel){grid-row:2 / 4 !important;}
 .builder-column > .terra-deck-panel{grid-row:2 !important;}
-.builder-column > .cost-curve-panel{
-  grid-column:2 !important;grid-row:3 !important;height:auto !important;min-height:0;
+.builder-column > .cost-curve-panel{height:auto !important;min-height:0;
   width:auto !important;max-width:none !important;margin:0 !important;
   padding:6px !important;display:block !important;overflow:hidden !important;
 }
@@ -8035,11 +7628,10 @@ function fitMainDeckCardGrid(width){
 </style>
 
 <style id="one-fifth-left-column">
-/* One fifth for the left rail; the browser and Main Deck share the rest. */
+/* one fifth left column — surviving rules in original cascade order. */
 body{grid-template-columns:minmax(0,0.88fr) minmax(0,4fr) !important;}
 .deck-panel.left-deck-rail{
   display:grid !important;grid-template-columns:minmax(0,1fr);
-  grid-template-rows:minmax(0,1.4fr) minmax(0,1fr) minmax(0,.7fr) minmax(0,.35fr);
   gap:8px !important;padding:clamp(4px,.7vw,10px) !important;
 }
 .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
@@ -8058,20 +7650,15 @@ body{grid-template-columns:minmax(0,0.88fr) minmax(0,4fr) !important;}
 }
 .left-deck-rail > .terra-deck-panel{grid-row:3 !important;}
 .left-deck-rail > .cost-curve-panel{grid-row:4 !important;}
-/* Align filled and empty slots against the left edge of their respective cells. */
 .left-deck-rail #deckListMini .deck-thumbnail-grid{justify-content:start !important;}
 .left-deck-rail #deckListMini .deck-thumbnail{justify-content:flex-start;justify-self:start;}
 .left-deck-rail #deckListMini .leader-empty-slot{justify-self:start;}
 .left-deck-rail #deckListMini .deck-visual-heading{justify-content:flex-start;gap:8px;}
-/* Removing Terra from the right frees the Main Deck to use the full width. */
 .builder-column{
-  grid-template-columns:minmax(0,1fr);
   grid-template-rows:minmax(0,1fr) minmax(110px,30%);
 }
 .builder-column > .main-deck-panel:not(.terra-deck-panel){grid-column:1 !important;grid-row:2 !important;}
-/* Compact-width rail layout. */
 @media(max-width:900px){
-  .deck-panel.left-deck-rail{grid-template-rows:minmax(0,1fr) minmax(0,.7fr) minmax(0,.35fr);}
   .left-deck-rail > .deck-details{grid-row:1;}
   .left-deck-rail > .terra-deck-panel{grid-row:2 !important;}
   .left-deck-rail > .cost-curve-panel{grid-row:3 !important;}
@@ -8095,6 +7682,7 @@ body{grid-template-columns:minmax(0,0.88fr) minmax(0,4fr) !important;}
 </style>
 
 <script id="close-royal-slot-sizing">
+// Close royal slot sizing.
 (function sizeRoyalSlotsStably(){
   const list=document.getElementById('deckListMini');
   if(!list) return;
@@ -8114,7 +7702,7 @@ body{grid-template-columns:minmax(0,0.88fr) minmax(0,4fr) !important;}
 </script>
 
 <style id="sticky-header-card-data">
-/* Final left-rail header: warnings first, then card data. No card artwork. */
+/* sticky header card data — surviving rules in original cascade order. */
 #cardHoverTooltip .sticky-card-preview{
   display:flex !important;
   flex-direction:column !important;
@@ -8141,24 +7729,10 @@ body{grid-template-columns:minmax(0,0.88fr) minmax(0,4fr) !important;}
 }
 #cardHoverTooltip .sticky-card-art{display:none !important;}
 #cardHoverTooltip .hover-card-name{
-  margin:0 0 5px !important;
   font-family:'Cinzel',serif !important;
-  font-size:clamp(13px,3.7cqw,18px) !important;
-  line-height:1.2 !important;
   font-weight:700 !important;
 }
-#cardHoverTooltip .hover-meta{
-  margin:0 0 10px !important;
-  font-size:clamp(9px,2.7cqw,12px) !important;
-  line-height:1.35 !important;
-}
-#cardHoverTooltip .hover-rule-label{
-  margin:0 0 5px !important;
-}
 #cardHoverTooltip .hover-text{
-  padding:0 0 10px !important;
-  font-size:clamp(10px,3cqw,13px) !important;
-  line-height:1.38 !important;
   white-space:pre-wrap !important;
 }
 #cardHoverTooltip .tooltip-placeholder{
@@ -8168,11 +7742,7 @@ body{grid-template-columns:minmax(0,0.88fr) minmax(0,4fr) !important;}
   justify-content:center;
   box-sizing:border-box;
 }
-
-/* Terra now lives in the same secondary column as Cost Curve, above it. */
 .builder-column{
-  /* Terra/Cost track reduced from 20% of this lower grid to 16%.
-     Main Deck absorbs the reclaimed width. */
   grid-template-columns:minmax(0,5.25fr) minmax(0,1fr) !important;
   grid-template-rows:minmax(0,1fr) minmax(72px,20%) minmax(52px,10%) !important;
 }
@@ -8231,8 +7801,6 @@ body{grid-template-columns:minmax(0,0.88fr) minmax(0,4fr) !important;}
   align-content:start;
   overflow:hidden;
 }
-
-/* Terra no longer consumes a row in the left rail. */
 .deck-panel.left-deck-rail{
   grid-template-rows:minmax(0,1.4fr) minmax(0,1fr) !important;
 }
@@ -8336,6 +7904,7 @@ body{
 </style>
 
 <script id="fit-left-rail-and-sticky-card-text">
+// Fit left rail and sticky card text.
 (function stableRailAndStickyText(){
   const rail=document.querySelector('.deck-panel.left-deck-rail');
   const leaderList=document.getElementById('deckListMini');
@@ -8438,6 +8007,7 @@ body{
 </style>
 
 <script id="terra-column-true-two-card-fit-script">
+// Terra column true two card fit script.
 (function stableTerraColumn(){
   const builder=document.querySelector('.builder-column');
   const panel=builder?.querySelector(':scope > .terra-deck-panel');
@@ -8484,22 +8054,12 @@ body{
 
 
 <style id="row-two-scroll-extra-browser-card-and-curve-balance">
-/* -------------------------------------------------------------------------
-   Requested layout pass
-   - Browser shows one additional regular card per row.
-   - Main Deck never shrinks after row 1; row 2+ is a vertical scroll menu.
-   - Terra row hugs its actual contents and Cost Curve receives the reclaimed
-     height. Average cost sits directly below the curve.
-   ------------------------------------------------------------------------- */
-
-/* Main Deck: fixed card sizing by width. Scrolling starts as soon as a second
-   row exists, rather than feeding the row count back into card size. */
+/* row two scroll extra browser card and curve balance — surviving rules in original cascade order. */
 .main-deck-panel .main-deck-grid{
   min-height:0 !important;
   overflow-x:hidden !important;
   overflow-y:hidden !important;
   overscroll-behavior:contain !important;
-  scrollbar-gutter:stable !important;
   align-content:start !important;
 }
 .main-deck-panel .main-deck-grid.is-scroll-menu{
@@ -8508,9 +8068,6 @@ body{
 .main-deck-panel .main-deck-grid > .deck-thumbnail{
   align-self:start !important;
 }
-
-/* Preserve the same total lower-deck height (30% of the builder), but make
-   Terra's row content-sized. The Cost Curve gets every pixel Terra gives up. */
 .builder-column{
   grid-template-rows:
     minmax(0,1fr)
@@ -8570,6 +8127,7 @@ body{
 </style>
 
 <script id="fit-browser-one-extra-card-and-terra-row-height">
+// Fit browser one extra card and terra row height.
 (function stableDensityAndTerraHeight(){
   const page=document.querySelector('.page-content');
   const builder=document.querySelector('.builder-column');
@@ -8760,6 +8318,7 @@ body.v35-layout-locked .main-deck-panel .main-deck-grid.is-scroll-menu{
 }
 </style>
 <script id="v35-stable-leader-main-deck-alignment-script">
+// Stable leader main deck alignment script.
 (function v35StableLayout(){
   const body=document.body;
   const rail=document.querySelector('.deck-panel.left-deck-rail');
@@ -8928,6 +8487,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 </style>
 
 <script id="v37-persistent-leader-measurements">
+// Persistent leader measurements.
 (function v37PersistentLeaderMeasurements(){
   const list=document.getElementById('deckListMini');
   if(!list) return;
@@ -8964,6 +8524,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 </script>
 
 <script id="v37-builder-one-more-card-per-row">
+// Builder one more card per row.
 (function v37OneMoreBuilderCardPerRow(){
   const page=document.querySelector('.page-content');
   if(!page) return;
@@ -9064,6 +8625,7 @@ body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid.v
 </style>
 
 <script id="v39-main-deck-12x2-and-denser-bastions">
+// Main deck 12x2 and denser bastions.
 (function v39LayoutPass(){
   const page=document.querySelector('.page-content');
   const bastionWall=page?.querySelector('.bastion-card-wall');
@@ -9185,6 +8747,7 @@ body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid.v
 <!-- v41: final Main Deck row-major override. This deliberately uses flexbox so
      older grid-template overrides cannot force the preview back into 1 column. -->
 <style id="v41-main-deck-left-to-right-final">
+/* Main deck left to right final. */
 body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid,
 .main-deck-panel:not(.terra-deck-panel) .main-deck-grid{
   display:flex !important;
@@ -9232,6 +8795,7 @@ body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid.v
 </style>
 
 <style id="v42-side-deck-toggle">
+/* Side deck toggle. */
 .main-deck-panel:not(.terra-deck-panel) #mainDeckList{
   display:flex;
   flex-direction:column;
@@ -9274,6 +8838,7 @@ body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid.v
 </style>
 
 <script id="v41-main-deck-left-to-right-controller">
+// Main deck left to right controller.
 (function v41MainDeckLeftToRight(){
   const list=document.getElementById('mainDeckList');
   if(!list) return;
@@ -9383,113 +8948,28 @@ button:not(.card-reveal-button):not(.other-cards-toggle):not(.castle-toggle):not
 
 <!-- v48: keep the selected Bastion zone full-width without cropping its artwork -->
 <style id="v48-left-bastion-contain-fix">
-/* The zone still spans the full left panel, but the card itself is capped by
-   the row height so a full 7:5 Bastion plus its caption always remains visible. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid{
-  width:100% !important;
-  max-width:none !important;
-  container-type:size !important;
-  grid-template-columns:minmax(0,1fr) !important;
-  justify-content:center !important;
-  justify-items:center !important;
-  overflow:visible !important;
-}
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .deck-thumbnail,
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .leader-empty-slot{
-  /* 140cqh is the 7:5 landscape width implied by the available row height.
-     Reserve ~34px for the caption/spacing so the figure itself never clips. */
-  width:min(100%, max(60px, calc(140cqh - 34px))) !important;
-  min-width:0 !important;
-  max-width:100% !important;
-  height:auto !important;
-  max-height:100% !important;
-  justify-self:center !important;
-  align-self:start !important;
-  margin-inline:auto !important;
-  overflow:visible !important;
-}
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .deck-thumbnail-art.landscape,
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .leader-empty-slot.landscape{
-  width:100% !important;
-  min-width:0 !important;
-  max-width:100% !important;
-  height:auto !important;
-  max-height:none !important;
-  aspect-ratio:7 / 5 !important;
-  overflow:hidden !important;
-}
+/* v48 left bastion contain fix — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .deck-thumbnail-art.landscape img{
-  display:block !important;
-  width:100% !important;
-  height:100% !important;
   max-width:100% !important;
   max-height:100% !important;
-  object-fit:contain !important;
-  object-position:center !important;
-}
-
-/* Harshlands is stored sideways. Rotate its image inside the landscape frame
-   using swapped dimensions instead of scaling past the frame, which prevents
-   the corrected orientation from cropping the card edges. */
-body.v35-layout-locked .left-deck-rail #deckListMini .deck-bastion-grid .deck-thumbnail[data-card-id="the-harshlands"] .deck-thumbnail-art img{
-  position:absolute !important;
-  left:50% !important;
-  top:50% !important;
-  width:71.4286% !important;
-  height:140% !important;
-  max-width:none !important;
-  max-height:none !important;
-  object-fit:contain !important;
-  object-position:center !important;
-  transform:translate(-50%,-50%) rotate(-90deg) !important;
-  transform-origin:center center !important;
 }
 </style>
 
 
 <!-- v50: authoritative selected-Bastion sizing and leader-balance override -->
 <style id="v50-final-bastion-preview-and-leader-lock">
-/* v48 is physically later than several newer patches in this accumulated file.
-   This final block is intentionally the last sizing authority. */
-body.v35-layout-locked .left-deck-rail #deckListMini{
-  /* Bastion band is 20% shorter than the old .8fr band; Royals get the space. */
-  grid-template-rows:auto minmax(0,.64fr) auto minmax(0,1.71fr) !important;
-}
+/* v50 final bastion preview and leader lock — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid{
-  width:100% !important;
-  max-width:none !important;
-  min-height:0 !important;
   container-type:size !important;
-  grid-template-columns:minmax(0,1fr) !important;
   justify-content:center !important;
-  justify-items:center !important;
-  align-items:start !important;
-  overflow:visible !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .deck-thumbnail,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .leader-empty-slot{
-  /* Same formula for empty and selected states. 80% panel-width cap keeps the
-     initial placeholder from dominating; the cqh cap guarantees the selected
-     card + caption fit the shorter Bastion row without collapsing. */
-  width:min(80%, max(72px, calc(140cqh - 42px))) !important;
-  min-width:0 !important;
-  max-width:80% !important;
-  height:auto !important;
-  max-height:none !important;
-  justify-self:center !important;
-  align-self:start !important;
   margin-inline:auto !important;
-  overflow:visible !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .deck-thumbnail-art.landscape,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .leader-empty-slot.landscape{
-  width:100% !important;
   min-width:0 !important;
-  max-width:100% !important;
-  height:auto !important;
-  max-height:none !important;
-  aspect-ratio:7 / 5 !important;
-  overflow:hidden !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .deck-thumbnail-art.landscape img{
   display:block !important;
@@ -9498,19 +8978,9 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid .deck-
   object-fit:contain !important;
   object-position:center !important;
 }
-/* Harshlands keeps the corrected landscape presentation inside the exact same box. */
 body.v35-layout-locked .left-deck-rail #deckListMini .deck-bastion-grid .deck-thumbnail[data-card-id="the-harshlands"] .deck-thumbnail-art img{
-  position:absolute !important;
-  left:50% !important;
-  top:50% !important;
-  width:71.4286% !important;
-  height:140% !important;
-  max-width:none !important;
-  max-height:none !important;
   object-fit:contain !important;
   object-position:center !important;
-  transform:translate(-50%,-50%) rotate(-90deg) !important;
-  transform-origin:center center !important;
 }
 </style>
 
@@ -9635,6 +9105,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini .deck-bastion-grid .deck-th
 }
 </style>
 <script id="v51-unified-selected-leader-fit">
+// Unified selected leader fit.
 (function v51UnifiedSelectedLeaderFit(){
   const list=document.getElementById('deckListMini');
   if(!list) return;
@@ -9679,12 +9150,9 @@ body.v35-layout-locked .left-deck-rail #deckListMini .deck-bastion-grid .deck-th
 
 <!-- v52: force selected leader preview into a true vertical stack -->
 <style id="v52-force-leaders-vertical-stack">
-/* Use flex for the selected-leader preview so legacy grid-row/grid-column
-   assignments cannot ever place the Royals beside the Bastion. */
+/* v52 force leaders vertical stack — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini{
-  display:flex !important;
   flex-direction:column !important;
-  align-items:center !important;
   justify-content:flex-start !important;
   gap:3px !important;
 }
@@ -9696,11 +9164,6 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
   grid-row:auto !important;
   order:initial !important;
 }
-/* Explicit source-order stack: Bastion heading/card first, then Royal heading/row. */
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(1){order:1 !important;}
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(2){order:2 !important;}
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3){order:3 !important;}
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){order:4 !important;}
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
   margin-top:0 !important;
 }
@@ -9708,6 +9171,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v53: screenshot-matched leader stack; Bastion row, protected gap, Royals row -->
 <style id="v53-screenshot-matched-leader-stack">
+/* v53 screenshot matched leader stack — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini{
   display:grid !important;
   grid-template-columns:minmax(0,1fr) !important;
@@ -9727,11 +9191,9 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(2){
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3){
   grid-row:3 !important; grid-column:1 !important; order:initial !important;
-  margin-top:12px !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
   grid-row:4 !important; grid-column:1 !important; order:initial !important;
-  margin-top:0 !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
@@ -9837,6 +9299,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 </style>
 
 <script id="v65-draggable-raised-popups">
+// Draggable raised popups.
 (() => {
   const configs=[
     ['#deckOptionsDialog','.deck-options-header'],
@@ -9898,6 +9361,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 
 <!-- Community deck library: local saves, Supabase gallery and CAPTCHA-protected guest sessions. -->
 <style id="v69-local-decks-community">
+/* Local decks community. */
 .deck-options-dialog{width:min(740px,calc(100vw - 24px)) !important;}
 .deck-storage-tabs{
   display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:5px;
@@ -10843,566 +10307,7 @@ html.kingdoms-force-landscape body{
 }
 </style>
 
-<script id="touch-sticky-card-actions-behavior" type="text/plain" data-disabled-by="v98-desktop-parity-touch">
-(() => {
-  let touchCandidate = null;
-  let touchSelection = null;
-  let touchGestureSerial = 0;
-  let lastProcessedTouchGesture = 0;
-  const CARD_SELECTOR = '.simple-card[data-card-id], .deck-thumbnail[data-card-id]';
-  const LEADER_TOUCH_SELECTOR = '.simple-royal-card[data-id], .simple-card[data-bastion-id]';
-
-  function isRecentTouchFor(el){
-    return !!(touchCandidate && touchCandidate.el === el && performance.now() - touchCandidate.time < 1400);
-  }
-
-  function beginTouchGesture(el){
-    touchGestureSerial += 1;
-    touchCandidate = {el, time:performance.now(), gesture:touchGestureSerial};
-  }
-
-  function claimTouchGesture(el){
-    if(!isRecentTouchFor(el)) return false;
-    const gesture = Number(touchCandidate?.gesture || 0);
-    if(!gesture || gesture === lastProcessedTouchGesture) return false;
-    lastProcessedTouchGesture = gesture;
-    return true;
-  }
-
-  function lookup(id){
-    return (typeof cardInspectorLookup === 'function' && cardInspectorLookup(id)) ||
-      (typeof deckCardById === 'function' && deckCardById(id)) || null;
-  }
-
-  function playTouchedCardHover(el){
-    if(!el || !el.isConnected) return;
-
-    /* Use the same transition system as desktop hover. Removing and re-adding
-       the class gives every tap a fresh hover-in, and the timed removal gives
-       the matching hover-out. No separate touch-only animation curve. */
-    if(el._touchDesktopHoverTimer) window.clearTimeout(el._touchDesktopHoverTimer);
-    el.classList.remove('touch-desktop-hover');
-    void el.offsetWidth;
-    el.classList.add('touch-desktop-hover');
-    el._touchDesktopHoverTimer = window.setTimeout(() => {
-      if(el.isConnected) el.classList.remove('touch-desktop-hover');
-      el._touchDesktopHoverTimer = 0;
-    }, 360);
-  }
-
-  /* Expose the exact desktop-hover replay to the Royal/Bastion renderers.
-     Their click handlers live earlier in the file and rerender their entire zone. */
-  window.__kingdomsPlayTouchedCardHover = playTouchedCardHover;
-
-  function replayTouchedCardHover(sel){
-    if(!sel) return;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const escaped = (window.CSS && CSS.escape) ? CSS.escape(sel.id) : String(sel.id).replace(/[\"']/g,'\\$&');
-      let el = null;
-      if(sel.kind === 'main' || sel.kind === 'side' || sel.kind === 'terra'){
-        el = document.querySelector(`.page-content .simple-card[data-card-id="${escaped}"]`);
-      }
-      if(!el){
-        const candidates = Array.from(document.querySelectorAll(`[data-card-id="${escaped}"]`));
-        el = candidates.find(node => node.matches('.simple-card,.deck-thumbnail')) || null;
-      }
-      playTouchedCardHover(el);
-    }));
-  }
-
-  function selectionCount(sel){
-    if(!sel) return 0;
-    if(sel.kind === 'terra') return typeof terraCardCount === 'function' ? terraCardCount(sel.id) : 0;
-    if(sel.kind === 'royal') return state.royals.includes(sel.id) ? 1 : 0;
-    if(sel.kind === 'bastion') return state.bastion === sel.id ? 1 : 0;
-    const pile = sel.kind === 'side' ? state.side : state.main;
-    return (pile && pile[sel.id]) || 0;
-  }
-
-  function maxForSelection(sel, card){
-    if(sel.kind === 'terra') return MAX_TERRA;
-    if(sel.kind === 'royal' || sel.kind === 'bastion') return 1;
-    if(sel.kind === 'side' && typeof sideDeckAbsoluteCopyLimitFor === 'function') return sideDeckAbsoluteCopyLimitFor(sel.id);
-    return typeof maxCopiesFor === 'function' ? maxCopiesFor(card) : 4;
-  }
-
-  function canAdd(sel, card){
-    if(sel.kind === 'royal' || sel.kind === 'bastion') return false;
-    if(sel.blocked) return false;
-    if(sel.kind === 'main' && state.royals.includes(sel.id)) return false;
-    if(sel.kind === 'side') return typeof canAddSideDeckCard === 'function' ? canAddSideDeckCard(sel.id) : false;
-    if(sel.kind === 'terra' && typeof terraDeckCount === 'function' && terraDeckCount() >= MAX_TERRA) return false;
-    return selectionCount(sel) < maxForSelection(sel, card);
-  }
-
-  function canRemove(sel){
-    return selectionCount(sel) > 0;
-  }
-
-  function playStickyTapFeedback(){
-    const tooltip = document.getElementById('cardHoverTooltip');
-    if(!tooltip) return;
-    tooltip.classList.remove('touch-tap-feedback');
-    void tooltip.offsetWidth;
-    tooltip.classList.add('touch-tap-feedback');
-    window.setTimeout(() => tooltip.classList.remove('touch-tap-feedback'), 320);
-  }
-
-  function replayStickyActionHover(action){
-    const tooltip = document.getElementById('cardHoverTooltip');
-    const button = tooltip?.querySelector(`[data-touch-card-action="${action}"]`);
-    if(!button || button.disabled) return;
-
-    /* Touch browsers can merge class changes around a re-render into one paint,
-       making a CSS-only replay effectively invisible. Drive the replay with the
-       Web Animations API on the NEW live button node so every successful copy
-       change visibly performs the desktop hover -> press -> hover -> rest motion. */
-    button.getAnimations?.().forEach(anim => {
-      if(anim.id === 'sticky-touch-hover-replay') anim.cancel();
-    });
-    button.classList.remove('touch-press','touch-hover');
-
-    const frames = [
-      {
-        transform:'translate3d(0,0,0) scale(1)',
-        filter:'brightness(1) saturate(1)',
-        color:'var(--parchment)',
-        borderColor:'var(--profile-outline,var(--brass-dim))',
-        boxShadow:'0 0 0 0 rgba(201,160,60,0)'
-      },
-      {
-        offset:.28,
-        transform:'translate3d(0,-4px,0) scale(1.045)',
-        filter:'brightness(1.08) saturate(1.06)',
-        color:'var(--brass)',
-        borderColor:'var(--brass)',
-        boxShadow:'0 0 0 1px rgba(201,160,60,.48),0 8px 16px rgba(0,0,0,.42),0 0 18px rgba(201,160,60,.22)'
-      },
-      {
-        offset:.48,
-        transform:'translate3d(0,-1px,0) scale(.965)',
-        filter:'brightness(.95) saturate(1.03)',
-        color:'var(--brass)',
-        borderColor:'var(--brass)',
-        boxShadow:'0 0 0 1px rgba(201,160,60,.38),0 3px 9px rgba(0,0,0,.34)'
-      },
-      {
-        offset:.72,
-        transform:'translate3d(0,-4px,0) scale(1.045)',
-        filter:'brightness(1.08) saturate(1.06)',
-        color:'var(--brass)',
-        borderColor:'var(--brass)',
-        boxShadow:'0 0 0 1px rgba(201,160,60,.48),0 8px 16px rgba(0,0,0,.42),0 0 18px rgba(201,160,60,.22)'
-      },
-      {
-        transform:'translate3d(0,0,0) scale(1)',
-        filter:'brightness(1) saturate(1)',
-        color:'var(--parchment)',
-        borderColor:'var(--profile-outline,var(--brass-dim))',
-        boxShadow:'0 0 0 0 rgba(201,160,60,0)'
-      }
-    ];
-
-    if(typeof button.animate === 'function' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-      const anim = button.animate(frames,{
-        duration:520,
-        easing:'cubic-bezier(.2,.82,.2,1)',
-        fill:'none'
-      });
-      anim.id = 'sticky-touch-hover-replay';
-      return;
-    }
-
-    /* Fallback for older WebViews: use two animation frames before applying
-       the class so the resting state is definitely painted first. */
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if(!button.isConnected) return;
-      button.classList.add('touch-hover');
-      window.setTimeout(() => button.isConnected && button.classList.add('touch-press'), 145);
-      window.setTimeout(() => {
-        if(!button.isConnected) return;
-        button.classList.remove('touch-press');
-        button.classList.add('touch-hover');
-      }, 245);
-      window.setTimeout(() => button.isConnected && button.classList.remove('touch-hover'), 500);
-    }));
-  }
-
-  function bindTouchButtonPressFeedback(button){
-    if(!button) return;
-    let pressTimer = 0;
-    let releaseTimer = 0;
-
-    const clearTimers = () => {
-      if(pressTimer) window.clearTimeout(pressTimer);
-      if(releaseTimer) window.clearTimeout(releaseTimer);
-      pressTimer = 0;
-      releaseTimer = 0;
-    };
-
-    const down = ev => {
-      if(ev.pointerType && ev.pointerType !== 'touch' && ev.pointerType !== 'pen') return;
-      clearTimers();
-
-      /* Touch has no real :hover state. Start every tap by deliberately
-         entering the exact same visual state as desktop hover. */
-      button.classList.remove('touch-press');
-      button.classList.add('touch-hover');
-
-      /* Let the hover lift/glow become visible before compressing into
-         the pressed state. This makes a tap read as hover -> press. */
-      pressTimer = window.setTimeout(() => {
-        button.classList.add('touch-press');
-        pressTimer = 0;
-      }, 85);
-    };
-
-    const up = ev => {
-      if(ev && ev.pointerType && ev.pointerType !== 'touch' && ev.pointerType !== 'pen') return;
-      if(pressTimer){
-        window.clearTimeout(pressTimer);
-        pressTimer = 0;
-      }
-      button.classList.remove('touch-press');
-
-      /* Return through the hover state instead of snapping directly back. */
-      button.classList.add('touch-hover');
-      if(releaseTimer) window.clearTimeout(releaseTimer);
-      releaseTimer = window.setTimeout(() => {
-        button.classList.remove('touch-hover');
-        releaseTimer = 0;
-      }, 230);
-    };
-
-    const cancel = () => {
-      clearTimers();
-      button.classList.remove('touch-press','touch-hover');
-    };
-
-    button.addEventListener('pointerdown', down, {passive:true});
-    button.addEventListener('pointerup', up, {passive:true});
-    button.addEventListener('pointercancel', cancel, {passive:true});
-    button.addEventListener('pointerleave', ev => {
-      if(ev.pointerType === 'touch' || ev.pointerType === 'pen') return;
-      cancel();
-    }, {passive:true});
-  }
-
-  function metaHtml(card){
-    const parts = [];
-    if(card.cost !== '' && card.cost != null) parts.push(`Cost ${card.cost}`);
-    if(card.faction) parts.push(card.faction);
-    if(card.type) parts.push(card.type);
-    if(card.stats) parts.push(card.stats);
-    return parts.length ? `<div class="hover-meta">${escapeHtml(parts.join(' · '))}</div>` : '';
-  }
-
-  function renderTouchSelection(){
-    if(!touchSelection) return;
-    const tooltip = document.getElementById('cardHoverTooltip');
-    const card = lookup(touchSelection.id);
-    if(!tooltip || !card) return;
-
-    const text = typeof formatCardRulesText === 'function' ? formatCardRulesText(cardRulesText(card)) : (cardRulesText(card) || '');
-    const count = selectionCount(touchSelection);
-    const addDisabled = !canAdd(touchSelection, card);
-    const removeDisabled = !canRemove(touchSelection);
-    const warning = stickyHoverNoticeHtml(touchSelection.warningMessages || [], touchSelection.warningVariant || 'warning');
-    const kindLabel = touchSelection.kind === 'side' ? 'Side Deck' :
-      touchSelection.kind === 'terra' ? 'Terra Deck' :
-      touchSelection.kind === 'royal' ? 'Royal' :
-      touchSelection.kind === 'bastion' ? 'Bastion' : 'Main Deck';
-
-    tooltip.innerHTML = `
-      <div class="sticky-card-preview sticky-card-data-only">
-        <div class="sticky-card-warnings">${warning}</div>
-        <div class="sticky-card-description">
-          <div class="hover-card-name">${escapeHtml(card.name || 'Unnamed Card')}</div>
-          ${metaHtml(card)}
-          <div class="hover-rule-label">Card text</div>
-          ${text ? `<div class="hover-text">${escapeHtml(text)}</div>` : '<div class="hover-text hover-unavailable">No card text listed.</div>'}
-        </div>
-        <div class="touch-card-actions touch-actions-enter" aria-label="Touch card controls">
-          <button type="button" class="touch-card-action-btn" data-touch-card-action="remove" aria-label="Remove one ${escapeHtml(card.name || 'card')}" ${removeDisabled ? 'disabled' : ''}>−</button>
-          <div class="touch-card-action-count" aria-live="polite">${count}</div>
-          <button type="button" class="touch-card-action-btn" data-touch-card-action="add" aria-label="Add one ${escapeHtml(card.name || 'card')}" ${addDisabled ? 'disabled' : ''}>+</button>
-          <div class="touch-card-action-label">${kindLabel}</div>
-        </div>
-      </div>`;
-    tooltip.classList.add('touch-card-selected');
-    tooltip.setAttribute('aria-hidden','false');
-
-    const removeBtn = tooltip.querySelector('[data-touch-card-action="remove"]');
-    const addBtn = tooltip.querySelector('[data-touch-card-action="add"]');
-    bindTouchButtonPressFeedback(removeBtn);
-    bindTouchButtonPressFeedback(addBtn);
-    removeBtn?.addEventListener('click', ev => {
-      ev.preventDefault(); ev.stopPropagation();
-      adjustTouchSelection(-1);
-    });
-    addBtn?.addEventListener('click', ev => {
-      ev.preventDefault(); ev.stopPropagation();
-      adjustTouchSelection(1);
-    });
-  }
-
-  function adjustTouchSelection(delta, replayAction = true){
-    const sel = touchSelection;
-    if(!sel) return;
-    const card = lookup(sel.id);
-    if(!card) return;
-
-    if(delta > 0 && !canAdd(sel, card)) return;
-    if(delta < 0 && !canRemove(sel)) return;
-
-    if(sel.kind === 'terra'){
-      if(delta < 0 && selectionCount(sel) > 0) playDeckReturnAnimation(sel.id,'terra');
-      const changed = typeof changeTerraCard === 'function' && changeTerraCard(sel.id, delta);
-      if(changed) renderAll();
-      renderTouchSelection();
-      if(changed && replayAction){ requestAnimationFrame(() => replayStickyActionHover(delta > 0 ? 'add' : 'remove')); replayTouchedCardHover(sel); }
-      return;
-    }
-
-    if(sel.kind === 'royal'){
-      if(delta < 0 && typeof removeSelectedRoyal === 'function'){
-        Promise.resolve(removeSelectedRoyal(sel.id)).then(renderTouchSelection);
-      }
-      return;
-    }
-
-    if(sel.kind === 'bastion'){
-      if(delta < 0 && state.bastion === sel.id){
-        playDeckReturnAnimation(sel.id,'bastion');
-        state.bastion = null;
-        state.cachedBastion = null;
-        renderAll();
-        renderTouchSelection();
-      }
-      return;
-    }
-
-    if(sel.kind === 'side'){
-      if(delta < 0 && selectionCount(sel) > 0) playDeckReturnAnimation(sel.id, 'side');
-      const changed = typeof changeSideDeckCard === 'function' && changeSideDeckCard(sel.id, delta);
-      if(!changed){ renderTouchSelection(); return; }
-      renderAll();
-      renderTouchSelection();
-      if(replayAction){ requestAnimationFrame(() => replayStickyActionHover(delta > 0 ? 'add' : 'remove')); replayTouchedCardHover(sel); }
-      return;
-    }
-
-    const target = state.main;
-    const cache = state.cachedMain;
-    const current = target[sel.id] || 0;
-    const cap = maxForSelection(sel, card);
-    const next = Math.max(0, Math.min(cap, current + delta));
-    if(next === current){ renderTouchSelection(); return; }
-    if(delta < 0 && next < current) playDeckReturnAnimation(sel.id, sel.kind);
-    delete cache[sel.id];
-    if(next === 0) delete target[sel.id]; else target[sel.id] = next;
-    if(typeof enforceSideDeckSharedCopyLimits === 'function') enforceSideDeckSharedCopyLimits();
-    renderAll();
-    renderTouchSelection();
-    if(replayAction){ requestAnimationFrame(() => replayStickyActionHover(delta > 0 ? 'add' : 'remove')); replayTouchedCardHover(sel); }
-  }
-
-  function touchSelectionFromElement(el){
-    const id = el?.dataset?.cardId;
-    if(!id) return null;
-    const kind = el.classList.contains('deck-thumbnail')
-      ? (el.dataset.deckKind || 'main')
-      : (state.activeDeck === 'side' ? 'side' : 'main');
-    const context = typeof stickyCardContext === 'function'
-      ? stickyCardContext(el)
-      : {messages:[el.dataset.restrictionReason || ''].filter(Boolean), variant:'warning'};
-    return {
-      id,
-      kind,
-      blocked: kind !== 'side' && (!!el.dataset.restrictionReason || el.getAttribute('aria-disabled') === 'true'),
-      warningMessages: context.messages || [],
-      warningVariant: context.variant || 'warning'
-    };
-  }
-
-  function touchTapWillAdd(el){
-    const sel = touchSelectionFromElement(el);
-    if(!sel) return false;
-    return selectionCount(sel) > 0 || !!(touchSelection && touchSelection.id === sel.id && touchSelection.kind === sel.kind);
-  }
-
-  function selectTouchedCard(el){
-    const nextSelection = touchSelectionFromElement(el);
-    if(!nextSelection) return;
-
-    /* Touch rule:
-       - If this card already has at least one copy in the relevant deck, a tap
-         immediately adds another copy (when legal) and keeps the sticky controls open.
-       - Otherwise the first tap selects/previews it; later taps add copies. */
-    const alreadyOwned = selectionCount(nextSelection) > 0;
-    const alreadySelected = !!(touchSelection && touchSelection.id === nextSelection.id && touchSelection.kind === nextSelection.kind);
-
-    touchSelection = nextSelection;
-
-    if(alreadyOwned || alreadySelected){
-      /* Do not run the pre-tap card animation here. The successful add path
-         rerenders the card and replays the hover once on the NEW node. */
-      adjustTouchSelection(1);
-      return;
-    }
-
-    renderTouchSelection();
-  }
-
-  /* Royals and Bastions rerender their entire selection zone when chosen.
-     Do NOT animate the pre-render node on touch-down: it gets replaced almost
-     immediately and creates a visible jump. Their own selection handlers replay
-     the desktop-hover state on the newly rendered card instead. */
-
-  /* A touch gesture owns its mutation on pointer-up. We deliberately do NOT
-     mutate from the browser's synthetic click event; some mobile browsers can
-     emit duplicate click-like events for a single physical tap. */
-  let activeCardPointer = null;
-  let suppressTouchClickUntil = 0;
-  let suppressTouchCardId = '';
-  const TAP_MOVE_LIMIT = 18;
-
-  document.addEventListener('pointerdown', ev => {
-    const leader = ev.target.closest?.(LEADER_TOUCH_SELECTOR);
-    if(leader && (ev.pointerType === 'touch' || ev.pointerType === 'pen')){
-      window.__kingdomsRecentLeaderTouch = {
-        id: leader.dataset.id || leader.dataset.bastionId || '',
-        kind: leader.dataset.bastionId ? 'bastion' : 'royal',
-        time: performance.now()
-      };
-    }
-
-    const el = ev.target.closest?.(CARD_SELECTOR);
-    if(!el) return;
-    if(ev.pointerType === 'touch' || ev.pointerType === 'pen'){
-      beginTouchGesture(el);
-      activeCardPointer = {
-        pointerId: ev.pointerId,
-        el,
-        id: el.dataset.cardId || '',
-        startX: ev.clientX,
-        startY: ev.clientY,
-        moved: false
-      };
-      /* First-selection taps animate immediately. Taps that will add a copy
-         animate only after the successful rerender, preventing a double pulse. */
-      if(!touchTapWillAdd(el)) playTouchedCardHover(el);
-      playStickyTapFeedback();
-    }else{
-      touchCandidate = null;
-      activeCardPointer = null;
-    }
-  }, true);
-
-  document.addEventListener('pointermove', ev => {
-    const active = activeCardPointer;
-    if(!active || ev.pointerId !== active.pointerId) return;
-    if(Math.hypot(ev.clientX - active.startX, ev.clientY - active.startY) > TAP_MOVE_LIMIT){
-      active.moved = true;
-    }
-  }, {capture:true, passive:true});
-
-  document.addEventListener('pointerup', ev => {
-    const active = activeCardPointer;
-    if(!active || ev.pointerId !== active.pointerId) return;
-    activeCardPointer = null;
-
-    const endEl = ev.target.closest?.(CARD_SELECTOR);
-    if(active.moved || !endEl || endEl !== active.el) return;
-
-    const accepted = claimTouchGesture(active.el);
-    if(!accepted) return;
-
-    /* One physical tap gets exactly one mutation here. Any click synthesized
-       afterward is suppression-only and can never mutate deck state. */
-    suppressTouchCardId = active.id;
-    suppressTouchClickUntil = performance.now() + 900;
-    ev.preventDefault();
-    ev.stopPropagation();
-    ev.stopImmediatePropagation();
-    selectTouchedCard(active.el);
-  }, true);
-
-  document.addEventListener('pointercancel', ev => {
-    if(activeCardPointer && ev.pointerId === activeCardPointer.pointerId) activeCardPointer = null;
-  }, true);
-
-  /* Fallback for older WebViews without Pointer Events. */
-  let fallbackTouch = null;
-  document.addEventListener('touchstart', ev => {
-    if(window.PointerEvent) return;
-    const leader = ev.target.closest?.(LEADER_TOUCH_SELECTOR);
-    if(leader){
-      window.__kingdomsRecentLeaderTouch = {
-        id: leader.dataset.id || leader.dataset.bastionId || '',
-        kind: leader.dataset.bastionId ? 'bastion' : 'royal',
-        time: performance.now()
-      };
-    }
-
-    const el = ev.target.closest?.(CARD_SELECTOR);
-    const touch = ev.changedTouches?.[0];
-    if(el && touch){
-      beginTouchGesture(el);
-      fallbackTouch = {el,id:el.dataset.cardId || '',startX:touch.clientX,startY:touch.clientY,moved:false};
-      if(!touchTapWillAdd(el)) playTouchedCardHover(el);
-      playStickyTapFeedback();
-    }
-  }, {capture:true, passive:true});
-
-  document.addEventListener('touchmove', ev => {
-    if(window.PointerEvent || !fallbackTouch) return;
-    const touch = ev.changedTouches?.[0];
-    if(!touch) return;
-    if(Math.hypot(touch.clientX - fallbackTouch.startX, touch.clientY - fallbackTouch.startY) > TAP_MOVE_LIMIT){
-      fallbackTouch.moved = true;
-    }
-  }, {capture:true, passive:true});
-
-  document.addEventListener('touchend', ev => {
-    if(window.PointerEvent || !fallbackTouch) return;
-    const active = fallbackTouch;
-    fallbackTouch = null;
-    if(active.moved) return;
-    const accepted = claimTouchGesture(active.el);
-    if(!accepted) return;
-    suppressTouchCardId = active.id;
-    suppressTouchClickUntil = performance.now() + 900;
-    ev.preventDefault();
-    ev.stopPropagation();
-    ev.stopImmediatePropagation();
-    selectTouchedCard(active.el);
-  }, {capture:true, passive:false});
-
-  document.addEventListener('click', ev => {
-    const el = ev.target.closest?.(CARD_SELECTOR);
-    if(!el) return;
-    const id = el.dataset.cardId || '';
-    const shouldSuppress = performance.now() < suppressTouchClickUntil && (!suppressTouchCardId || id === suppressTouchCardId);
-    if(!shouldSuppress && !isRecentTouchFor(el)) return;
-
-    /* Touch-generated clicks are suppression-only. All touch deck mutations
-       already happened exactly once on pointerup/touchend above. */
-    ev.preventDefault();
-    ev.stopPropagation();
-    ev.stopImmediatePropagation();
-  }, true);
-
-  document.addEventListener('contextmenu', ev => {
-    const el = ev.target.closest?.(CARD_SELECTOR);
-    if(el && isRecentTouchFor(el)){
-      ev.preventDefault();
-      ev.stopPropagation();
-      ev.stopImmediatePropagation();
-    }
-  }, true);
-})();
-</script>
+<!-- [removed dead code, 2026-09-18]: inert <script type="text/plain"> block "touch-sticky-card-actions-behavior" (560 lines) -- disabled via data-disabled-by="v98-desktop-parity-touch" and never executed by the browser. Superseded by "v98-desktop-parity-touch" below. -->
 
 
 <!-- v75: Side Deck Bastions, Main Deck copy warnings, deck-library controls, and dynamic Main Deck fill -->
@@ -11464,6 +10369,7 @@ body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid >
 @media(max-width:720px){.deck-library-primary-actions{grid-template-columns:1fr;}}
 </style>
 <script id="v75-dynamic-main-deck-fill">
+// Dynamic main deck fill.
 (function v75DynamicMainDeckFill(){
   const list=document.getElementById('mainDeckList');
   if(!list) return;
@@ -11589,6 +10495,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 }
 </style>
 <script id="v78-maximize-sticky-text-both-axes">
+// Maximize sticky text both axes.
 (function v78MaximizeStickyTextBothAxes(){
   const tooltip=document.getElementById('cardHoverTooltip');
   if(!tooltip) return;
@@ -11683,40 +10590,22 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 
 <!-- v83: shorter info controls, lower Royal slots, Side Deck Royal browser restored -->
 <style id="v83-info-royal-side-deck-refine">
-/* Make the icon-only info control about 20% smaller than the previous 38px button.
-   Keep a predictable hit target and let the existing hover animation work normally. */
+/* v83 info royal side deck refine — surviving rules in original cascade order. */
 .simple-card > .card-info-button{
-  width:30px !important;
-  min-width:30px !important;
-  height:30px !important;
-  min-height:30px !important;
   padding:0 !important;
   transform:none !important;
   border-radius:50% !important;
 }
-.simple-card > .card-info-button span{font-size:17px !important;}
 .deck-thumbnail > .card-info-button{
-  width:24px !important;
-  min-width:24px !important;
-  height:24px !important;
-  min-height:24px !important;
   transform:none !important;
 }
-.deck-thumbnail > .card-info-button span{font-size:15px !important;}
 .card-info-button:hover,.card-info-button:focus-visible{transform:scale(1.08) !important;}
-
-/* Give the Bastion more of the selected-leader panel's vertical band so the
-   Royal row begins lower in the left column instead of crowding the Bastion.
-   This stays proportional across viewport sizes rather than using a fixed pixel offset. */
 body.v35-layout-locked .left-deck-rail #deckListMini{
   grid-template-rows:auto minmax(0,1.55fr) auto minmax(0,.8fr) !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
   align-self:end !important;
 }
-
-/* Side Deck already treats Royal cards as Side Deck sources in renderRoyals().
-   Keep that Royal browser visible alongside the Bastion browser. */
 body.side-deck-active .page-content #leaderOptions > section.block:first-child,
 body.side-deck-active .page-content #leaderOptions > section.block:nth-child(2){
   display:block !important;
@@ -11725,6 +10614,7 @@ body.side-deck-active .page-content #leaderOptions > section.block:nth-child(2){
 
 <!-- v84: raise selected Royal slots 40px within the left leader panel -->
 <style id="v84-royal-slots-up-40">
+/* Royal slots up 40. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
   transform:translateY(-40px) !important;
 }
@@ -11798,6 +10688,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v98: touch uses desktop semantics + on-card +/- controls + drag Main Deck back to builder to remove -->
 <style id="v98-touch-desktop-parity-controls">
+/* Touch desktop parity controls. */
 @media (hover:none), (pointer:coarse){
   /* Touch uses the normal desktop card click handlers. The explicit +/- controls
      replace desktop right-click for copy changes without changing tap semantics. */
@@ -11866,207 +10757,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
   .touch-main-drag-ghost img{width:100%;height:100%;object-fit:cover;display:block;}
 }
 </style>
-<script id="v98-touch-desktop-parity-behavior" type="text/plain" data-disabled-by="v119-exact-desktop-touch">
-(() => {
-  const coarse = () => window.matchMedia('(hover:none), (pointer:coarse)').matches;
-  const CARD_SURFACE = '.simple-card[data-card-id], .simple-royal-card[data-id], .simple-card[data-bastion-id], .deck-thumbnail[data-card-id]';
-
-  function cardId(el){
-    return el?.dataset?.cardId || el?.dataset?.id || el?.dataset?.bastionId || el?.dataset?.terraId || '';
-  }
-
-  function cardKind(el){
-    if(!el) return '';
-    if(el.dataset.bastionId) return 'bastion';
-    if(el.dataset.id && el.classList.contains('simple-royal-card')) return 'royal';
-    if(el.classList.contains('deck-thumbnail')) return el.dataset.deckKind || 'main';
-    return state.activeDeck === 'side' ? 'side' : 'main';
-  }
-
-  function directCount(el){
-    const id=cardId(el), kind=cardKind(el);
-    if(!id) return 0;
-    if(kind==='royal') return state.royals.includes(id) ? 1 : 0;
-    if(kind==='bastion') return state.bastion===id ? 1 : 0;
-    if(kind==='terra') return typeof terraCardCount==='function' ? terraCardCount(id) : 0;
-    const pile = kind==='side' ? state.side : state.main;
-    return Number(pile?.[id] || 0);
-  }
-
-  function canPlus(el){
-    const id=cardId(el), kind=cardKind(el);
-    if(!id) return false;
-    if(kind==='royal'){
-      /* Clicking a selected Royal on desktop pins its data instead of selecting again. */
-      return !state.royals.includes(id);
-    }
-    if(kind==='bastion') return state.bastion!==id || state.activeDeck==='side';
-    if(kind==='side') return typeof canAddSideDeckCard==='function' ? canAddSideDeckCard(id) : true;
-    if(kind==='terra') return typeof terraDeckCount!=='function' || terraDeckCount() < MAX_TERRA;
-    const card = typeof deckCardById==='function' ? deckCardById(id) : null;
-    if(state.royals.includes(id)) return false;
-    return !card || directCount(el) < (typeof maxCopiesFor==='function' ? maxCopiesFor(card) : 3);
-  }
-
-  function canMinus(el){ return directCount(el) > 0; }
-
-  function desktopAction(el, add){
-    if(!el) return;
-    const type = add ? 'click' : 'contextmenu';
-    const evt = new MouseEvent(type, {
-      bubbles:true,
-      cancelable:true,
-      composed:true,
-      button:add ? 0 : 2,
-      buttons:0,
-      view:window
-    });
-    el.dispatchEvent(evt);
-  }
-
-  function addStepper(el){
-    if(!coarse() || !el || el.dataset.touchStepperReady==='1') return;
-    const art = el.querySelector(':scope > .simple-card-image, :scope > .deck-thumbnail-art');
-    if(!art) return;
-    el.dataset.touchStepperReady='1';
-
-    const plus=document.createElement('button');
-    plus.type='button';
-    plus.className='touch-card-stepper-btn touch-add';
-    plus.textContent='+';
-    plus.setAttribute('aria-label','Add one copy');
-
-    const minus=document.createElement('button');
-    minus.type='button';
-    minus.className='touch-card-stepper-btn touch-remove';
-    minus.textContent='−';
-    minus.setAttribute('aria-label','Remove one copy');
-
-    const isolate = ev => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      ev.stopImmediatePropagation();
-    };
-    ['pointerdown','pointerup','mousedown','mouseup','contextmenu'].forEach(type => {
-      plus.addEventListener(type,isolate,{capture:true});
-      minus.addEventListener(type,isolate,{capture:true});
-    });
-    plus.addEventListener('click', ev => {
-      isolate(ev);
-      if(!plus.disabled) desktopAction(el,true);
-      requestAnimationFrame(syncTouchSteppers);
-    }, true);
-    minus.addEventListener('click', ev => {
-      isolate(ev);
-      if(!minus.disabled) desktopAction(el,false);
-      requestAnimationFrame(syncTouchSteppers);
-    }, true);
-
-    art.append(plus,minus);
-  }
-
-  function syncTouchSteppers(){
-    if(!coarse()) return;
-    document.querySelectorAll(CARD_SURFACE).forEach(el => {
-      addStepper(el);
-      const plus=el.querySelector(':scope > .simple-card-image > .touch-add, :scope > .deck-thumbnail-art > .touch-add');
-      const minus=el.querySelector(':scope > .simple-card-image > .touch-remove, :scope > .deck-thumbnail-art > .touch-remove');
-      if(plus) plus.disabled=!canPlus(el);
-      if(minus) minus.disabled=!canMinus(el);
-    });
-  }
-
-  /* Keep controls attached across every render path, including filters that call
-     renderPool/renderRoyals directly instead of renderAll. */
-  const observer = new MutationObserver(() => requestAnimationFrame(syncTouchSteppers));
-  observer.observe(document.body,{childList:true,subtree:true});
-  window.addEventListener('resize',syncTouchSteppers,{passive:true});
-  requestAnimationFrame(syncTouchSteppers);
-
-  /* Main Deck -> builder drag removes exactly one Main Deck copy. This is the
-     only touch-only mutation gesture; ordinary taps are left untouched and use
-     the same desktop click handlers already attached by the app. */
-  let drag=null;
-  let suppressClickUntil=0;
-
-  function dragSourceFromEvent(ev){
-    if(!coarse() || (ev.pointerType && ev.pointerType!=='touch' && ev.pointerType!=='pen')) return null;
-    if(ev.target.closest('.card-info-button,.touch-card-stepper-btn')) return null;
-    return ev.target.closest('#mainDeckList .deck-thumbnail[data-deck-kind="main"]');
-  }
-
-  function makeGhost(source,x,y){
-    const ghost=document.createElement('div');
-    ghost.className='touch-main-drag-ghost';
-    const img=source.querySelector('.deck-thumbnail-art img');
-    if(img){ const copy=img.cloneNode(false); ghost.appendChild(copy); }
-    ghost.style.left=x+'px'; ghost.style.top=y+'px';
-    document.body.appendChild(ghost);
-    return ghost;
-  }
-
-  function overBuilder(x,y){
-    const hit=document.elementFromPoint(x,y);
-    return !!hit?.closest('.page-content');
-  }
-
-  function finishDrag(ev,cancelled=false){
-    if(!drag || drag.pointerId!==ev.pointerId) return;
-    const current=drag;
-    drag=null;
-    current.source.classList.remove('touch-main-dragging');
-    current.ghost?.remove();
-    document.body.classList.remove('touch-main-drag-active','touch-main-drag-over');
-
-    if(current.dragging){
-      suppressClickUntil=performance.now()+800;
-      ev.preventDefault();
-      ev.stopPropagation();
-      ev.stopImmediatePropagation();
-      if(!cancelled && overBuilder(ev.clientX,ev.clientY)){
-        desktopAction(current.source,false);
-      }
-    }
-  }
-
-  document.addEventListener('pointerdown', ev => {
-    const source=dragSourceFromEvent(ev);
-    if(!source) return;
-    drag={
-      pointerId:ev.pointerId,
-      source,
-      startX:ev.clientX,
-      startY:ev.clientY,
-      dragging:false,
-      ghost:null
-    };
-  },true);
-
-  document.addEventListener('pointermove', ev => {
-    if(!drag || drag.pointerId!==ev.pointerId) return;
-    const dx=ev.clientX-drag.startX, dy=ev.clientY-drag.startY;
-    if(!drag.dragging && Math.hypot(dx,dy)>16){
-      drag.dragging=true;
-      drag.source.classList.add('touch-main-dragging');
-      drag.ghost=makeGhost(drag.source,ev.clientX,ev.clientY);
-      document.body.classList.add('touch-main-drag-active');
-    }
-    if(!drag.dragging) return;
-    ev.preventDefault();
-    drag.ghost.style.left=ev.clientX+'px';
-    drag.ghost.style.top=ev.clientY+'px';
-    document.body.classList.toggle('touch-main-drag-over',overBuilder(ev.clientX,ev.clientY));
-  },{capture:true,passive:false});
-
-  document.addEventListener('pointerup', ev => finishDrag(ev,false),true);
-  document.addEventListener('pointercancel', ev => finishDrag(ev,true),true);
-  document.addEventListener('click', ev => {
-    if(performance.now()>=suppressClickUntil) return;
-    if(!ev.target.closest('#mainDeckList .deck-thumbnail[data-deck-kind="main"]')) return;
-    ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
-  },true);
-})();
-</script>
+<!-- [removed dead code, 2026-09-18]: inert <script type="text/plain"> block "v98-touch-desktop-parity-behavior" (201 lines) -- disabled via data-disabled-by="v119-exact-desktop-touch" and never executed by the browser. Superseded by "v119-exact-desktop-touch" below. -->
 
 
 <style id="v100-colourless-and-royal-category-castles">
@@ -12119,6 +10810,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v106: larger Bastion browser cards arranged across two rows -->
 <style id="v106-bastion-two-row-size">
+/* Bastion two row size. */
 .page-content #bastionGrid .bastion-card-wall{
   align-items:start !important;
   align-content:start !important;
@@ -12143,6 +10835,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 }
 </style>
 <script id="v106-bastion-two-row-fit">
+// Bastion two row fit.
 (function v106BastionTwoRowFit(){
   const page=document.querySelector('.page-content');
   const wall=document.querySelector('#bastionGrid .bastion-card-wall');
@@ -12180,6 +10873,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v110: Bastion browser uses the same compact card width as Side Deck thumbnails -->
 <style id="v110-bastion-side-deck-size">
+/* Bastion side deck size. */
 .page-content #bastionGrid .bastion-card-wall{
   grid-template-columns:repeat(auto-fill,var(--v110-side-deck-card-w,48px)) !important;
   column-gap:var(--v110-side-deck-gap,5px) !important;
@@ -12205,6 +10899,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 }
 </style>
 <script id="v110-sync-bastion-side-deck-size">
+// Sync bastion side deck size.
 (function v110SyncBastionSideDeckSize(){
   const wall=document.querySelector('#bastionGrid .bastion-card-wall');
   const mainList=document.getElementById('mainDeckList');
@@ -12237,38 +10932,15 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v112: fixed-pixel Bastion browser sizing -->
 <style id="v112-fixed-bastion-pixels">
+/* v112 fixed bastion pixels — surviving rules in original cascade order. */
 .page-content #bastionGrid .bastion-card-wall{
   grid-template-columns:repeat(auto-fill,150px) !important;
-  column-gap:10px !important;
-  row-gap:18px !important;
-  align-items:start !important;
-  justify-content:start !important;
-}
-.page-content #bastionGrid .bastion-card-wall > .simple-card,
-.page-content #bastionGrid .bastion-card-wall > .card-reveal-button{
-  width:150px !important;
-  min-width:150px !important;
-  max-width:150px !important;
-  flex-basis:150px !important;
-}
-.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-image,
-.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-image{
-  width:150px !important;
-  min-width:150px !important;
-  max-width:150px !important;
-  height:107px !important;
-  min-height:107px !important;
-  max-height:107px !important;
-  aspect-ratio:auto !important;
-}
-.page-content #bastionGrid .bastion-card-wall > .simple-card .simple-card-info,
-.page-content #bastionGrid .bastion-card-wall > .card-reveal-button .simple-card-info{
-  width:150px !important;
 }
 </style>
 
 <!-- v113: +15% Bastions with responsive two-row category fitting -->
 <style id="v113-responsive-bastion-fit">
+/* Responsive bastion fit. */
 .page-content #bastionGrid .bastion-card-wall{
   --v113-bastion-w:173px;
   --v113-bastion-h:123px;
@@ -12302,6 +10974,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 }
 </style>
 <script id="v113-responsive-bastion-fit-script">
+// Responsive bastion fit script.
 (function v113ResponsiveBastionFit(){
   const wall=document.querySelector('#bastionGrid .bastion-card-wall');
   if(!wall) return;
@@ -12342,6 +11015,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v115: Bastions render in natural single-row flow immediately; no startup two-row snap -->
 <style id="v115-bastion-first-paint-natural-flow">
+/* Bastion first paint natural flow. */
 .page-content #bastionGrid .bastion-card-wall{
   display:flex !important;
   flex-flow:row wrap !important;
@@ -12377,12 +11051,14 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v122: sticky-header adaptive fill with a hard 36px ceiling -->
 <style id="v122-sticky-adaptive-36px">
+/* Sticky adaptive 36px. */
 #cardHoverTooltip .sticky-card-description,
 #cardHoverTooltip .hover-text{
   --v121-sticky-max-font:36px;
 }
 </style>
 <script id="v121-sticky-adaptive-fit">
+// Sticky adaptive fit.
 (function v121StickyAdaptiveFit(){
   const tooltip=document.getElementById('cardHoverTooltip');
   if(!tooltip) return;
@@ -12447,6 +11123,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v119: touch is exactly the desktop interaction surface -->
 <style id="v119-exact-desktop-touch-controls">
+/* Exact desktop touch controls. */
 @media (hover:none), (pointer:coarse){
   /* No touch-only +/- controls or drag affordances. Touch uses the same
      click/info/selection handlers and visual controls as desktop. */
@@ -12492,6 +11169,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 
 <!-- v126: sticky text fit includes padding/border safety so no edge clipping -->
 <style id="v123-sticky-shrink-no-scroll">
+/* Sticky shrink no scroll. */
 #cardHoverTooltip .sticky-card-description,
 #cardHoverTooltip .hover-text,
 #cardHoverTooltip .sticky-card-preview{
@@ -12505,6 +11183,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 }
 </style>
 <script id="v126-sticky-shrink-to-fit">
+// Sticky shrink to fit.
 (function v126StickyShrinkToFit(){
   const tooltip=document.getElementById('cardHoverTooltip');
   if(!tooltip) return;
@@ -12632,6 +11311,7 @@ body{
 }
 </style>
 <script id="v141-move-live-actions-top-right">
+// Move live actions top right.
 (function moveDeckActionsToActualTopRight(){
   function install(){
     const save=document.getElementById('openDeckFilePanel');
@@ -12753,6 +11433,7 @@ body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid >
 }
 </style>
 <script id="v148-maximize-main-deck-cards">
+// Maximize main deck cards.
 (function v148MaximizeMainDeckCards(){
   const list=document.getElementById('mainDeckList');
   if(!list) return;
@@ -12806,8 +11487,7 @@ body.v35-layout-locked .main-deck-panel:not(.terra-deck-panel) .main-deck-grid >
 
 <!-- v149: restore stable Bastion/Main Deck alignment + normal sticky left inset -->
 <style id="v149-restore-stable-rail-geometry">
-/* Restore the stable rail split: the lower Bastion/Royals panel occupies the
-   same 30% vertical band as the Main Deck, so their top/bottom edges align. */
+/* v149 restore stable rail geometry — surviving rules in original cascade order. */
 body.v35-layout-locked .deck-panel.left-deck-rail{
   grid-template-rows:minmax(0,70%) minmax(0,30%) !important;
   row-gap:0 !important;
@@ -12816,7 +11496,6 @@ body.v35-layout-locked .deck-panel.left-deck-rail{
 body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
   grid-column:1 !important;
   grid-row:1 !important;
-  height:100% !important;
   min-height:0 !important;
   max-height:none !important;
   margin:0 !important;
@@ -12831,19 +11510,12 @@ body.v35-layout-locked .left-deck-rail > .deck-details{
   margin-top:0 !important;
   align-self:stretch !important;
 }
-/* The old rail action container is empty now that its live controls are in the
-   top-right action group; do not let it consume a grid row. */
 body.v35-layout-locked .left-deck-rail > .left-deck-actions{
   display:none !important;
 }
-
-/* Restore only the sticky panel's ordinary left inset. v146's extra 5%
-   horizontal padding remains suppressed; this is the normal panel padding. */
 body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
   padding-left:clamp(10px,1.2vw,18px) !important;
 }
-/* Keep inner sticky content flush to the panel's normal inset rather than
-   adding another nested left inset. */
 #cardHoverTooltip > *,
 #cardHoverTooltip .sticky-card-preview,
 #cardHoverTooltip .sticky-card-description,
@@ -12854,9 +11526,6 @@ body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
 #cardHoverTooltip .tooltip-placeholder{
   padding-left:0 !important;
 }
-
-/* Main Deck card scaling is contained inside the already-sized Main Deck panel.
-   It may change thumbnail size, but never the panel/grid track geometry. */
 body.v35-layout-locked .builder-column > .main-deck-panel:not(.terra-deck-panel){
   min-height:0 !important;
   height:auto !important;
@@ -13039,6 +11708,7 @@ body .split-copy-count .copy-zone-side b{color:inherit !important;}
 </style>
 
 <style id="card-zone-drag-and-flight">
+/* Card zone drag and flight. */
 .kb-card-flight{position:fixed;z-index:1000001;pointer-events:none;border-radius:6px;overflow:hidden;transform-origin:center;box-shadow:0 8px 25px #0008;background:var(--panel-raised);}
 .kb-card-flight img{display:block;width:100%;height:100%;object-fit:contain;}
 /* Live drag ghost: bright enough to track at a glance, and reactive to the
@@ -13492,6 +12162,7 @@ body .deck-thumbnail.touch-desktop-hover{
 }
 </style>
 <script id="touch-feedback-live-cards">
+// Touch feedback live cards.
 (function restoreTouchCardFeedback(){
   const selector='.simple-card[data-card-id],.simple-royal-card[data-id],.simple-card[data-bastion-id],.simple-card[data-terra-id],.deck-thumbnail[data-card-id]';
   let contact=null, recent=null, queued=0;
@@ -13553,10 +12224,12 @@ body .deck-thumbnail.touch-desktop-hover{
 </script>
 
 <style id="touch-fullscreen-control">
+/* Touch fullscreen control. */
 #v141TopRightActions > #touchFullscreenButton[hidden]{display:none !important;}
 #v141TopRightActions > #touchFullscreenButton{border:1px solid var(--profile-outline,var(--line));border-radius:7px;background:var(--profile-deck-panel,var(--panel));color:var(--parchment);padding:7px 9px;cursor:pointer;}
 </style>
 <script id="touch-inverted-fullscreen">
+// Touch inverted fullscreen.
 (function maximizeInvertedTouchViewport(){
   const root=document.documentElement;
   const fullscreen=()=>document.fullscreenElement||document.webkitFullscreenElement;
@@ -13665,6 +12338,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini .deck-visual-heading,
 
 <!-- v-final: every warning / hover preview begins at the top of the sticky header -->
 <style id="v-final-sticky-always-start-at-top">
+/* Sticky always start at top. */
 #cardHoverTooltip .sticky-card-preview{
   justify-content:flex-start !important;
   align-content:flex-start !important;
@@ -13683,6 +12357,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini .deck-visual-heading,
 }
 </style>
 <script id="v-final-sticky-always-start-at-top-script">
+// Sticky always start at top script.
 (function stickyHeaderAlwaysStartsAtTop(){
   const tooltip=document.getElementById('cardHoverTooltip');
   if(!tooltip) return;
@@ -13728,73 +12403,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini .deck-visual-heading,
 
 <!-- v-next: viewport inspector + larger top-right controls + larger selected Bastion -->
 <style id="v-next-screen-scale-and-bastion">
-/* Inspector: use essentially all available viewport space instead of stopping
-   at the old 1120 x 760 desktop cap. The internal image/data columns continue
-   to reflow at the existing mobile breakpoint. */
-#cardInspectorModal.card-inspector-modal{
-  padding:clamp(6px,.8vw,12px) !important;
-}
-#cardInspectorModal .card-inspector-window{
-  width:calc(100vw - clamp(12px,1.6vw,24px)) !important;
-  max-width:none !important;
-  height:calc(100dvh - clamp(12px,1.6vw,24px)) !important;
-  max-height:none !important;
-  grid-template-columns:minmax(260px,44%) minmax(300px,1fr) !important;
-}
-#cardInspectorModal .card-inspector-image-wrap{
-  padding:clamp(10px,1.5vw,24px) !important;
-}
-#cardInspectorModal .card-inspector-data{
-  padding:clamp(18px,2.2vw,38px) !important;
-}
-#cardInspectorModal .card-inspector-name{
-  font-size:clamp(24px,3vw,48px) !important;
-}
-#cardInspectorModal .card-inspector-meta{
-  font-size:clamp(12px,1.15vw,18px) !important;
-}
-#cardInspectorModal .card-inspector-rules{
-  font-size:clamp(15px,1.45vw,22px) !important;
-  line-height:1.5 !important;
-}
-@media(max-width:760px){
-  #cardInspectorModal.card-inspector-modal{padding:5px !important;}
-  #cardInspectorModal .card-inspector-window{
-    width:calc(100vw - 10px) !important;
-    height:calc(100dvh - 10px) !important;
-    grid-template-columns:1fr !important;
-    grid-template-rows:minmax(180px,46%) minmax(0,1fr) !important;
-  }
-  #cardInspectorModal .card-inspector-image-wrap{padding:8px !important;}
-  #cardInspectorModal .card-inspector-data{padding:16px 14px 22px !important;}
-  #cardInspectorModal .card-inspector-name{font-size:clamp(22px,7vw,34px) !important;}
-  #cardInspectorModal .card-inspector-rules{font-size:clamp(14px,4vw,18px) !important;}
-}
-
-/* Persistent top-right deck actions: roughly double the old compact visual
-   scale while retaining a smaller responsive floor on narrow screens. */
-#v141TopRightActions{
-  gap:clamp(8px,.75vw,14px) !important;
-}
-#v141TopRightActions > button{
-  min-height:clamp(60px,5vw,76px) !important;
-  padding:clamp(13px,1.15vw,18px) clamp(16px,1.6vw,26px) !important;
-  border-radius:10px !important;
-  font-size:clamp(15px,1.15vw,20px) !important;
-  line-height:1.1 !important;
-  font-weight:800 !important;
-}
-@media(max-width:700px){
-  #v141TopRightActions{gap:6px !important;}
-  #v141TopRightActions > button{
-    min-height:52px !important;
-    padding:10px 12px !important;
-    font-size:13px !important;
-  }
-}
-
-/* Bottom-left selected Bastion: enlarge only the Bastion presentation. Royals
-   keep their current dimensions and position. The cap prevents horizontal crop. */
+/* v next screen scale and bastion — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini{
   --v-next-bastion-width:min(96%, calc(var(--v51-bastion-width, 220px) * 1.30));
 }
@@ -13883,6 +12492,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .lea
 
 <!-- v-final: preserve hover features, but show only the first/highest-priority warning -->
 <script id="v-final-single-warning-preserve-hover">
+// Single warning preserve hover.
 (function keepOnlyTopWarningMessage(){
   function firstWarning(messages){
     const seen = new Set();
@@ -14036,6 +12646,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .lea
 }
 </style>
 <script id="v-final2-sticky-authoritative-mouse-hover-script">
+// Sticky authoritative mouse hover script.
 (function makeStickyHeaderAuthoritativeForMouseHover(){
   const sticky=document.getElementById('cardHoverTooltip');
   if(!sticky) return;
@@ -14226,29 +12837,19 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .lea
 
 <!-- v-final5: selected Bastion zone position/scale refinement -->
 <style id="v-final5-bastion-zone-position-scale">
-/* Bottom-left selected Bastion only: ~10% smaller than the current enlarged
-   treatment and visually nudged upward by 20px. Royal slots are untouched. */
+/* v final5 bastion zone position scale — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini{
   --v-next-bastion-width:min(86%,257px) !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-visual-heading:first-child,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid{
   position:relative !important;
-  top:-20px !important;
 }
 </style>
 
 <!-- v-final6: bottom-left panel +10px and exact Bastion empty/filled geometry -->
 <style id="v-final6-bastion-slot-panel-height">
-/* Give the lower-left selected-leader panel 10px more height while keeping the
-   overall rail height fixed; the sticky header yields the same 10px. */
-body.v35-layout-locked .deck-panel.left-deck-rail{
-  grid-template-rows:minmax(0,calc(70% - 10px)) minmax(0,calc(30% + 10px)) !important;
-}
-
-/* The empty Bastion placeholder and an occupied Bastion now own the exact same
-   landscape box. This prevents the slot from changing size when a Bastion is
-   selected. */
+/* v final6 bastion slot panel height — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .deck-thumbnail,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .leader-empty-slot{
   width:var(--v-next-bastion-width) !important;
@@ -14274,65 +12875,27 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .lea
 </style>
 
 <!-- v-final7: fine-tune lower-left panel and Bastion vertical position -->
-<style id="v-final7-bastion-panel-position-tune">
-/* Bastion zone: move 8px back down from the previous -20px nudge. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-visual-heading:first-child,
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid{
-  top:-12px !important;
-}
 
-/* Lower-left panel: move its top edge down 5px from the previous +10px-height
-   adjustment, leaving it still 5px taller than the original baseline. */
-body.v35-layout-locked .deck-panel.left-deck-rail{
-  grid-template-rows:minmax(0,calc(70% - 5px)) minmax(0,calc(30% + 5px)) !important;
-}
-</style>
 
 <!-- v-final8: +3px vertical refinement and restored empty Bastion slot -->
 <style id="v-final8-bastion-slot-restored-up3">
-/* Fine tune from v-final7: bring both the lower-left panel and its Bastion
-   row back upward by 3px without changing the occupied Bastion dimensions. */
+/* v final8 bastion slot restored up3 — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-visual-heading:first-child,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid{
   top:-15px !important;
 }
-body.v35-layout-locked .deck-panel.left-deck-rail{
-  grid-template-rows:minmax(0,calc(70% - 8px)) minmax(0,calc(30% + 8px)) !important;
-}
-
-/* Only the EMPTY Bastion state gets an explicit landscape frame. The filled
-   Bastion thumbnail is deliberately untouched so its current perfect sizing
-   and caption layout remain exactly as they are. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid:has(> .leader-empty-slot){
   container-type:normal !important;
-  aspect-ratio:7 / 5 !important;
-  height:auto !important;
-  min-height:0 !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid:has(> .leader-empty-slot) > .leader-empty-slot{
-  display:flex !important;
-  width:100% !important;
-  min-width:100% !important;
-  max-width:100% !important;
-  height:100% !important;
-  min-height:100% !important;
-  max-height:100% !important;
-  aspect-ratio:auto !important;
-  box-sizing:border-box !important;
-  align-items:center !important;
-  justify-content:center !important;
-  flex-direction:column !important;
-  gap:4px !important;
   border:1px dashed color-mix(in srgb,var(--brass) 72%,transparent) !important;
   border-radius:8px !important;
   background:linear-gradient(145deg,color-mix(in srgb,var(--brass) 10%,transparent),transparent) !important;
   box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--brass) 6%,transparent) !important;
   color:var(--muted) !important;
-  overflow:hidden !important;
 }
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid:has(> .leader-empty-slot) > .leader-empty-slot .leader-slot-mark{
   display:block !important;
-  font-size:20px !important;
   line-height:1 !important;
   color:var(--brass) !important;
   opacity:.7 !important;
@@ -14418,6 +12981,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid:has(> 
 }
 </style>
 <script id="v-final10-sync-empty-bastion-to-builder-thumbnail">
+// Sync empty bastion to builder thumbnail.
 (function vFinal10SyncEmptyBastionToBuilderThumbnail(){
   const leaderList=document.getElementById('deckListMini');
   const bastionGrid=document.getElementById('bastionGrid');
@@ -14505,41 +13069,24 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid > .dec
 
 <!-- v-final: micro-position tuning requested for left rail -->
 <style id="v-final-left-rail-micro-position-tuning">
-/* Move the sticky header panel upward by 3px in both Main and Side views. */
+/* v final left rail micro position tuning — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip,
 body.v35-layout-locked.side-deck-active .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
   transform:translateY(-3px) !important;
 }
-
-/* Move the entire lower-left Bastion/Royal panel down by 1px. */
 body.v35-layout-locked .left-deck-rail > .deck-details,
 body.v35-layout-locked.side-deck-active .left-deck-rail > .deck-details{
   transform:translateY(1px) !important;
-}
-
-/* The Bastion row itself comes down 3px from its prior -15px offset. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-visual-heading:first-child,
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid{
-  top:-12px !important;
 }
 </style>
 
 <!-- v-final: royal/bastion/sticky micro-position refinement -->
 <style id="v-final-royal-bastion-sticky-micro-refinement">
-/* Royal heading + Royal slots: move upward by 3px only. */
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3),
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
-  position:relative !important;
-  top:-3px !important;
-}
-
-/* Bastion heading + slot: one pixel lower than the current -12px position. */
+/* v final royal bastion sticky micro refinement — surviving rules in original cascade order. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-visual-heading:first-child,
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-bastion-grid{
   top:-11px !important;
 }
-
-/* Shorten the sticky header panel by another 5px without moving the lower panel. */
 body.v35-layout-locked .left-deck-rail > #cardHoverTooltip.card-hover-tooltip,
 body.v35-layout-locked.side-deck-active .left-deck-rail > #cardHoverTooltip.card-hover-tooltip{
   height:calc(100% - 5px) !important;
@@ -14548,32 +13095,13 @@ body.v35-layout-locked.side-deck-active .left-deck-rail > #cardHoverTooltip.card
 }
 </style>
 
-<!-- v-final: Royal slot cards/empty placeholders up 3px more -->
-<style id="v-final-royal-slot-grid-up-3-more">
-/* Keep the Royals heading where it is. Move the actual Royal slot row — both
-   empty placeholders and occupied Royal thumbnails — upward another 3px. */
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
-  position:relative !important;
-  top:-6px !important;
-}
-</style>
 
-<!-- v-final: definitive Royal slot/heading positions; must remain last so older layout patches cannot override them -->
-<style id="v-final-definitive-royal-positioning">
-/* Actual Royal slot row: 5px higher than the prior visible -6px position. */
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
-  position:relative !important;
-  top:-11px !important;
-}
 
-/* Preserve the requested Royals heading/count position: 8px lower than the old -3px position. */
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3){
-  position:relative !important;
-  top:5px !important;
-}
-</style>
 
-<!-- FINAL AUTHORITATIVE OVERRIDES: must remain at true EOF -->
+
+
+
+
 <style id="v-final-authoritative-side-bastions-and-bottom-left-royals">
 /* Bottom-left panel UI only: move the actual two Royal slots up another 10px.
    The Royals heading/count is intentionally left in its current position. */
@@ -14647,82 +13175,34 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > :nth-chi
 }
 </style>
 
-<!-- FINAL: Royal-slot correction — 5px extra upward movement in BOTH deck views -->
-<style id="v-final-royal-slots-up5-both-views">
-/* The actual bottom-left Royal slot grid is shared by Main and Side Deck.
-   Prior stable position was -11px; requested adjustment is now +5px upward,
-   so lock the real Royal grid at -16px in both views. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid),
-body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
-  position:relative !important;
-  top:-16px !important;
-}
-</style>
 
-<!-- FINAL MICRO-ADJUSTMENT: Royal slots down 3px; Royals label/count up 3px -->
-<style id="v-final-royal-slots-down3-counter-up3">
-/* Royal slots: prior final position -16px; bring them down 3px to -13px. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid),
-body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
-  position:relative !important;
-  top:-13px !important;
-}
 
-/* Royals heading/count: prior final position +5px; move it up 3px to +2px. */
-body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3),
-body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > :nth-child(3){
-  position:relative !important;
-  top:2px !important;
-}
-</style>
 
-<!-- FINAL MICRO-ADJUSTMENT: Royal slots down 4px more; counter stays unchanged -->
-<style id="v-final-royal-slots-down4-more">
-/* Prior final Royal-slot position was -13px; move the slots down another 4px to -9px. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="royal-slot-layout">
+/* Royal cards and their counter in both deck views. These are absolute offsets,
+   not incremental adjustments: edit the final positions here. */
 body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid),
 body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
   position:relative !important;
   top:-9px !important;
 }
-</style>
 
-<!-- FINAL MICRO-ADJUSTMENT: Royal slots down 5px more; counter stays unchanged -->
-<style id="v-final-royal-slots-down5-more">
-/* Prior final Royal-slot position was -9px; move the slots down another 5px to -4px. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid),
-body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
-  position:relative !important;
-  top:-4px !important;
-}
-</style>
-
-
-<!-- FINAL MICRO-ADJUSTMENT: Royal slots up 2px more -->
-<style id="v-final-royal-slots-up2-more">
-/* Prior final Royal-slot position was -4px; move only the bottom-left Royal
-   slots up another 2px to -6px in both Main and Side Deck views. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid),
-body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
-  position:relative !important;
-  top:-6px !important;
-}
-</style>
-
-
-<!-- TRUE FINAL MICRO-ADJUSTMENT: 80px deck wrap floor + Royal slots up 3px more -->
-<style id="v-true-final-wrap80-royals-up3">
-/* Bottom-left Royal slots: current final position is -6px; move them up another 3px to -9px. */
-body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid),
-body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(.deck-bastion-grid){
-  position:relative !important;
-  top:-9px !important;
-}
-</style>
-
-<!-- TRUE FINAL MICRO-ADJUSTMENT: tuck Royals counter under the selected Royal slots -->
-<style id="v-true-final-royal-counter-tucked-up">
-/* Keep the Royal cards exactly where they are. Move only the Royals x / 2 line
-   upward so it sits directly beneath the bottom edge of the two Royal slots. */
+/* Counter directly below the Royal cards. */
 body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3),
 body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > :nth-child(3){
   position:relative !important;
@@ -14779,6 +13259,7 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > :nth-chi
 </style>
 
 <script id="v191-keep-deck-toggle-top-right">
+// Keep deck toggle top right.
 (function keepDeckViewToggleInTopActions(){
   function place(){
     const bar=document.getElementById('v141TopRightActions');
@@ -14797,11 +13278,9 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > :nth-chi
 })();
 </script>
 
-<style id="v192-swap-side-deck-save-order">
-/* Final top-right action order:
-   View Side/Main Deck → Save / Load Deck → Customize UI → New Deck */
-</style>
+
 <script id="v192-swap-side-deck-save-order-script">
+// Swap side deck save order script.
 (function swapDeckToggleAndSaveButton(){
   function place(){
     const bar=document.getElementById('v141TopRightActions');
@@ -14817,3 +13296,5 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > :nth-chi
   requestAnimationFrame(()=>requestAnimationFrame(place));
 })();
 </script>
+</body>
+</html>
