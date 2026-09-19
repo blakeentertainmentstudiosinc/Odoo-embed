@@ -17,8 +17,16 @@ before later styles load, so those earlier declarations are not dead weight.
 
 Search style IDs to locate feature sections; IDs remain for traceability.
 Royal grid: final top offset -9px. Royal heading: top -4px.
-JavaScript and embedded card images are unchanged. Historical patch scripts
-remain; this pass consolidates CSS, not application behavior.
+The original JavaScript and embedded card images were preserved by the CSS
+cleanup. Historical patch scripts remain.
+
+PLAY MODE (2026-09-19)
+The kingdoms-play-mode-styles and kingdoms-play-mode sections at the end of
+this file implement a separate solo table. Each physical card has a unique ID;
+game actions never edit builder state. Mouse dragging and touch/pen dragging
+share one move operation. Opening hands, drawing, taxing, damage markers, Undo,
+and local session resume are supported. Costs, effects, and combat resolve
+manually. Use Play game / Deck builder to switch views.
 The obsolete line-number map and superseded patch comments were removed.
 -->
 <html lang="en">
@@ -6326,10 +6334,11 @@ body.side-deck-active .simple-card.selected[data-royal-id]{
 
 <style id="shared-copy-warning-indicators">
 /* A compact warning mark says "there is a reason this add is blocked"; the full
-   reason is repeated in the sticky header and the mouse-follow hover warning. */
+   reason is repeated in the sticky header and the mouse-follow hover warning.
+   Use the upper-left corner to leave the upper-right Info control clear. */
 .page-content .simple-card[data-add-block-reason] .simple-card-image::after,
 #mainDeckList .deck-thumbnail[data-add-block-reason] .deck-thumbnail-art::after{
-  content:"⚠";position:absolute;right:5px;top:5px;z-index:12;display:flex;align-items:center;justify-content:center;
+  content:"⚠";position:absolute;left:5px;right:auto;top:5px;z-index:12;display:flex;align-items:center;justify-content:center;
   min-width:22px;height:22px;padding:0 5px;border:1px solid rgba(255,190,92,.82);border-radius:999px;
   background:rgba(74,37,5,.92);color:#ffd79b;font:800 12px/1 'Work Sans',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.45);pointer-events:none;
 }
@@ -11146,23 +11155,12 @@ body.v35-layout-locked .left-deck-rail #deckListMini > .deck-thumbnail-grid:not(
 }
 </style>
 
-<style id="v120-touch-only-info-button">
-/* v120: Info buttons are a touch affordance only. Desktop mouse/trackpad users
-   still get the same sticky-header/card interactions without the extra icon. */
+<style id="card-info-button-visibility">
+/* Show the explicit card inspector control on desktop, touch, and hybrid devices. */
 .card-info-button,
 .simple-card > .card-info-button,
 .deck-thumbnail > .card-info-button{
-  display:none !important;
-}
-
-/* Show on devices that expose a coarse/touch pointer, including hybrid devices
-   that have both touch and a mouse/trackpad. */
-@media (any-pointer:coarse), (hover:none) and (pointer:coarse){
-  .card-info-button,
-  .simple-card > .card-info-button,
-  .deck-thumbnail > .card-info-button{
-    display:flex !important;
-  }
+  display:flex !important;
 }
 </style>
 
@@ -13296,5 +13294,357 @@ body.v35-layout-locked.side-deck-active .left-deck-rail #deckListMini > :nth-chi
   requestAnimationFrame(()=>requestAnimationFrame(place));
 })();
 </script>
+<!-- Play table: independent card instances; the saved builder deck is never edited by game actions. -->
+<style id="kingdoms-play-mode-styles">
+.kg-only { display:none; }
+body:not(.kingdoms-play-mode) .kg-only { display:none !important; }
+body.kingdoms-play-mode .kg-only { display:block; }
+body.kingdoms-play-mode .page-content > .wrap,
+body.kingdoms-play-mode #mainDeckList,
+body.kingdoms-play-mode #terraDeckList,
+body.kingdoms-play-mode .cost-curve-panel > .curve,
+body.kingdoms-play-mode .left-deck-rail .royal-bastion-panel,
+body.kingdoms-play-mode #v141TopRightActions > #deckViewToggle,
+body.kingdoms-play-mode #v141TopRightActions > #openDeckFilePanel,
+body.kingdoms-play-mode #v141TopRightActions > #newDeckBtn { display:none !important; }
+body.v35-layout-locked.kingdoms-play-mode .builder-column {
+  grid-template-columns:minmax(0,1fr) minmax(175px,19%) !important;
+  grid-template-rows:minmax(0,1fr) minmax(90px,13%) minmax(160px,23%) !important;
+  gap:8px !important;
+}
+body.v35-layout-locked.kingdoms-play-mode .builder-column > .page-content {
+  grid-column:1 / -1 !important; grid-row:1 !important;
+  padding:0 8px !important; overflow:hidden !important;
+}
+body.v35-layout-locked.kingdoms-play-mode .builder-column > .main-deck-panel:not(.terra-deck-panel) {
+  grid-column:1 !important; grid-row:2 / 4 !important; overflow:hidden !important; padding:10px !important;
+}
+body.v35-layout-locked.kingdoms-play-mode .builder-column > .terra-deck-panel {
+  grid-column:2 !important; grid-row:2 !important; overflow:hidden !important; padding:7px !important;
+}
+body.v35-layout-locked.kingdoms-play-mode .builder-column > .cost-curve-panel {
+  grid-column:2 !important; grid-row:3 !important; overflow:auto !important; padding:8px !important;
+}
+body.v35-layout-locked.kingdoms-play-mode .left-deck-rail > .deck-details { overflow:auto !important; }
+body.kingdoms-play-mode #kgPiles { display:grid; }
+body.kingdoms-play-mode #kgBoard { display:flex; flex-direction:column; height:100%; gap:7px; min-height:0; }
+.kg-surface, .kg-dialog { color:var(--parchment,#ede6d3); font:13px/1.4 'Work Sans',sans-serif; }
+.kg-surface *, .kg-dialog * { box-sizing:border-box; }
+.kg-surface button, .kg-dialog button, .kg-dialog select {
+  font:inherit; color:var(--parchment,#ede6d3); border:1px solid var(--profile-outline,var(--brass));
+  border-radius:6px; background:var(--profile-builder-raised,#27221a); padding:6px 9px; cursor:pointer;
+}
+.kg-surface button:hover, .kg-dialog button:hover { background:color-mix(in srgb,var(--brass) 24%,#17140f); }
+.kg-surface button:focus-visible, .kg-dialog button:focus-visible, .kg-dialog select:focus-visible {
+  outline:2px solid #f7df9a; outline-offset:2px;
+}
+.kg-surface button:disabled, .kg-dialog button:disabled { opacity:.4; cursor:default; }
+.kg-heading { display:flex; align-items:center; gap:9px; margin:0; font-size:14px; font-weight:700; color:var(--brass); }
+.kg-heading span { margin-left:auto; font-size:11px; font-weight:500; color:var(--muted,#b5aa99); }
+.kg-top { padding:5px 290px 0 0; flex:0 0 auto; }
+.kg-top h1 { margin:0; font:700 22px/1.3 'Cinzel',serif; color:var(--brass); }
+.kg-top p { margin:2px 0 0; font-size:11px; color:var(--muted,#b5aa99); }
+.kg-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.kg-toolbar .kg-turn { font-weight:700; margin-right:6px; }
+.kg-gold { display:flex; align-items:center; gap:5px; margin-left:auto; }
+.kg-status { margin:0; min-height:18px; color:var(--muted,#b5aa99); font-size:11px; }
+.kg-fields { display:grid; grid-template-rows:1fr 2.2fr; gap:6px; min-height:0; flex:1; overflow:auto; }
+.kg-zone { border:1px dashed color-mix(in srgb,var(--brass) 46%,transparent); border-radius:7px; min-height:95px; padding:7px; display:flex; flex-direction:column; gap:5px; overflow:auto; background:rgba(0,0,0,.12); }
+.kg-zone[data-kg-zone="frontline"] { background:linear-gradient(90deg,rgba(131,67,35,.15),transparent); }
+.kg-zone[data-kg-zone="kingdom"] { background:radial-gradient(circle at 50% 62%,rgba(64,109,64,.14),transparent 70%); }
+.kg-zone.kg-drop-over, .kg-drop-over { outline:2px solid #e8c67e; outline-offset:-3px; background:rgba(201,160,60,.16) !important; }
+.kg-cards { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:flex-start; gap:8px; min-height:0; }
+/* Kingdom + Terra now share one zone. Terra sits in a muted back row behind the
+   Kingdom's front row; both rows grow outward from the center as cards are added. */
+.kg-cards.kg-kingdom-cards, .kg-cards.kg-terra-back { justify-content:center; }
+.kg-terra-back { flex:0 0 auto; padding-bottom:6px; margin-bottom:2px; border-bottom:1px dashed color-mix(in srgb,var(--brass) 30%,transparent); opacity:.8; }
+.kg-terra-back .kg-card { flex-basis:var(--kg-terra-card-w,92px); width:var(--kg-terra-card-w,92px); transition:flex-basis .15s ease,width .15s ease; }
+.kg-terra-back .kg-card-art { max-height:110px; }
+.kg-kingdom-cards { flex:1 1 auto; align-content:flex-start; }
+.kg-kingdom-cards .kg-card { flex-basis:var(--kg-kingdom-card-w,130px); width:var(--kg-kingdom-card-w,130px); transition:flex-basis .15s ease,width .15s ease; }
+.kg-empty { align-self:center; padding:8px; font-size:12px; color:var(--muted,#b5aa99); }
+.kg-card { touch-action:none; user-select:none; position:relative; flex:0 0 110px; width:110px; border:1px solid color-mix(in srgb,var(--brass) 64%,transparent); border-radius:7px; padding:3px; background:var(--profile-deck-raised,#191710); overflow:hidden; }
+.kg-card.kg-selected { outline:2px solid #ffe0a0; outline-offset:1px; }
+.kg-surface .kg-card-main, .kg-dialog .kg-card-main { display:block; width:100%; padding:0; border:0; background:transparent; text-align:left; border-radius:3px; }
+.kg-card-art { display:flex; align-items:center; justify-content:center; aspect-ratio:5/7; background:rgba(0,0,0,.3); overflow:hidden; border-radius:3px; }
+.kg-card-art img { display:block; width:100%; height:100%; object-fit:contain; pointer-events:none; }
+.kg-card.kg-taxed .kg-card-art img { transform:rotate(90deg) scale(.71); }
+.kg-card.kg-taxed .kg-card-art { background:rgba(157,99,20,.25); }
+.kg-card-name { display:block; font-size:10px; line-height:1.2; min-height:25px; padding:4px 2px 0; overflow-wrap:anywhere; }
+.kg-card-note { display:block; color:var(--brass); font-size:9px; min-height:14px; padding:1px 2px; }
+.kg-surface .kg-info, .kg-dialog .kg-info { position:absolute; top:5px; right:5px; width:25px; height:25px; padding:0; border-radius:50%; background:rgba(12,10,7,.94); font:bold 17px Georgia,serif; }
+.kg-surface .kg-quick, .kg-dialog .kg-quick { width:100%; padding:3px; font-size:10px; }
+#kgHand { height:100%; }
+#kgHand .kg-cards { height:calc(100% - 26px); overflow:auto; flex-wrap:nowrap; margin-top:7px; padding:2px; }
+#kgHand .kg-card { flex-basis:clamp(100px,11vw,145px); }
+#kgHand .kg-card-art { max-height:calc(var(--kingdoms-logical-vh,100vh) * .22); }
+.kg-zone[data-kg-zone="frontline"] .kg-card { flex-basis:130px; width:130px; }
+.kg-fields .kg-card-art { max-height:150px; }
+.kg-piles { display:grid; grid-template-columns:1fr 1fr; gap:7px; height:100%; }
+.kg-surface .kg-pile { display:flex; flex-direction:column; justify-content:center; align-items:center; padding:5px; }
+.kg-pile b { font-size:19px; color:var(--brass); }
+.kg-pile small { font-size:9px; color:var(--muted); }
+.kg-draw-pile { display:grid; grid-template-columns:1fr auto; gap:4px; margin-top:7px; padding:7px; border:1px solid color-mix(in srgb,var(--brass) 50%,transparent); border-radius:6px; }
+.kg-draw-pile > strong { font-size:12px; }
+.kg-draw-pile > span { color:var(--brass); font-weight:700; }
+.kg-draw-pile .kg-draw { grid-column:1; }
+.kg-draw-pile .kg-shuffle { font-size:10px; padding:4px; }
+.kg-leaders .kg-cards { gap:5px; }
+.kg-leaders [data-kg-zone="throne"] { min-height:90px; }
+.kg-surface .kg-info { min-height:25px !important; min-width:25px !important; height:25px !important; width:25px !important; }
+.kg-drag-ghost { position:fixed !important; z-index:2147483000 !important; pointer-events:none !important; opacity:.9; box-shadow:0 12px 26px #0008; }
+.kg-drag-source { opacity:.35; }
+#kgHand .kg-heading button { font-size:11px; padding:3px 7px; }
+.kg-leaders .kg-card { flex-basis:calc(50% - 3px); width:calc(50% - 3px); }
+.kg-leaders .kg-card-art { max-height:95px; }
+.kg-leaders .kg-bastion .kg-card { flex-basis:100%; width:100%; }
+.kg-leaders .kg-bastion .kg-card-art { aspect-ratio:7/3; max-height:80px; }
+.kg-leaders .kg-heading { margin:5px 0; font-size:11px; }
+.kg-leaders .kg-card-name { min-height:0; }
+.kg-dialog { width:min(780px,90vw); max-height:85vh; border:1px solid var(--profile-outline,var(--brass)); border-radius:12px; background:var(--profile-deck-bg,#171410); padding:20px; overflow:auto; }
+.kg-dialog::backdrop { background:rgba(0,0,0,.72); }
+.kg-dialog h2 { font-family:'Cinzel',serif; color:var(--brass); margin:0 0 10px; }
+.kg-dialog p { color:var(--muted,#b5aa99); }
+.kg-dialog label { display:block; margin:16px 0; }
+.kg-dialog select { margin-left:8px; }
+.kg-dialog-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+.kg-dialog .kg-cards { padding:3px; }
+.kg-dialog .kg-card { flex-basis:125px; }
+.kg-dialog [data-kg-error] { color:#ffc7a1; }
+@media (prefers-reduced-motion:no-preference) { .kg-card { transition:outline-color .12s; } }
+</style>
+<script id="kingdoms-play-mode">
+/* Manual solo table. Cards are individual instances, even when they share a name.
+   Mutations only touch game.zones; deck-builder state and saved decks stay intact. */
+(function installKingdomsPlayMode(){
+  'use strict';
+  const STORAGE='kingdoms-play-table-v1';
+  const ZONES=['mainDeck','terraDeck','hand','kingdom','frontline','terra','grave','exile','throne','bastion'];
+  const LABEL={mainDeck:'Main deck',terraDeck:'Terra deck',hand:'Hand',kingdom:'Kingdom',frontline:'Front line',terra:'Terra',grave:'Grave',exile:'Exile',throne:'Throne room',bastion:'Bastion'};
+  const FIELD=new Set(['kingdom','frontline','terra','bastion']);
+  let game=null, active=false, selected=null, dragging=null, history=[], status='', viewZone='hand', touchDrag=null, suppressClickUntil=0;
+  const esc=escapeHtml;
+  const clone=o=>JSON.parse(JSON.stringify(o));
+  const cardFor=c=>cardInspectorLookup(c.id);
+  const unit=c=>/Unit|Lord/i.test(cardFor(c)?.type || '');
+  const isTerra=c=>TERRA_CARDS.some(t=>t.id===c.id);
+  const locate=uid=>{if(!game)return null;for(const zone of ZONES){const i=game.zones[zone].findIndex(c=>c.uid===uid);if(i>=0)return {zone,index:i,card:game.zones[zone][i]};}return null;};
+  function shuffled(cards){for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];}return cards;}
+  function persist(){try{localStorage.setItem(STORAGE,JSON.stringify({version:1,game}));}catch(e){status='This browser could not save the play session. Keep this tab open to continue.';}}
+  function restore(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(STORAGE)||'null');
+      if(saved?.version!==1 || !saved.game || !ZONES.every(z=>Array.isArray(saved.game.zones?.[z])))return;
+      const g=saved.game, ids=new Set();
+      for(const z of ZONES)for(const c of g.zones[z]){
+        if(!c || typeof c.uid!=='string' || !/^play-\d+$/.test(c.uid) || !cardInspectorLookup(c.id) || ids.has(c.uid))return;
+        ids.add(c.uid);
+      }
+      if(ids.size>1000 || !Number.isFinite(g.turn) || !Number.isFinite(g.gold) || !Array.isArray(g.royalTax) || g.royalTax.length!==2)return;
+      game=g;
+    }catch(e){/* An unavailable/old session does not block the deck builder. */}
+  }
+  function commit(label,fn){history.push(clone(game));if(history.length>40)history.shift();fn();status=label;persist();render();}
+  function notify(message){status=message;renderStatus();}
+  function renderStatus(){document.getElementById('kgStatus').textContent=status;}
+  function switchMode(on){
+    active=on;document.body.classList.toggle('kingdoms-play-mode',on);
+    document.getElementById('kgModeToggle').textContent=on?'Deck builder':game?'Resume game':'Play game';
+    document.getElementById('kgModeToggle').setAttribute('aria-pressed',String(on));
+    document.querySelector('.page-content').scrollTop=0;
+    closeCardInspector();
+    if(on)render();
+    window.dispatchEvent(new Event('resize'));
+  }
+  function availableDeck(){return {name:document.getElementById('deckName').value.trim()||'Kingdoms Deck',main:{...state.main},terra:{...state.terraDeck,'natural-terra':state.terra},royals:[...state.royals],bastion:state.bastion};}
+  function openSetup(){
+    const deck=availableDeck(),total=Object.values(deck.main).reduce((a,n)=>a+(Number(n)||0),0),terra=Object.values(deck.terra).reduce((a,n)=>a+(Number(n)||0),0);
+    const dialog=document.getElementById('kgSetup');
+    dialog.innerHTML=`<h2 id="kgSetupTitle">Start a solo game</h2><p><strong>${esc(deck.name)}</strong> · ${total} main-deck cards · ${terra} Terra cards</p><p>Shuffle both decks and draw five cards. Choose how many come from your Terra deck; the rest come from your main deck.</p><label>Terra cards in opening hand <select id="kgOpeningTerra">${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${n===2?'selected':''}>${n} Terra + ${5-n} main</option>`).join('')}</select></label><p>Manual play: use the card text to resolve costs, effects, and combat. Your Royals start in the throne room; your Bastion starts in play.</p>${game?'<p>Starting replaces your current play session. Your saved deck stays intact.</p>':''}<p data-kg-error role="status"></p><div class="kg-dialog-footer"><button type="button" data-kg-action="close-setup">Cancel</button><button type="button" data-kg-action="start">Shuffle &amp; start</button></div>`;
+    dialog.showModal();
+  }
+  function start(){
+    const deck=availableDeck(),terraOpening=Number(document.getElementById('kgOpeningTerra').value);
+    const zones=Object.fromEntries(ZONES.map(z=>[z,[]]));let serial=0;
+    const make=(id,royalSlot=null)=>({uid:'play-'+(++serial),id,taxed:false,damage:0,briefed:false,royalSlot});
+    const expand=(map,zone)=>Object.entries(map).forEach(([id,n])=>{if(cardInspectorLookup(id))for(let i=0;i<Math.min(100,Math.max(0,Math.floor(Number(n)||0)));i++)zones[zone].push(make(id));});
+    expand(deck.main,'mainDeck');expand(deck.terra,'terraDeck');
+    if(zones.mainDeck.length<5-terraOpening || zones.terraDeck.length<terraOpening){document.querySelector('#kgSetup [data-kg-error]').textContent='Not enough cards for that opening hand. Choose a different split, or add/load cards in the builder.';return;}
+    deck.royals.forEach((id,i)=>{if(cardInspectorLookup(id))zones.throne.push(make(id,i));});
+    if(deck.bastion && cardInspectorLookup(deck.bastion))zones.bastion.push(make(deck.bastion));
+    shuffled(zones.mainDeck);shuffled(zones.terraDeck);
+    zones.hand.push(...zones.mainDeck.splice(0,5-terraOpening),...zones.terraDeck.splice(0,terraOpening));
+    game={zones,turn:1,gold:0,royalTax:[0,0],name:deck.name};history=[];selected=null;viewZone='hand';
+    status='Drag cards from your hand into your Kingdom. Draw from either deck. Double-click cards in play to tax or untax.';
+    document.getElementById('kgSetup').close();persist();switchMode(true);
+  }
+  function draw(zone){
+    if(!game.zones[zone].length){notify(LABEL[zone]+' is empty.');return;}
+    const c=game.zones[zone][0];
+    commit('Drew '+cardFor(c).name+' from '+LABEL[zone]+'.',()=>game.zones.hand.push(game.zones[zone].shift()));
+  }
+  function move(uid,target){
+    const source=locate(uid);if(!source || !ZONES.includes(target))return;
+    if(target==='kingdom' && isTerra(source.card))target='terra';
+    if(target==='mainDeck' && isTerra(source.card))target='terraDeck';
+    if(target==='terraDeck' && !isTerra(source.card))target='mainDeck';
+    if(target===source.zone){notify('That card is already in '+LABEL[target]+'.');return;}
+    if(target==='frontline' && !unit(source.card)){notify('Only units and Lords belong on the front line.');return;}
+    if(target==='terra' && !isTerra(source.card)){notify('Use the Kingdom area for non-Terra cards.');return;}
+    if(target==='throne' && (source.card.royalSlot===null || game.zones.throne.some(c=>c.royalSlot===source.card.royalSlot))){notify('Only a Royal can return to its empty throne slot.');return;}
+    if(target==='bastion'){notify('Use the Kingdom for cards you play.');return;}
+    const c=source.card,from=source.zone;
+    commit(cardFor(c).name+' → '+LABEL[target]+'.',()=>{
+      game.zones[from].splice(source.index,1);
+      if(target==='throne')game.royalTax[c.royalSlot]+=2;
+      if(!FIELD.has(target) || !FIELD.has(from)){c.taxed=false;c.damage=0;c.briefed=false;}
+      game.zones[target].push(c);selected=null;if(from==='grave'||from==='exile')viewZone='hand';
+    });
+  }
+  function cardHTML(c,zone){
+    const data=cardFor(c);if(!data)return '';
+    const image=cardImageUrl(data),inPlay=FIELD.has(zone);
+    const notes=[c.taxed?'Taxed':'',inPlay&&unit(c)&&!c.briefed?'Unbriefed':'',zone==='throne'?'Royal · +'+game.royalTax[c.royalSlot]+' gold':''].filter(Boolean).join(' · ');
+    return `<article class="kg-card${c.taxed?' kg-taxed':''}${selected===c.uid?' kg-selected':''}" draggable="true" data-kg-uid="${c.uid}" data-kg-card-id="${esc(c.id)}"><button type="button" class="kg-card-main" data-kg-action="select" data-kg-uid="${c.uid}" aria-label="Select ${esc(data.name)}"><span class="kg-card-art">${image?`<img src="${esc(image)}" alt="${esc(data.name)}" draggable="false" loading="lazy">`:'♜'}</span><span class="kg-card-name">${esc(data.name)}</span><span class="kg-card-note">${esc(notes)}</span></button><button type="button" class="kg-info" data-kg-action="info" data-kg-uid="${c.uid}" aria-label="Info for ${esc(data.name)}">i</button></article>`;
+  }
+  function zoneHTML(zone,hint){return `<section class="kg-zone" data-kg-zone="${zone}" aria-label="${LABEL[zone]} drop area"><h2 class="kg-heading">${LABEL[zone]}<span>${game.zones[zone].length} cards</span></h2><div class="kg-cards">${game.zones[zone].map(c=>cardHTML(c,zone)).join('')||`<p class="kg-empty">${hint}</p>`}</div></section>`;}
+  /* Terra no longer gets its own boxed zone: it renders as a muted back row inside
+     the Kingdom zone, and drops still land on data-kg-zone="kingdom" (move() already
+     reroutes Terra cards into the terra zone automatically). */
+  function kingdomZoneHTML(){
+    const terraCards=game.zones.terra.map(c=>cardHTML(c,'terra')).join('');
+    const kingdomCards=game.zones.kingdom.map(c=>cardHTML(c,'kingdom')).join('');
+    return `<section class="kg-zone" data-kg-zone="kingdom" aria-label="Kingdom drop area"><h2 class="kg-heading">Kingdom<span>${game.zones.kingdom.length} cards · ${game.zones.terra.length} Terra</span></h2><div class="kg-cards kg-terra-back" aria-hidden="false">${terraCards||'<p class="kg-empty">Terra plays sit behind your Kingdom.</p>'}</div><div class="kg-cards kg-kingdom-cards">${kingdomCards||'<p class="kg-empty">Play cards from your hand into your Kingdom.</p>'}</div></section>`;
+  }
+  /* Cards scale to the zone's width and fan out from the center as more are added,
+     instead of stacking left-to-right at a fixed size. */
+  function scaleKingdomCards(){
+    const zone=document.querySelector('.kg-zone[data-kg-zone="kingdom"]');if(!zone)return;
+    const kRow=zone.querySelector('.kg-kingdom-cards'),tRow=zone.querySelector('.kg-terra-back');if(!kRow||!tRow)return;
+    const width=zone.clientWidth||1;
+    const kCount=Math.max(1,game.zones.kingdom.length),tCount=Math.max(1,game.zones.terra.length);
+    const kSize=Math.max(74,Math.min(130,Math.floor(width/Math.max(3,Math.ceil(Math.sqrt(kCount*1.6))))));
+    const tSize=Math.max(56,Math.min(96,Math.floor(width/Math.max(4,Math.ceil(Math.sqrt(tCount*2.2))))));
+    kRow.style.setProperty('--kg-kingdom-card-w',kSize+'px');
+    tRow.style.setProperty('--kg-terra-card-w',tSize+'px');
+  }
+  function render(){
+    if(!game || !active)return;
+    document.getElementById('kgTurn').textContent='Turn '+game.turn;
+    document.getElementById('kgGold').textContent=game.gold;
+    document.getElementById('kgUndo').disabled=!history.length;
+    document.getElementById('kgDeckName').textContent=game.name+' · solo play table';
+    document.getElementById('kgFields').innerHTML=zoneHTML('frontline','Play or move a unit here.')+kingdomZoneHTML();
+    const hand=document.getElementById('kgHand');hand.dataset.kgZone=viewZone;
+    hand.innerHTML=`<h2 class="kg-heading">${viewZone==='hand'?'Your hand':LABEL[viewZone]} ${viewZone!=='hand'?`<button type="button" data-kg-action="hand" data-kg-zone="hand">Your hand (${game.zones.hand.length})</button>`:''}<span>${game.zones[viewZone].length} cards</span></h2><div class="kg-cards">${game.zones[viewZone].map(c=>cardHTML(c,viewZone)).join('')||'<p class="kg-empty">No cards here.</p>'}</div>`;
+    document.getElementById('kgPiles').innerHTML=['grave','exile'].map(z=>`<button type="button" class="kg-pile" data-kg-action="pile" data-kg-zone="${z}"><span>${LABEL[z]}</span><b>${game.zones[z].length}</b><small>View / drop cards</small></button>`).join('');
+    document.getElementById('kgDrawDecks').innerHTML=`<h2 class="kg-heading">Draw decks</h2>${['mainDeck','terraDeck'].map(z=>`<div class="kg-draw-pile" data-kg-zone="${z}"><strong>${LABEL[z]}</strong><span>${game.zones[z].length}</span><button type="button" class="kg-draw" data-kg-action="draw" data-kg-zone="${z}" ${game.zones[z].length?'':'disabled'}>Draw</button><button type="button" class="kg-shuffle" data-kg-action="shuffle" data-kg-zone="${z}" ${game.zones[z].length?'':'disabled'}>Shuffle</button></div>`).join('')}`;
+    document.getElementById('kgLeaders').innerHTML=`<div class="kg-bastion"><h2 class="kg-heading">Bastion</h2><div class="kg-cards">${game.zones.bastion.map(c=>cardHTML(c,'bastion')).join('')||'<span class="kg-empty">No Bastion</span>'}</div></div><h2 class="kg-heading">Throne room</h2><div class="kg-cards" data-kg-zone="throne">${game.zones.throne.map(c=>cardHTML(c,'throne')).join('')||'<span class="kg-empty">Royals in play</span>'}</div>`;
+    renderStatus();
+    document.querySelectorAll(".kg-surface [data-kg-zone]:not(button), #kgHand").forEach(el=>{el.tabIndex=0;el.setAttribute("aria-label",LABEL[el.dataset.kgZone]+" drop area");});
+    scaleKingdomCards();
+  }
+  function inspect(uid){const found=locate(uid);if(found){openCardInspector(cardFor(found.card));}}
+  function select(uid){const found=locate(uid);if(!found)return;selected=uid;pinCardObjectToSticky(cardFor(found.card));document.querySelectorAll('.kg-card').forEach(el=>el.classList.toggle('kg-selected',el.dataset.kgUid===uid));}
+  function showPile(zone){viewZone=zone;selected=null;notify('Drag a card from '+LABEL[zone]+' into any destination.');render();}
+  function action(event){
+    const button=event.target.closest('[data-kg-action]');if(!button)return;
+    if(performance.now()<suppressClickUntil){event.preventDefault();event.stopPropagation();return;}
+    const action=button.dataset.kgAction,uid=button.dataset.kgUid,zone=button.dataset.kgZone;
+    event.preventDefault();event.stopPropagation();
+    if(action==='mode'){if(active)switchMode(false);else if(game)switchMode(true);else openSetup();return;}
+    if(action==='setup'){openSetup();return;}
+    if(action==='start'){start();return;}
+    if(action==='close-setup'){document.getElementById('kgSetup').close();return;}
+    if(!active || !game)return;
+    if(action==='draw'){draw(zone);return;}
+    if(action==='select'){select(uid);return;}
+    if(action==='info'){inspect(uid);return;}
+    if(action==='pile'){showPile(zone);return;}
+    if(action==='hand'){viewZone='hand';selected=null;render();return;}
+    if(action==='deselect'){selected=null;render();return;}
+    if(action==='shuffle'){commit('Shuffled '+LABEL[zone]+'.',()=>shuffled(game.zones[zone]));return;}
+    if(action==='undo'){if(history.length){game=history.pop();selected=null;status='Last action undone.';persist();render();}return;}
+    if(action==='gold-up'||action==='gold-down'){commit('Gold adjusted.',()=>game.gold=Math.max(0,game.gold+(action==='gold-up'?1:-1)));return;}
+    if(action==='next-turn'){
+      commit('Turn '+(game.turn+1)+': cards untaxed and units briefed. Draw two cards from either deck.',()=>{
+        game.turn++;game.gold=0;for(const z of FIELD)for(const c of game.zones[z]){c.taxed=false;c.briefed=true;}
+      });return;
+    }
+  }
+  /* Touch/pen dragging uses the same zone move as native desktop dragging.
+     Convert the builder's logical coordinates back to physical pixels for hit testing. */
+  function hitZone(x,y){
+    const viewport=window.kingdomsDesignViewport,scale=viewport?.scale||1;
+    return (viewport?.forcedLandscape?document.elementFromPoint((innerHeight-y)*scale,x*scale):document.elementFromPoint(x*scale,y*scale))?.closest('[data-kg-zone]');
+  }
+  function clearTouch(){
+    if(touchDrag){touchDrag.ghost?.remove();touchDrag.element.classList.remove('kg-drag-source');}
+    touchDrag=null;dragging=null;document.querySelectorAll('.kg-drop-over').forEach(el=>el.classList.remove('kg-drop-over'));
+  }
+  function installTouchDrag(){
+    document.addEventListener('pointerdown',e=>{
+      if(!active || e.pointerType==='mouse' || e.button!==0)return;
+      const element=e.target.closest('.kg-card');if(!element||e.target.closest('.kg-info'))return;
+      touchDrag={pointer:e.pointerId,uid:element.dataset.kgUid,x:e.clientX,y:e.clientY,element,ghost:null};
+      element.setPointerCapture(e.pointerId);
+    });
+    document.addEventListener('pointermove',e=>{
+      if(!touchDrag || touchDrag.pointer!==e.pointerId)return;
+      const scale=window.kingdomsDesignViewport?.scale||1;
+      if(!touchDrag.ghost && Math.hypot(e.clientX-touchDrag.x,e.clientY-touchDrag.y)*scale<7)return;
+      e.preventDefault();
+      if(!touchDrag.ghost){
+        const rect=touchDrag.element.getBoundingClientRect(),ghost=touchDrag.element.cloneNode(true);
+        ghost.classList.add('kg-drag-ghost','kg-surface');ghost.setAttribute('aria-hidden','true');ghost.inert=true;ghost.style.width=rect.width+'px';
+        ghost.removeAttribute('data-kg-uid');ghost.draggable=false;document.body.append(ghost);
+        touchDrag.ghost=ghost;touchDrag.width=rect.width;touchDrag.height=rect.height;dragging=touchDrag.uid;touchDrag.element.classList.add('kg-drag-source');
+      }
+      touchDrag.ghost.style.left=(e.clientX-touchDrag.width/2)+'px';touchDrag.ghost.style.top=(e.clientY-touchDrag.height/2)+'px';
+      document.querySelectorAll('.kg-drop-over').forEach(el=>el.classList.remove('kg-drop-over'));
+      hitZone(e.clientX,e.clientY)?.classList.add('kg-drop-over');
+    },{passive:false});
+    document.addEventListener('pointerup',e=>{
+      if(!touchDrag || touchDrag.pointer!==e.pointerId)return;
+      const uid=touchDrag.uid,dragged=!!touchDrag.ghost,zone=dragged?hitZone(e.clientX,e.clientY):null;
+      clearTouch();
+      if(dragged){e.preventDefault();suppressClickUntil=performance.now()+400;if(zone)move(uid,zone.dataset.kgZone);else notify('Drop cancelled; the card stays in its original zone.');}
+    });
+    document.addEventListener('pointercancel',e=>{if(touchDrag&&touchDrag.pointer===e.pointerId)clearTouch();});
+    document.addEventListener('lostpointercapture',e=>{if(touchDrag&&touchDrag.pointer===e.pointerId)clearTouch();});
+  }
+  function install(){
+    restore();
+    const button=document.createElement('button');button.id='kgModeToggle';button.type='button';button.className='left-deck-action-btn';button.dataset.kgAction='mode';button.textContent=game?'Resume game':'Play game';
+    document.getElementById('v141TopRightActions').append(button);
+    const board=document.createElement('div');board.id='kgBoard';board.className='kg-only kg-surface';
+    board.innerHTML=`<header class="kg-top"><h1>Kingdom</h1><p id="kgDeckName"></p></header><div class="kg-toolbar"><span id="kgTurn" class="kg-turn"></span><button type="button" data-kg-action="next-turn">Next turn</button><button type="button" id="kgUndo" data-kg-action="undo">Undo</button><button type="button" data-kg-action="setup">New game</button><div class="kg-gold"><span>Gold</span><button type="button" data-kg-action="gold-down" aria-label="Remove one gold">−</button><b id="kgGold">0</b><button type="button" data-kg-action="gold-up" aria-label="Add one gold">+</button></div></div><p id="kgStatus" class="kg-status" role="status" aria-live="polite"></p><div id="kgFields" class="kg-fields"></div>`;
+    document.querySelector('.page-content').append(board);
+    function panel(parent,id,extra=''){const el=document.createElement('div');el.id=id;el.className='kg-only kg-surface '+extra;document.querySelector(parent).append(el);return el;}
+    panel('.builder-column > .main-deck-panel:not(.terra-deck-panel)','kgHand').dataset.kgZone='hand';
+    panel('.builder-column > .terra-deck-panel','kgPiles','kg-piles');
+    panel('.builder-column > .cost-curve-panel','kgDrawDecks');
+    panel('.left-deck-rail > .deck-details','kgLeaders','kg-leaders');
+    for(const [id,label] of [['kgSetup','kgSetupTitle']]){const d=document.createElement('dialog');d.id=id;d.className='kg-dialog';d.setAttribute('aria-labelledby',label);document.body.append(d);}
+    document.addEventListener('click',action);
+    installTouchDrag();
+    document.addEventListener('dblclick',e=>{const card=e.target.closest('.kg-card');if(!active||!card||e.target.closest('.kg-info'))return;const found=locate(card.dataset.kgUid);if(found&&FIELD.has(found.zone))commit('Tax status changed.',()=>found.card.taxed=!found.card.taxed);});
+    document.addEventListener('keydown',e=>{if(!active||!selected||e.key!=='Enter')return;const zone=e.target.closest('[data-kg-zone]');if(zone&&e.target===zone&&!zone.matches('button')){e.preventDefault();move(selected,zone.dataset.kgZone);}});
+    document.addEventListener('dragstart',e=>{
+      if(!active)return;const c=e.target.closest('.kg-card');if(!c)return;
+      if(touchDrag){e.preventDefault();return;}
+      dragging=c.dataset.kgUid;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('application/x-kingdoms-play-card',dragging);e.dataTransfer.setData('text/plain',dragging);
+    });
+    document.addEventListener('dragover',e=>{const z=e.target.closest('[data-kg-zone]');if(active&&dragging&&z){e.preventDefault();e.dataTransfer.dropEffect='move';z.classList.add('kg-drop-over');}});
+    document.addEventListener('dragleave',e=>{const z=e.target.closest('[data-kg-zone]');if(z&&!z.contains(e.relatedTarget))z.classList.remove('kg-drop-over');});
+    document.addEventListener('drop',e=>{const z=e.target.closest('[data-kg-zone]');if(!active||!dragging||!z)return;e.preventDefault();e.stopPropagation();const uid=dragging;dragging=null;document.querySelectorAll('.kg-drop-over').forEach(el=>el.classList.remove('kg-drop-over'));move(uid,z.dataset.kgZone);});
+    document.addEventListener('dragend',()=>{dragging=null;document.querySelectorAll('.kg-drop-over').forEach(el=>el.classList.remove('kg-drop-over'));});
+    document.addEventListener('pointerover',e=>{if(!active || e.pointerType==='touch')return;const card=e.target.closest('.kg-card');if(card&&!card.contains(e.relatedTarget)){const c=locate(card.dataset.kgUid);if(c)pinCardObjectToSticky(cardFor(c.card));}});
+    window.addEventListener('resize',()=>{if(active)scaleKingdomCards();});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+</script>
+
 </body>
 </html>
