@@ -1,0 +1,18 @@
+Name: Sy-Laqon, Nature's Apex
+ID: sy-laqon-natures-apex
+Data Group: Main card database
+Cost: 4
+Faction: Green
+Type: Mythic Unit - Flora Spirit
+Stats: 5/5
+Image ID: 39
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Sy-Laqon%2C%20Nature%27s%20Apex.jpg
+
+Rules Text:
+[Rooted]: Can’t defend the bastion & only moves by card effect.
+
+[Overwhelm]: While attacking, deals excess combat damage to the bastion.
+
+[Entrance]: This may cultivate all terra/flora in your grave.
+
+[Passive]: Gets +1/+1 for each cultivated card you control.

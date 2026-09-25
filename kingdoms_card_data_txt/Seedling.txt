@@ -1,0 +1,16 @@
+Name: Seedling
+ID: seedling
+Data Group: Main card database
+Cost: 1
+Faction: Green
+Type: Unit - Flora
+Stats: 0/1
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Seedling.jpg
+
+Rules Text:
+[Entrance]: You may discard a card, if you discarded a terra/flora card this way, draw 1.
+
+[Trigger]: If this enters the grave; you may exile it & add a natural terra from your grave/terra deck to your hand. (Shuffle & reveal if from deck.)
+
+[Rooted]: Can’t defend the bastion & only moves by card effect.

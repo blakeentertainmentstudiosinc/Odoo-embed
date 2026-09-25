@@ -1,0 +1,18 @@
+Name: Nuvish, Nature’s Bulwark
+ID: nuvish-nature-s-bulwark
+Data Group: Main card database
+Cost: 2
+Faction: Green
+Type: Lord - Mythic Unit - Orc Druid
+Stats: Morale 2
+Image ID: 36
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Nuvish%2C%20Nature%E2%80%99s%20Bulwark.jpg
+
+Rules Text:
+[Epic]
+
+[Passive]: Increase the cost to play units by 1.
+
+[Entrance]: Reveal a “Plantoid” from your deck, add it to your hand, then shuffle.
+
+Fringe – [Once Per Your Turn]: Choose one; • - [1]: The next unit you play costs 1 less. • +[1]: Re-activate this card’s entrance.

@@ -1,0 +1,16 @@
+Name: Dreyraka, Herald of the Harshlands
+ID: dreyraka-herald-of-the-harshlands
+Data Group: Main card database
+Cost: 3
+Faction: Green
+Type: Mythic Unit - Orc Druid
+Stats: 3/4
+Image ID: 28
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Dreyraka%2C%20Herald%20of%20the%20Harshlands.jpg
+
+Rules Text:
+[Grapple]: Takes no combat damage when attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is alive.
+
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Passive]: Units without restless enter the front-line taxed, unless their controller pays 1 Gold.

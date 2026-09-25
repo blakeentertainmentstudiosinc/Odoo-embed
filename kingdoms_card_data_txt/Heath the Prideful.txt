@@ -1,0 +1,18 @@
+Name: Heath the Prideful
+ID: heath-the-prideful
+Data Group: Main card database
+Cost: 4
+Faction: Yellow
+Type: Mythic Unit - Human Dwarf Warrior
+Stats: 4/5
+Image ID: 21
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Heath%20the%20Prideful.jpg
+
+Rules Text:
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Survivor]: When this survives 1 or more combat damage; it gets a +1/+1 counter.
+
+[Optional Cost]: This may enter with up to 2 -1/-1 counters; Reduce its cost by 1 for each.
+
+Level Up – [Entrance]: Except the first; it levels up & gets a +1/+1 counter, then it gets another for each copy you’ve leveled up.

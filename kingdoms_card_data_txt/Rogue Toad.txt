@@ -1,0 +1,12 @@
+Name: Rogue Toad
+ID: rogue-toad
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Unit - Swift - Aquan Rogue
+Stats: 1/1
+Image ID: 59
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Rogue%20Toad.jpg
+
+Rules Text:
+[Poison]: Any amount of combat damage this deals to a unit is enough to destroy it.

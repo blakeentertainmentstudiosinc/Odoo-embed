@@ -1,0 +1,16 @@
+Name: Pushback Magi
+ID: pushback-magi
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Unit - Swift - Elf Magi
+Stats: 1/1
+Image ID: 88
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Pushback%20Magi.jpg
+
+Rules Text:
+[Reflex]: Deals combat damage first against non-reflex units. Dealing lethal damage ends combat.
+
+[Swift]
+
+[Entrance]: Target a unit; Tax it & stop any effects it would gain from entering play. Then: If its on the battlefield – You may move it to the kingdom. If its in the kingdom – You may send it to the hand.

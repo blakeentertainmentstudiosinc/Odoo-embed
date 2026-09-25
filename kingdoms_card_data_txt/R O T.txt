@@ -1,0 +1,18 @@
+Name: R O T
+ID: rot
+Data Group: Main card database
+Cost: 5
+Faction: Red
+Type: Mythic Unit - Terror
+Stats: 0/5
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/R%20O%20T.jpg
+
+Rules Text:
+[Dreg]: Cannot be a royal.
+
+[Invulnerable to]: The effects of -1/-1 counters.
+
+Ritual – As you play ROT you MUST sacrifice a unit(s): For each, put a -1/-1 counter on ROT & reduce its cost by 1.
+
+[Passive]: Units deal combat damage to each-other in the form of -1/-1 counters. Units leaving play transfer their -1/-1 counters to ROT. ROT’s ATK is equal to the number of -1/-1 counters it has.

@@ -1,0 +1,14 @@
+Name: Dwarven Cathedral
+ID: dwarven-cathedral
+Data Group: Bastion
+Cost: 
+Faction: Yellow
+Type: Bastion
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Dwarven%20Cathedral.jpg
+
+Rules Text:
+One Of Us! – If one or more royals you control are yellow: Card effects you activate may target (or effect) the kingdom instead of the front-line.
+
+Fringe – [Once per your turn, Exalt Cost 3]: If you control two or more royals: for each unit you exalt (exile) from grave, reduce this cost by 1; the next unit effect you activate that requires a target may have an extra target declared. (May be the same target twice.)

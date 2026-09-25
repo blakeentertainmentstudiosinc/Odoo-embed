@@ -1,0 +1,16 @@
+Name: Dwarfed Dwarf
+ID: dwarfed-dwarf
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Unit - Dwarf Warrior
+Stats: 1/1
+Image ID: 25
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Dwarfed%20Dwarf.jpg
+
+Rules Text:
+[Sneak]: If able to attack a bastion, may target its units. Non-reflex units can’t move in response to sneak.
+
+[Evasive]: If taxed & defending, takes no combat damage.
+
+[Entrance]: If you control another unit; this gets a +1/+1 counter.

@@ -1,0 +1,16 @@
+Name: Dauz, Aceus Forgemaster
+ID: dauz-aceus-forgemaster
+Data Group: Main card database
+Cost: 3
+Faction: Yellow
+Type: Lord - Mythic Unit - Human Artificer
+Stats: Morale 3
+Image ID: 18
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Dauz%2C%20Aceus%20Forgemaster.jpg
+
+Rules Text:
+[Passive]: Reduce the cost of supplies in your hand that cost 2+, by 1. (Not to 0)
+
+[Passive, Trigger Once Per Turn]: If a supplied unit would be destroyed; You may exile 1 of its supplies & prevent what would destroy it.
+
+Fringe – [Once Per Your Turn]: Choose one; +[0]: Reveal cards from the top of your main deck until you reveal a supply, add it to your hand, & shuffle the other cards back. -[1]: Target a supply in your grave, send it to your hand. +[1]: Target a non-continuous supply & supply it to a new valid target.

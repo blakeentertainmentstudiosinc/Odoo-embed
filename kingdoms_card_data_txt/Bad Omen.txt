@@ -1,0 +1,12 @@
+Name: Bad Omen
+ID: bad-omen
+Data Group: Main card database
+Cost: 1
+Faction: Green
+Type: Scroll - Swift
+Stats: 
+Image ID: 29
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Bad%20Omen.jpg
+
+Rules Text:
+Target a unit & move it, it cannot move again this turn.

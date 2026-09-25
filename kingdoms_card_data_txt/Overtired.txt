@@ -1,0 +1,12 @@
+Name: Overtired
+ID: overtired
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Scroll
+Stats: 
+Image ID: 22
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/overtired.jpg
+
+Rules Text:
+Target a unit, if it’s taxed, destroy it.

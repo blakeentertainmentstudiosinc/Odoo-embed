@@ -1,0 +1,14 @@
+Name: Lillia, Saint of Vitality
+ID: lillia-saint-of-vitality
+Data Group: Main card database
+Cost: 2
+Faction: Yellow
+Type: Mythic Unit - Human Cleric
+Stats: 1/3
+Image ID: 14
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Lillia%2C%20Saint%20of%20Vitality.jpg
+
+Rules Text:
+Swift Fringe – [Once Per Turn]: Target a unit you control, it may use its hp value as its atk value while attacking this turn.
+
+[Tax, Cost 2]: Choose one; • Target any unit you control & re-activate its entrance effect. • Target a unit you control without a vitality counter & give it one. (If a card with a vitality counter would be destroyed, remove its vitality counters & prevent what would destroyed it.)

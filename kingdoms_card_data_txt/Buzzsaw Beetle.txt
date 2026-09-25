@@ -1,0 +1,16 @@
+Name: Buzzsaw Beetle
+ID: buzzsaw-beetle
+Data Group: Main card database
+Cost: 2
+Faction: Green
+Type: Unit - Bug Nephilim
+Stats: 2/3
+Image ID: 31
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Buzzsaw%20Beetle.jpg
+
+Rules Text:
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Entrance]: You may burn 3 from your terra deck, then if your terra deck is empty, draw 1.
+
+[Passive]: If you were to draw from an empty deck, put a +1/+1 counter on this instead.

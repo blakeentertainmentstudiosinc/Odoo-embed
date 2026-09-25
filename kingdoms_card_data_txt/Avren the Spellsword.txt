@@ -1,0 +1,16 @@
+Name: Avren the Spellsword
+ID: avren-the-spellsword
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Mythic Unit - Human Magi Warrior
+Stats: 2/2
+Image ID: 78
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Avren%20the%20Spellsword.jpg
+
+Rules Text:
+[Entrance]: Except the first time; it levels up & gets 2 +1/+1 counters for each copy of it you’ve leveled up.
+
+[Trigger]: When you draw from a card effect; this gets a +1/+1 counter for each card.
+
+[Dies]: If this isn’t your royal, you may place it in an empty throne room zone of yours but don’t increase your throne room tax. (This becomes an extra royal.)

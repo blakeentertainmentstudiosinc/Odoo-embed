@@ -1,0 +1,12 @@
+Name: Backup Bomb
+ID: backup-bomb
+Data Group: Main card database
+Cost: 1
+Faction: Red
+Type: Scroll
+Stats: 
+Image ID: 70
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Backup%20Bomb.jpg
+
+Rules Text:
+Target a unit or bastion, this deal 2 damage to it.

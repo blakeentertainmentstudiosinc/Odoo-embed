@@ -1,0 +1,14 @@
+Name: Overpower
+ID: overpower
+Data Group: Main card database
+Cost: 1
+Faction: Blue
+Type: Scroll - Swift
+Stats: 
+Image ID: 98
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Overpower.jpg
+
+Rules Text:
+Only activate this card when a unit enters. Target it, if its paid cost was 1 or less, destroy it & stop its effects this turn.
+
+[Optional Cost]: Pay an extra Gold; replace the “1” in the above effect text with “3”.

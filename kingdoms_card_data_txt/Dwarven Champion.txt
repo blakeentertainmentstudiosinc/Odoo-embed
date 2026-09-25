@@ -1,0 +1,18 @@
+Name: Dwarven Champion
+ID: dwarven-champion
+Data Group: Main card database
+Cost: 5
+Faction: Yellow
+Type: Unit - Dwarf Berserker
+Stats: 4/5
+Image ID: 26
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Dwarven%20Champion.jpg
+
+Rules Text:
+[Optional Shared Cost]: Tax up to 2 (untaxed) dwarves you control; each shares 1 gold towards this card’s cost.
+
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.
+
+[Berserk]: Once per your turn, immediately after this deals combat damage, untax it.

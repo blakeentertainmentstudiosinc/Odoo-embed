@@ -1,0 +1,14 @@
+Name: Become Plant
+ID: become-plant
+Data Group: Main card database
+Cost: 2
+Faction: Green
+Type: Scroll - Swift
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Become%20Plant.jpg
+
+Rules Text:
+[Optional Cost]: Discard a card; reduce this card’s cost by 1.
+
+Target a unit, until the end of your next turn the unit has -3 ATK, is rooted, & also has the flora type. (Rooted units can’t defend the bastion & only move by card effect.)

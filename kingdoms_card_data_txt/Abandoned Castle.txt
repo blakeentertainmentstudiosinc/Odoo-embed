@@ -1,0 +1,16 @@
+Name: Abandoned Castle
+ID: abandoned-castle
+Data Group: Bastion
+Cost: 
+Faction: Colourless
+Type: Bastion
+Stats: Morale 18
+Image ID: 103
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Abandoned%20Castle.jpg
+
+Rules Text:
+All For One! – You have 1 throne room zone instead of 2.
+
+One For All! – Cards in your deck(s) may be from any faction.
+
+Fort – If playing a game mode where a fort type bastion is required: It starts with 8 less morale, & you only have 1 throne room zone. Also your terra deck size is 5-10, & your main deck size is 20-45.

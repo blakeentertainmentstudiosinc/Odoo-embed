@@ -1,0 +1,14 @@
+Name: Magi Freshman
+ID: magi-freshman
+Data Group: Main card database
+Cost: 1
+Faction: Blue
+Type: Unit - Elf Magi
+Stats: 1/2
+Image ID: 85
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Magi%20Freshman.jpg
+
+Rules Text:
+[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.
+
+[Entrance]: Study X. X = the number of “Magi Freshman” you control.

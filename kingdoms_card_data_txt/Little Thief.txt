@@ -1,0 +1,14 @@
+Name: Little Thief
+ID: little-thief
+Data Group: Main card database
+Cost: 1
+Faction: Red
+Type: Unit - Human Thief
+Stats: 1/1
+Image ID: 55
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Little%20Thief.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Entrance]: Target an enemy, they exile the top card of their main deck. Until the end of your next turn you may play it by paying its cost(s). If you don’t, the opp may send it back to the top of their deck at their next upkeep.

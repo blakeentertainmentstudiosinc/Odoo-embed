@@ -1,0 +1,12 @@
+Name: Scold
+ID: scold
+Data Group: Main card database
+Cost: 1
+Faction: Blue
+Type: Scroll - Swift
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Scold.jpg
+
+Rules Text:
+Target a player. They burn 2. (To burn, a player sends the top card of their main deck to grave.)

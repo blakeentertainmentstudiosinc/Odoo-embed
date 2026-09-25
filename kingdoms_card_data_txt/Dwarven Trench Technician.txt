@@ -1,0 +1,16 @@
+Name: Dwarven Trench Technician
+ID: dwarven-trenchman
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Unit - Swift - Dwarf Warrior
+Stats: 1/1
+Image ID: 27
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Dwarven%20Trench%20Technician.jpg
+
+Rules Text:
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Entrance]: This turn enemy units on the front-line can’t move, can’t resolve entrance effects, & can’t deal damage if attacking.
+
+[Optional Cost]: Sacrifice a terra; reduce this card’s cost by 1. If you did, this card’s entrance effect gains - “Also, enemy units on the front-line can’t deal damage if defending.”

@@ -1,0 +1,14 @@
+Name: Riptide Elemental
+ID: riptide-elemental
+Data Group: Main card database
+Cost: 4
+Faction: Blue
+Type: Unit - Swift - Elemental
+Stats: 2/1
+Image ID: 91
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Riptide%20Elemental.jpg
+
+Rules Text:
+[Dodge]: May direct damage from itself to your bastion.
+
+[Entrance]: Target up to 2 units. Prevent all damage they do this turn, tax them, & choose one to stay taxed during its next untax step. Then, for each taxed enemy unit in play, this gets a +1/+1 counter. Now, for every 2 +1/+1 counters on this card, you may draw 1.

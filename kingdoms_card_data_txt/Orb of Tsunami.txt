@@ -1,0 +1,14 @@
+Name: Orb of Tsunami
+ID: orb-of-tsunami
+Data Group: Main card database
+Cost: 2
+Faction: Colourless
+Type: Mythic Relic
+Stats: 
+Image ID: 50
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Orb%20of%20Tsunami.jpg
+
+Rules Text:
+[Passive]: All units you control with 2 or less printed ATK get +1 ATK.
+
+Epic – [Cost 4, Tax, & Sacrifice]: Destroy all non-lord units with 3 or less current ATK. (Only resolve one epic effect per turn.)

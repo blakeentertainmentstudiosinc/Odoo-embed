@@ -1,0 +1,14 @@
+Name: De’ Xaio, Oni of the End
+ID: de-xaio-oni-of-the-end
+Data Group: Main card database
+Cost: 4
+Faction: Colourless
+Type: Lord - Mythic Relic Unit - Golem Fiend
+Stats: 4/4
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/De%E2%80%99%20Xaio%2C%20Oni%20of%20the%20End.jpg
+
+Rules Text:
+Fringe – [Once per your turn]: Choose one –
+• +[0]: This gets +1 morale for each relic you control. If you control this card, “Corrosis Talisman”, “Blessed Stone”, “Seed of the Ancient Tree”, & “Orb of Tsunami” you may activate this card’s fringe effect again.
+• -[13]: If you control this card, “Corrosis Talisman”, “Blessed Stone”, “Seed of the Ancient Tree”, & “Orb of Tsunami” you win the game.

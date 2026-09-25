@@ -1,0 +1,12 @@
+Name: Helga the Bog Witch
+ID: helga-the-bog-witch
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Mythic Unit - Human Magi
+Stats: 2/2
+Image ID: 84
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Helga%20the%20Bog%20Witch.jpg
+
+Rules Text:
+[Trigger Once Per Turn]: After you study; Draw 1, then this gets a +1/+1 counter.

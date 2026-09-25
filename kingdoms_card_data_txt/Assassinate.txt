@@ -1,0 +1,12 @@
+Name: Assassinate
+ID: assassinate
+Data Group: Main card database
+Cost: 3
+Faction: Red
+Type: Scroll - Swift
+Stats: 
+Image ID: 56
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Assassinate.jpg
+
+Rules Text:
+Target a unit & destroy it.

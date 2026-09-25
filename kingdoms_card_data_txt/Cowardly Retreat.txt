@@ -1,0 +1,12 @@
+Name: Cowardly Retreat
+ID: cowardly-retreat
+Data Group: Main card database
+Cost: 3
+Faction: Blue
+Type: Scroll - Swift
+Stats: 
+Image ID: 95
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Cowardly%20Retreat.jpg
+
+Rules Text:
+Target a unit & send it to the top of its deck, or if it’s your turn you may shuffle it into its deck instead.

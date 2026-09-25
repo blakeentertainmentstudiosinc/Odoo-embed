@@ -1,0 +1,16 @@
+Name: Seed of the Ancient Tree
+ID: seed-of-the-ancient-tree
+Data Group: Main card database
+Cost: 0
+Faction: Colourless
+Type: Mythic Relic
+Stats: 
+Image ID: 51
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Seed%20of%20the%20Ancient%20Tree.jpg
+
+Rules Text:
+[Entrance]: Each player searches their terra deck for a terra card & plays them taxed. (Shuffle.)
+
+Epic – [Tax]: If you control less terra than another player & this is the first card you’ve taxed this turn; +1 Gold. (Only resolve one epic effect per turn.)
+
+[Cost 2, Tax, & Sacrifice]: All players sacrifice a mythic terra.

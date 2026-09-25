@@ -1,0 +1,16 @@
+Name: Red Cloak
+ID: red-cloak
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Supply
+Stats: 
+Image ID: 72
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Red%20Cloak.jpg
+
+Rules Text:
+[On Play]: Target a unit, supply this to it.
+
+[Passive]: A unit supplied with this gets +2 ATK.
+
+[Optional Cost]: Discard 1 card as you play this; reduce its cost by 1 & exile 1 card from the top of your main deck face up. If this card resolves, you may play the exiled card until the end of your next turn by paying its cost(s).

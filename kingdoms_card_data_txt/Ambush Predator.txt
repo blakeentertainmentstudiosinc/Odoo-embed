@@ -1,0 +1,20 @@
+Name: Ambush Predator
+ID: ambush-predator
+Data Group: Main card database
+Cost: 4
+Faction: Green
+Type: Unit - Swift - Reptoid Arakni Nephilim
+Stats: 4/5
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Ambush%20Predator.jpg
+
+Rules Text:
+[Invulnerable to]: Poison damage.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.
+
+[Reach]: Defends as if it had ranged. Takes no combat damage while attacking a non-ranged/reach unit.
+
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Grapple]: Takes no combat damage when attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is alive.

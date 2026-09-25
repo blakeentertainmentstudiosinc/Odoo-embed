@@ -1,0 +1,14 @@
+Name: Pyro Magi Warrior
+ID: pyro-magi-warrior
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Unit - Human Magi Warrior
+Stats: 2/1
+Image ID: 87
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Pyro%20Magi%20Warrior.jpg
+
+Rules Text:
+[Combative]: When this deals combat damage to a unit; its controller burns 1 card for each damage, then if this doesn’t have a +1/+1 counter, it gets one. (To burn, a player sends the top card of their main deck to grave.)
+
+[Reflex]: Deals combat damage first against non-reflex units. Dealing lethal damage ends combat.

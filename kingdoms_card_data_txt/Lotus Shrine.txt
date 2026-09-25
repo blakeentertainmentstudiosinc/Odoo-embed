@@ -1,0 +1,14 @@
+Name: Lotus Shrine
+ID: lotus-shrine
+Data Group: Main card database
+Cost: 1
+Faction: Colourless
+Type: Relic
+Stats: 
+Image ID: 49
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Lotus%20Shrine.jpg
+
+Rules Text:
+[Trigger]: If another player controls no terra cards; sacrifice this.
+
+Once – [Tax]: +1 Gold. (Effects with once can’t resolve multiple copies in one turn.)

@@ -1,0 +1,14 @@
+Name: Goblin Boneyard
+ID: goblin-boneyard
+Data Group: Bastion
+Cost: 
+Faction: Red
+Type: Bastion
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Goblin%20Boneyard.jpg
+
+Rules Text:
+One Of Us! – If one or more royals you control are red: Goblins you control have urgency. (May attack/use tax effects immediately.)
+
+Fringe – [Once per your turn]: If you control two or more royals; target a goblin in your grave, you may pay its cost(s) to play it with an undeath counter. (They get exiled instead of dying.)

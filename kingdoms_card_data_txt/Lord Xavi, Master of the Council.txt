@@ -1,0 +1,16 @@
+Name: Lord Xavi, Master of the Council
+ID: lord-xavi-master-of-the-council
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Lord - Mythic Unit - Human Magi
+Stats: 0/3
+Image ID: 80
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Lord%20Xavi%2C%20Master%20of%20the%20Council.jpg
+
+Rules Text:
+[Entrance]: Except the first time; it levels up & its fringe effect becomes “
+
+Swift Fringe – [Once Per Turn]”.
+
+Fringe – [Once Per Your Turn]: If untaxed, choose one: • - [1]: Draw 1 card. • +[1]: Study 1 (View the top card of a deck you own, put it back on top or on bottom.) • -[9]: Target a unit. Its controller exiles the top card of their main deck, a random card from their hand, & the unit. Repeat this for each time you’ve leveled up a copy of Xavi.

@@ -1,0 +1,18 @@
+Name: Argon the Telekinetic
+ID: argon-the-telekinetic
+Data Group: Main card database
+Cost: 3
+Faction: Blue
+Type: Mythic Unit - Elf Magi
+Stats: 2/2
+Image ID: 79
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Argon%20the%20Telekinetic.jpg
+
+Rules Text:
+[Reflex]: Deals combat damage first against non-reflex units. Dealing lethal damage ends combat.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.
+
+[Entrance]: You may target a unit & tax it. It stays taxed while you control this card.
+
+[Dies]: You may target a unit & tax it, then exile each other copy of this card from your grave. The target stays taxed if this is in grave & you control a blue royal/this is your royal.

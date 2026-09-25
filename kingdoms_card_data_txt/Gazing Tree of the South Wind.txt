@@ -1,0 +1,14 @@
+Name: Gazing Tree of the South Wind
+ID: gazing-tree-of-the-south-wind
+Data Group: Bastion
+Cost: 
+Faction: Green
+Type: Bastion
+Stats: 
+Image ID: 33
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Gazing%20Tree%20of%20the%20South%20Wind.jpg
+
+Rules Text:
+Undergrowth – You may play basic terra from your grave as if they were in your hand.
+
+Fringe – [Once Per Your Turn]: If you control two or more royals: Target a unit in your grave, you may play it this turn by paying its cost.

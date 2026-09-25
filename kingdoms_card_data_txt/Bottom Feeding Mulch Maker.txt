@@ -1,0 +1,16 @@
+Name: Bottom Feeding Mulch Maker
+ID: bottom-feeding-mulch-maker
+Data Group: Main card database
+Cost: 1
+Faction: Green
+Type: Unit - Flora
+Stats: 0/1
+Image ID: 35
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Bottom%20Feeding%20Mulch%20Maker.jpg
+
+Rules Text:
+[Grapple]: Takes no combat damage when attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is alive.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.
+
+[Trigger]: When a unit you control dies; This gets a +1/+1 counter.

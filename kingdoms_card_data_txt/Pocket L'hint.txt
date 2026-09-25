@@ -1,0 +1,12 @@
+Name: Pocket L’hint
+ID: pocket-lhint
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Relic Unit - Goblin Mek
+Stats: 0/0
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Pocket%20L%E2%80%99hint.jpg
+
+Rules Text:
+[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.

@@ -1,0 +1,18 @@
+Name: Aires, Lord of Battle
+ID: aires-lord-of-battle
+Data Group: Main card database
+Cost: 3
+Faction: Yellow
+Type: Lord - Mythic Unit - Dwarf Warrior
+Stats: Morale 5
+Image ID: 6
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Aires%2C%20Lord%20of%20Battle.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Entrance]: Except the 1st time; it levels up & for each copy of it you’ve leveled up, it gets +[1] morale.
+
+Swift Fringe – [Once Per Turn]: May move for -[1].
+
+Fringe – [Once Per Your Turn]: If untaxed, choose one: -[2]: This turn, this gets +4 ATK. +[O]: Target a bastion & a lord, both get +[1].

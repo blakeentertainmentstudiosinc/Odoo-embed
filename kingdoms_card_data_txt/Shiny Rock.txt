@@ -1,0 +1,12 @@
+Name: Shiny Rock
+ID: shiny-rock
+Data Group: Main card database
+Cost: 0
+Faction: Colourless
+Type: Relic
+Stats: 
+Image ID: 46
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Shiny%20Rock.jpg
+
+Rules Text:
+Epic – [Tax & Sacrifice]: +1 Gold. (Only resolve one epic effect per turn.)

@@ -1,0 +1,17 @@
+Name: Poisoned Dagger
+ID: poisoned-dagger
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Supply
+Stats: 
+Image ID: 71
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Poisoned%20Dagger.jpg
+
+Rules Text:
+[On Play]: Target a unit, supply this to it.
+
+[Passive]: A unit supplied with this gets:
+• +1 ATK.
+• [Dies]: Draw 1.
+• [Poison]: Any amount of combat damage this deals to a unit is enough to destroy it.

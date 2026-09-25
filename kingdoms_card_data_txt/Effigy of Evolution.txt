@@ -1,0 +1,16 @@
+Name: Effigy of Evolution
+ID: effigy-of-evolution
+Data Group: Main card database
+Cost: 1
+Faction: Green
+Type: Relic
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Effigy%20of%20Evolution.jpg
+
+Rules Text:
+[Entrance]: Target any number of terra/flora you control or in your grave, this cultivates them. (A cultivated card is also a supply but loses its original effects.)
+
+[Tax & Cost 2]: Choose a terra this is cultivating & play it, or re-activate this card’s entrance effect.
+
+Once – [Tax & Cost 3]: Target a non-human unit. Transfer all cultivated cards from this to the unit & then sacrifice this. This turn the unit gets +1 ATK for each card it’s cultivating. (Effects with once can’t resolve multiple copies in one turn.)

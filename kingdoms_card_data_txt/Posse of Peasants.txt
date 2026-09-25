@@ -1,0 +1,12 @@
+Name: Posse of Peasants
+ID: posse-of-peasants
+Data Group: Main card database
+Cost: 1
+Faction: Colourless
+Type: Unit - Human
+Stats: 1/1
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/posse%20of%20peasants.jpg
+
+Rules Text:
+[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.

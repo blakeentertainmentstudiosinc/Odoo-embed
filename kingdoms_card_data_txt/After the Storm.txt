@@ -1,0 +1,12 @@
+Name: After the Storm
+ID: after-the-storm
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Scroll - Swift
+Stats: 
+Image ID: 8
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/After%20the%20Storm.jpg
+
+Rules Text:
+Only activate this card immediately after a unit(s) you control on the front-line is destroyed; for each, target an enemy unit on the front-line and destroy them.

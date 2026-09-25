@@ -1,0 +1,14 @@
+Name: Rootsnare Druid
+ID: rootsnare-druid
+Data Group: Main card database
+Cost: 2
+Faction: Green
+Type: Unit - Swift - Orc Druid
+Stats: 1/1
+Image ID: 38
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Rootsnare%20Druid.jpg
+
+Rules Text:
+[Grapple]: Takes no combat damage when attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is alive.
+
+[Entrance]: Target a unit, this may grapple it, then you may move it to the front-line &/or tax it. If it’s taxed, this turn it takes O combat damage & is untargettable. If it’s untaxed, remove up to 2 of its counters or destroy 1 of its supplies.

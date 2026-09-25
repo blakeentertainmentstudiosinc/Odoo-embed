@@ -1,0 +1,14 @@
+Name: Dwarven Bannerman
+ID: dwarven-bannerman
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Unit - Dwarf Warrior
+Stats: 0/1
+Image ID: 24
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Dwarven%20Bannerman.jpg
+
+Rules Text:
+[Entrance]: Target a non-lord unit, it gets a +1/+1 counter.
+
+[Tax & Cost 2]: Target a non-lord unit, it gets a +1/+1 counter.

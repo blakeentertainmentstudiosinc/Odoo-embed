@@ -1,0 +1,12 @@
+Name: Noble Squire
+ID: noble-squire
+Data Group: Main card database
+Cost: 1
+Faction: Colourless
+Type: Unit - Human Knight
+Stats: 1/1
+Image ID: 53
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Noble%20Squire.jpg
+
+Rules Text:
+[Passive]: Gets +1/+1 for each royal you control. (A royal is any card from the throne room.)

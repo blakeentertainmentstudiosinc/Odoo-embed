@@ -1,0 +1,14 @@
+Name: Frogue
+ID: frogue
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Unit - Aquan Rogue
+Stats: 1/1
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Frogue.jpg
+
+Rules Text:
+[Sneak]: If able to attack a bastion, may target its units. Non-reflex units can’t move in response to sneak.
+
+[Poison]: Any amount of combat damage this deals to a unit is enough to destroy it.

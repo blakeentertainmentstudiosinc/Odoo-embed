@@ -1,0 +1,16 @@
+Name: L’hint, Goblin-Mutationmancer
+ID: lhint-goblin-mutationmancer
+Data Group: Main card database
+Cost: 3
+Faction: Red
+Type: Mythic Unit - Goblin Shaman Artificer
+Stats: 1/1
+Image ID: 65
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/L%E2%80%99hint%2C%20Goblin-Mutationmancer.jpg
+
+Rules Text:
+[Passive]: Gets +1 ATK for each relic you control. Goblins you control are also relics. Non-lord goblin units you control get +1 HP.
+
+[Optional Upkeep]: Cost 1 & Discard 1; play a “Pocket L’hint” from your side deck for each HP this card has.
+
+[Cost 3 & Sacrifice a Relic]: This gets a +1/+1 counter for each goblin you control.

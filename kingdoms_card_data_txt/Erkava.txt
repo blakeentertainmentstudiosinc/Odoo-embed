@@ -1,0 +1,14 @@
+Name: Erkava
+ID: erkava
+Data Group: Main card database
+Cost: 1
+Faction: Blue
+Type: Scroll - Swift
+Stats: 
+Image ID: 94
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Erkava.jpg
+
+Rules Text:
+Only Activate this as a non-terra card enters/activates its effect. If its paid cost to be played/activate its effect was 1 or less, target it & stop its effects this turn. If you did & it’s a scroll/relic/supply that was played this turn, destroy it.
+
+[Optional Cost]: Pay an extra Gold; replace “1” in the effect text above with “3”.

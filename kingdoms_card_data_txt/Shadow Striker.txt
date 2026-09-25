@@ -1,0 +1,16 @@
+Name: Shadow Striker
+ID: shadow-striker
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Unit - Rogue Spirit
+Stats: 2/1
+Image ID: 68
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Shadow%20Striker.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Sneak]: If able to attack a bastion, may target its units. Non-reflex units can’t move in response to sneak.
+
+[On attack]: Has dodge for the attack. (May direct damage from itself to your bastion.)

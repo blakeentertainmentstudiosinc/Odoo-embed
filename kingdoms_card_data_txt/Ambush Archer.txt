@@ -1,0 +1,14 @@
+Name: Ambush Archer
+ID: ambush-archer
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Unit - Swift - Human Archer
+Stats: 1/1
+Image ID: 57
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Ambush%20Archer.jpg
+
+Rules Text:
+[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.
+
+[Entrance]: Target a unit or bastion & this deals 1 damage to it.

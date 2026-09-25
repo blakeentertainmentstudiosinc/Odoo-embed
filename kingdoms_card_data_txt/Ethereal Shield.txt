@@ -1,0 +1,18 @@
+Name: Ethereal Shield
+ID: ethereal-shield
+Data Group: Main card database
+Cost: 1
+Faction: Blue
+Type: Unit - Spirit
+Stats: 0/2
+Image ID: 90
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Ethereal%20Shield.jpg
+
+Rules Text:
+[Reach]: Defends as if it had ranged. Takes no combat damage while attacking a non-ranged/reach unit.
+
+[Dodge]: May direct damage from itself to your bastion.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.
+
+[Entrance/Dies]: You may study 1. If you did & this is alive, it gets a -1/-1 counter.

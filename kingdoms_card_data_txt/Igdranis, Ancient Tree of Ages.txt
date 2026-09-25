@@ -1,0 +1,16 @@
+Name: Igdranis, Ancient Tree of Ages
+ID: igdranis-ancient-tree-of-ages
+Data Group: Main card database
+Cost: 4
+Faction: Green
+Type: Lord - Mythic Unit - Flora God
+Stats: Morale 8
+Image ID: 34
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Igdranis%2C%20Ancient%20Tree%20of%20Ages.jpg
+
+Rules Text:
+[Rooted]: Can’t defend the bastion & only moves by card effect.
+
+Swift Fringe – [Once Per Turn]: Choose one; +[2]: Target a cultivated card you control or a flora card in your grave, play it by paying its cost(s) & exiling another copy of it from your hand, grave, or main deck. (Shuffle.) -[6] &
+
+[Cost 1, Sacrifice a flora/terra]: Choose the target(s) of an effect that is targeting a card(s) you control.

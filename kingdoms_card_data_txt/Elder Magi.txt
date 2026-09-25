@@ -1,0 +1,16 @@
+Name: Elder Magi
+ID: elder-magi
+Data Group: Main card database
+Cost: 3
+Faction: Blue
+Type: Unit - Swift - Elf Magi
+Stats: 2/3
+Image ID: 86
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Elder%20Magi.jpg
+
+Rules Text:
+[Reach]: Defends as if it had ranged. Takes no combat damage while attacking a non-ranged/reach unit.
+
+[Urgency]: May attack/use tax effects immediately.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.

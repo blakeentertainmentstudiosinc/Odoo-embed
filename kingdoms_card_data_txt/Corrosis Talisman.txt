@@ -1,0 +1,14 @@
+Name: Corrosis Talisman
+ID: corrosis-talisman
+Data Group: Main card database
+Cost: 1
+Faction: Colourless
+Type: Mythic Relic
+Stats: 
+Image ID: 48
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Corrosis%20Talisman.jpg
+
+Rules Text:
+[Force]: Must finish resolving before cards/effects without force can be played. Except generating gold & other special actions.
+
+Epic Force – [Cost 1, Tax, & Sacrifice]: Target a relic or supply in play/any card in grave, stop its effects, then exile it. (Only resolve one epic effect per turn.)

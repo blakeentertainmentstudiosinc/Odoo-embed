@@ -1,0 +1,16 @@
+Name: Sarath, Noble Knight
+ID: sarath-noble-knight
+Data Group: Main card database
+Cost: 3
+Faction: Colourless
+Type: Mythic Unit - Human Knight
+Stats: 1/1
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Sarath%2C%20Noble%20Knight.jpg
+
+Rules Text:
+[Passive]: Gets +1/+1 for every 2 counters on your throne room.
+
+Epic – [Entrance]: You may sacrifice this card & target a royal you own in a throne room zone. If you do, play it & that zone gets 2 counters. (Only resolve one epic effect per turn.)
+
+[Trigger]: When a royal you own enters the throne room; you may play this card from the grave with an undeath counter by paying its cost(s). (Gets exiled instead of dying.)

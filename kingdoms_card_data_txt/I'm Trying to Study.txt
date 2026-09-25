@@ -1,0 +1,12 @@
+Name: I’m Trying to Study
+ID: im-trying-to-study
+Data Group: Main card database
+Cost: 1
+Faction: Blue
+Type: Scroll - Swift
+Stats: 
+Image ID: 96
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/I%E2%80%99m%20Trying%20to%20Study.jpg
+
+Rules Text:
+Only activate this immediately after a player studies. Target a unit, this deals 3 damage to it.

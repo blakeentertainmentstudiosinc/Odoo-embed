@@ -1,0 +1,16 @@
+Name: Rogue Thief
+ID: rogue-thief
+Data Group: Main card database
+Cost: 4
+Faction: Red
+Type: Unit - Human Rogue Thief
+Stats: 5/2
+Image ID: 60
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Rogue%20Thief.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Finesse]: May take no combat damage while attacking.
+
+[Dies]: You may target a relic or supply in play/in an enemy grave & take control of it/play it, then exile this card. A supply taken this way may be supplied to a valid target.

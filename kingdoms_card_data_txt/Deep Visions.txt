@@ -1,0 +1,12 @@
+Name: Deep Visions
+ID: deep-visions
+Data Group: Main card database
+Cost: 1
+Faction: Blue
+Type: Scroll - Swift
+Stats: 
+Image ID: 93
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Deep%20Visions.jpg
+
+Rules Text:
+Draw 2, then discard 1 from your hand.

@@ -1,0 +1,12 @@
+Name: Back-Stab
+ID: back-stab
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Scroll
+Stats: 
+Image ID: 69
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Back-Stab.jpg
+
+Rules Text:
+Target a friendly unit on the front-line & an enemy unit. Your unit attacks the enemy unit but yours doesn’t get taxed or take combat damage. (This is as an extra attack.)

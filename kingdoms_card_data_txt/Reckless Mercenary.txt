@@ -1,0 +1,16 @@
+Name: Reckless Mercenary
+ID: reckless-mercenary
+Data Group: Main card database
+Cost: 5
+Faction: Colourless
+Type: Unit - Human Berserker - [Swift]
+Stats: 7/3
+Image ID: 52
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Reckless%20Mercenary.jpg
+
+Rules Text:
+[Passive]: Reduce this cards cost by 1 for each unit you control that was destroyed in combat/by enemy card effect(s) this turn.
+
+[Berserk]: Once per your turn, immediately after dealing combat damage, untax this.
+
+[Opportunist]: If attacking a taxed unit, may take no combat damage.

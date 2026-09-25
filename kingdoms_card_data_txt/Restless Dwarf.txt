@@ -1,0 +1,16 @@
+Name: Restless Dwarf
+ID: restless-dwarf
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Unit - Dwarf Warrior
+Stats: 0/2
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Restless%20Dwarf.jpg
+
+Rules Text:
+[On Attack]: This gets +1 ATK for each dwarf you control, until the end step.
+
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.

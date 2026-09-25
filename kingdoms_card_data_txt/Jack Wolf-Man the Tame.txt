@@ -1,0 +1,18 @@
+Name: Jack Wolf-Man the Tame
+ID: jack-wolf-man-the-tame
+Data Group: Main card database
+Cost: 4
+Faction: Red
+Type: Mythic Unit - Human Lykin Rogue
+Stats: 4/3
+Image ID: 67
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Jack%20Wolf-Man%20the%20Tame.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Finesse]: May take no combat damage while attacking.
+
+[Bloodthirsty]: You may target a unit or bastion, this deals 2 effect damage to it.
+
+[Passive]: Damage dealt by red cards you control is increased by 1.

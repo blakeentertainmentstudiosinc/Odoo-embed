@@ -1,0 +1,12 @@
+Name: Speed Scroll
+ID: speed-scroll
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Scroll - Swift
+Stats: 
+Image ID: 12
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Speed%20Scroll.jpg
+
+Rules Text:
+Epic – The next cost you pay this turn is reduced by 2. (Only resolve one epic effect per turn.)

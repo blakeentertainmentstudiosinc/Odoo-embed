@@ -1,0 +1,16 @@
+Name: Big Shield Dwarf
+ID: big-shield-dwarf
+Data Group: Main card database
+Cost: 2
+Faction: Yellow
+Type: Unit - Dwarf Warrior
+Stats: 1/4
+Image ID: 17
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Big%20Shield%20Dwarf.jpg
+
+Rules Text:
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.
+
+[Evasive]: If taxed & defending, takes no combat damage.
+
+[Trigger]: When this takes damage; tax it.

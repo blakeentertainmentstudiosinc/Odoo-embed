@@ -1,0 +1,18 @@
+Name: Plyeth, Invulnerable Bog Frog
+ID: plyeth-invulnerable-bog-frog
+Data Group: Main card database
+Cost: 3
+Faction: Green
+Type: Mythic Unit - Aquan Druid
+Stats: 3/4
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Plyeth%2C%20Invulnerable%20Bog%20Frog.jpg
+
+Rules Text:
+[Invulnerable to]: Poison damage, effect damage, enemy scroll effects, magis, druids, & shamans.
+
+[Reach]: Defends as if it had ranged. Takes no combat damage attacking non-/reach/ranged units.
+
+[Overwhelm]: While attacking, deals excess combat damage to the bastion.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.

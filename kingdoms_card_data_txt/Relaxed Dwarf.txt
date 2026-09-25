@@ -1,0 +1,12 @@
+Name: Relaxed Dwarf
+ID: relaxed-dwarf
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Unit - Dwarf Warrior
+Stats: 0/3
+Image ID: 13
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Relaxed%20Dwarf.jpg
+
+Rules Text:
+[Tax, Cost 2]: Target a unit; it untaxes & this gets a -1/-1 counter.

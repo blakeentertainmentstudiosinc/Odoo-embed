@@ -1,0 +1,14 @@
+Name: Red Riding Rogue
+ID: red-riding-rogue
+Data Group: Main card database
+Cost: 3
+Faction: Red
+Type: Mythic Unit - Human Rogue
+Stats: 3/2
+Image ID: 61
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Red%20Riding%20Rogue.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Entrance]: Target a friendly unit & an enemy unit. Your unit attacks the enemy unit but yours’ doesn’t get taxed or take combat damage. (This is as an extra attack.)

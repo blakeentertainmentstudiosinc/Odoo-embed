@@ -1,0 +1,16 @@
+Name: Barbar Dwarf
+ID: barbar-dwarf
+Data Group: Main card database
+Cost: 3
+Faction: Yellow
+Type: Unit - Dwarf Berserker
+Stats: 2/3
+Image ID: 16
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Barbar%20Dwarf.jpg
+
+Rules Text:
+[Berserk]: Once per your turn, immediately after this deals combat damage, untax it.
+
+[Urgency]: May attack/use tax effects immediately.
+
+[Combative]: When this deals combat damage to a unit; you may untax this.

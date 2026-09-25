@@ -1,0 +1,14 @@
+Name: Phoenix Feather
+ID: phoenix-feather
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Scroll - Swift
+Stats: 
+Image ID: 11
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Phoenix%20Feather.jpg
+
+Rules Text:
+Target a unit you control, it becomes rested & then, either its hp heals, or prevent its next source of damage.
+
+[Optional Cost]: Pay an extra gold; If you do, this gets the additional effect – “Target an enemy unit on the front-line. Move your unit to the front-line & it attacks the enemy unit but stays rested.” (This is an extra attack.)

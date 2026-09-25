@@ -1,0 +1,18 @@
+Name: Stack Lhumbar
+ID: stack-lhumbar
+Data Group: Main card database
+Cost: 3
+Faction: Yellow
+Type: Mythic Unit - Dwarf Warrior
+Stats: 3/4
+Image ID: 20
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Stack%20Lhumbar.jpg
+
+Rules Text:
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Survivor]: When this survives 1 or more combat damage; it gets a +1/+1 counter.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.
+
+[Passive]: This may guard as many times as you like each turn.

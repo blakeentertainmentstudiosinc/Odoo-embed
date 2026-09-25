@@ -1,0 +1,18 @@
+Name: Eagle Eye
+ID: eagle-eye
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Unit - Swift - Avian
+Stats: 1/1
+Image ID: 92
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Eagle%20Eye.jpg
+
+Rules Text:
+[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.
+
+[Reflex]: Deals combat damage first against non-reflex units. Dealing lethal damage ends combat.
+
+[Entrance]: Draw 1.
+
+[Passive]: If you play this as a response to you or another player studying, reduce its cost by 1.

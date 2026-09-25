@@ -1,0 +1,12 @@
+Name: Lucid Mind
+ID: lucid-mind
+Data Group: Main card database
+Cost: 1
+Faction: Blue
+Type: Scroll - Swift
+Stats: 
+Image ID: 97
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Lucid%20Mind.jpg
+
+Rules Text:
+Study 1, then draw 1.

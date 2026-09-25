@@ -1,0 +1,16 @@
+Name: Mordin, Veteran Undertaker
+ID: mordin-veteran-undertaker
+Data Group: Main card database
+Cost: 2
+Faction: Green
+Type: Mythic Unit - Avian Cleric
+Stats: 1/2
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Mordin%2C%20Veteran%20Undertaker.jpg
+
+Rules Text:
+[Entrance & Upkeep]: Reveal the top 2 cards of your main deck; you may send any units among them to the grave. The other cards go back on top in any order.
+
+[Passive]: Mordin gets +1/+1 for every 2 units in all exiles combined. Instead of going to the grave, friendly units may be exiled with an after-life counter. You may pay 1 Gold to do the same to enemy units.
+
+Fringe – [Once per your turn, Cost 4]: Target a unit exiled with an after-life counter & play it with an un-death counter. (Instead of dying, it’s exiled.)

@@ -1,0 +1,18 @@
+Name: Drez the Druid Warrior
+ID: drez-the-druid-warrior
+Data Group: Main card database
+Cost: 2
+Faction: Yellow
+Type: Mythic Unit - Dwarf Warrior
+Stats: 2/3
+Image ID: 19
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Drez%20the%20Druid%20Warrior.jpg
+
+Rules Text:
+[Restless]: May stay untaxed to attack. Gives it no extra attacks.
+
+[Entrance]: Reveal a dwarf card from your main deck & put it on the top of your main deck.
+
+[Dies]: If this isn’t your royal & you have an empty throne room zone; it may ascend. When this ascends you may trigger its entrance.
+
+[Cost 3]: Re-activate this cards entrance.

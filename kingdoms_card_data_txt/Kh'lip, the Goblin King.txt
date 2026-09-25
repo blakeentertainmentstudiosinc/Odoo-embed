@@ -1,0 +1,16 @@
+Name: Kh’lip, the “Goblin” King
+ID: kh-lip-the-goblin-king
+Data Group: Main card database
+Cost: 3
+Faction: Red
+Type: Lord - Mythic Unit - Orc
+Stats: Morale 3
+Image ID: 64
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Kh%E2%80%99lip%2C%20the%20%E2%80%9CGoblin%E2%80%9D%20King.jpg
+
+Rules Text:
+[Entrance]: Reveal a “Goblinoid” from your main deck, add it to your hand, then shuffle.
+
+[Passive]: All goblin units you control get +1 atk.
+
+[Once Per Your Turn]: If Untaxed Choose one; +[1]: Play a “Goblinoid” from your hand. -[2]: Re-activate this card’s entrance & you may re-activate this card’s fringe effect this turn.

@@ -1,0 +1,12 @@
+Name: Blessed Stone
+ID: blessed-stone
+Data Group: Main card database
+Cost: 3
+Faction: Colourless
+Type: Mythic Relic
+Stats: 
+Image ID: 45
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Blessed%20Stone.jpg
+
+Rules Text:
+Epic, Slow – [Tax & Sacrifice]: Target a unit in your grave & exile it. Then target a unit in any grave & play it. (Only resolve one epic effect per turn. Slow effects can’t be used as a response.)

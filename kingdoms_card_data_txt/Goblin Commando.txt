@@ -1,0 +1,14 @@
+Name: Goblin Commando
+ID: goblin-commando
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Unit - Swift - Rogue Goblin
+Stats: 1/1
+Image ID: 63
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Goblin%20Commando.jpg
+
+Rules Text:
+[Critical]: If attacking a unit, deals double combat damage.
+
+[Entrance]: Target a unit, stop its effects this turn, then if its your turn this gets a +1/+1 counter.

@@ -1,0 +1,16 @@
+Name: Lotus Toad
+ID: lotus-toad
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Unit - Aquan
+Stats: 0/2
+Image ID: 54
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Lotus%20Toad.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Tax]: In response to your bastion taking damage; Prevent that damage, then deal the same amount of damage to an enemy bastion & exile this if the damage was greater than 1.
+
+[Trigger]: When a card is played and its paid cost was less than its printed cost. This deals damage to the players bastion equal to the difference.

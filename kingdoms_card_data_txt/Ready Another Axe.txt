@@ -1,0 +1,16 @@
+Name: Ready Another Axe
+ID: ready-another-axe
+Data Group: Main card database
+Cost: 2
+Faction: Yellow
+Type: Supply
+Stats: 
+Image ID: 15
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Ready%20Another%20Axe.jpg
+
+Rules Text:
+[On Play]: Target a unit, supply this to it.
+
+[Passive]: A unit supplied with this has berserk.
+
+[Berserk]: Once per your turn, immediately after this deals combat damage, untax it.

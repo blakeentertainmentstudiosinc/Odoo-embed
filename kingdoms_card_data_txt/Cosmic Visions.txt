@@ -1,0 +1,12 @@
+Name: Cosmic Visions
+ID: cosmic-visions
+Data Group: Main card database
+Cost: 4
+Faction: Green
+Type: Scroll - Swift
+Stats: 
+Image ID: 32
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Cosmic%20Visions.jpg
+
+Rules Text:
+Choose one or both as you play this: • Sacrifice any number of terra you control &/or exile any number of terra from your grave; Draw 1 for each. • Discard any number of cards from your hand; +1 Gold for each.

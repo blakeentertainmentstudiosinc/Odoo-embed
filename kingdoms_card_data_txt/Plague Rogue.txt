@@ -1,0 +1,14 @@
+Name: Plague Rogue
+ID: plague-rogue
+Data Group: Main card database
+Cost: 2
+Faction: Red
+Type: Unit - Reptoid Rogue
+Stats: 1/1
+Image ID: 62
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Plague%20Rogue.jpg
+
+Rules Text:
+[Poison]: Any amount of combat damage this deals to a unit is enough to destroy it.
+
+[Entrance]: Target a unit, this turn it has poison.

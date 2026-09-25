@@ -1,0 +1,12 @@
+Name: Goblinoid
+ID: goblinoid
+Data Group: Main card database
+Cost: 1
+Faction: Red
+Type: Unit - Rogue Goblin
+Stats: 2/1
+Image ID: 74
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Goblinoid.jpg
+
+Rules Text:
+[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.

@@ -1,0 +1,12 @@
+Name: Become Krab
+ID: become-krab
+Data Group: Main card database
+Cost: 2
+Faction: Green
+Type: Scroll - Swift
+Stats: 
+Image ID: 30
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Become%20Krab.jpg
+
+Rules Text:
+Target a unit. Until the end of your next turn its printed effects are stopped. Plus it’s a 1/2 green krab (aquan) instead of its printed ATK/HP, unit types, & faction.

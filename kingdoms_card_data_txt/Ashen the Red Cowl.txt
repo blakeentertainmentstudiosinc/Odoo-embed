@@ -1,0 +1,16 @@
+Name: Ashen the Red Cowl
+ID: ashen-the-red-cowl
+Data Group: Main card database
+Cost: 3
+Faction: Red
+Type: Mythic Unit - Human Thief Archer
+Stats: 3/2
+Image ID: 58
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/Ashen%20the%20Red%20Cowl.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.
+
+[Bloodthirsty]: Exile the destroyed unit instead. You may play cards exiled this way by paying their cost(s) as long as you control a copy of this card.
