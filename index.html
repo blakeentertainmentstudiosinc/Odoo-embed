@@ -4937,17 +4937,17 @@ window.KB = { state, CARDS, ROYAL_OPTIONS, BASTION_OPTIONS, TERRA_CARDS, renderA
 .card-inspector-rules.inspector-unavailable{color:var(--muted);font-style:italic;}
 body.card-inspector-open{overflow:hidden !important;}
 @media(max-width:760px){
-  .card-inspector-modal{padding:8px;}
-  .card-inspector-window{
+  html:not(.kingdoms-force-landscape) .card-inspector-modal{padding:8px;}
+  html:not(.kingdoms-force-landscape) .card-inspector-window{
     grid-template-columns:1fr;
     grid-template-rows:minmax(210px,48vh) minmax(0,1fr);
     width:98vw;
     height:96vh;
   }
-  .card-inspector-image-wrap{border-right:0;border-bottom:1px solid var(--profile-outline-soft);padding:12px;}
-  .card-inspector-data{padding:20px 18px 28px;}
-  .card-inspector-name{font-size:24px;}
-  .card-inspector-rules{font-size:15px;line-height:1.5;}
+  html:not(.kingdoms-force-landscape) .card-inspector-image-wrap{border-right:0;border-bottom:1px solid var(--profile-outline-soft);padding:12px;}
+  html:not(.kingdoms-force-landscape) .card-inspector-data{padding:20px 18px 28px;}
+  html:not(.kingdoms-force-landscape) .card-inspector-name{font-size:24px;}
+  html:not(.kingdoms-force-landscape) .card-inspector-rules{font-size:15px;line-height:1.5;}
 }
 </style>
 
@@ -5001,7 +5001,7 @@ body.card-inspector-open{overflow:hidden !important;}
   color:var(--parchment,#f4e4c6) !important;
 }
 @media(max-width:760px){
-  #cardInspectorModal .card-inspector-image-wrap{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-image-wrap{
     border-right:0 !important;
     border-bottom-color:var(--profile-outline-soft,#32171f) !important;
   }
@@ -13780,10 +13780,10 @@ body.kingdoms-play-mode #kgBoard { display:flex; flex-direction:column; height:1
 
 /* Give text priority as width gets tight. */
 @media(max-width:900px){
-  #cardInspectorModal .card-inspector-window{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-window{
     grid-template-columns:minmax(180px,32vw) minmax(0,1fr) !important;
   }
-  #cardInspectorModal .card-inspector-image-wrap{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-image-wrap{
     padding:10px !important;
   }
 }
@@ -13791,49 +13791,49 @@ body.kingdoms-play-mode #kgBoard { display:flex; flex-direction:column; height:1
 /* On phone-size layouts, keep the inspector full-screen but cap artwork height so
    the readable rules panel gets most of the viewport. */
 @media(max-width:680px){
-  #cardInspectorModal.card-inspector-modal{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal.card-inspector-modal{
     padding-top:calc(clamp(52px,8dvh,70px) + env(safe-area-inset-top, 0px)) !important;
     padding-right:calc(10px + env(safe-area-inset-right, 0px)) !important;
     padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)) !important;
     padding-left:calc(10px + env(safe-area-inset-left, 0px)) !important;
   }
-  #cardInspectorModal .card-inspector-window{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-window{
     width:100% !important;
     height:100% !important;
     grid-template-columns:1fr !important;
     grid-template-rows:minmax(120px,30dvh) minmax(0,1fr) !important;
     border-radius:8px !important;
   }
-  #cardInspectorModal .card-inspector-image-wrap{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-image-wrap{
     border-right:0 !important;
     border-bottom:1px solid var(--profile-outline-soft,var(--line-soft)) !important;
     padding:8px !important;
   }
-  #cardInspectorModal .card-inspector-data{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-data{
     padding:18px 16px 28px !important;
   }
-  #cardInspectorModal .card-inspector-name{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-name{
     margin-right:42px !important;
     font-size:clamp(23px,7vw,34px) !important;
   }
-  #cardInspectorModal .card-inspector-meta{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-meta{
     font-size:13px !important;
     margin-bottom:16px !important;
   }
-  #cardInspectorModal .card-inspector-rules{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-rules{
     font-size:clamp(16px,4.4vw,20px) !important;
     line-height:1.55 !important;
   }
 }
 
 @media(max-width:420px){
-  #cardInspectorModal .card-inspector-window{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-window{
     grid-template-rows:minmax(100px,24dvh) minmax(0,1fr) !important;
   }
-  #cardInspectorModal .card-inspector-data{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-data{
     padding:15px 13px 24px !important;
   }
-  #cardInspectorModal .card-inspector-rules{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-rules{
     font-size:16px !important;
   }
 }
@@ -13885,7 +13885,7 @@ body.kingdoms-play-mode #kgBoard { display:flex; flex-direction:column; height:1
   right:clamp(10px,1vw,16px) !important;
 }
 @media(max-width:680px){
-  #cardInspectorModal.card-inspector-modal{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal.card-inspector-modal{
     padding-top:calc(12px + env(safe-area-inset-top, 0px)) !important;
     padding-right:calc(10px + env(safe-area-inset-right, 0px)) !important;
     padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)) !important;
@@ -13898,31 +13898,80 @@ body.kingdoms-play-mode #kgBoard { display:flex; flex-direction:column; height:1
   const root = document.documentElement;
   const modal = () => document.getElementById('cardInspectorModal');
 
-  function syncInspectorVisualViewport(){
+  function realViewport(){
     const vv = window.visualViewport;
-    const top = vv ? Math.max(0, vv.offsetTop || 0) : 0;
-    const left = vv ? Math.max(0, vv.offsetLeft || 0) : 0;
-    const width = vv ? vv.width : window.innerWidth;
-    const height = vv ? vv.height : window.innerHeight;
-
-    root.style.setProperty('--kg-inspector-vv-top', top + 'px');
-    root.style.setProperty('--kg-inspector-vv-left', left + 'px');
-    root.style.setProperty('--kg-inspector-vv-width', Math.max(1, width) + 'px');
-    root.style.setProperty('--kg-inspector-vv-height', Math.max(1, height) + 'px');
+    return {
+      left: vv ? Math.max(0, vv.offsetLeft || 0) : 0,
+      top: vv ? Math.max(0, vv.offsetTop || 0) : 0,
+      width: vv ? Math.max(1, vv.width) : Math.max(1, document.documentElement.clientWidth),
+      height: vv ? Math.max(1, vv.height) : Math.max(1, document.documentElement.clientHeight)
+    };
   }
 
-  syncInspectorVisualViewport();
-  window.addEventListener('resize', syncInspectorVisualViewport, {passive:true});
-  window.addEventListener('orientationchange', syncInspectorVisualViewport, {passive:true});
+  function syncInspectorVisualViewport(){
+    const view = realViewport();
+    const design = window.kingdomsDesignViewport;
+    const scale = Math.max(0.0001, Number(design?.scale) || 1);
+    const forcedLandscape = !!design?.forcedLandscape || root.classList.contains('kingdoms-force-landscape');
+    const touchDevice = (navigator.maxTouchPoints || 0) > 0 ||
+      (window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+    /* A phone/tablet can reach landscape in two different ways:
+       1) the app force-rotates a physical portrait viewport, or
+       2) the player physically rotates the device and forcedLandscape becomes false.
+       Readability/scaling belongs to BOTH states; coordinate rotation belongs only to #1. */
+    const touchLandscape = !!touchDevice && (forcedLandscape || view.width >= view.height);
+
+    let left, top, width, height;
+    if(forcedLandscape){
+      /* The body is rotated 90deg clockwise. visualViewport is still reported in
+         physical portrait coordinates, so convert that physical rectangle back
+         into the app's logical landscape coordinate space before sizing the modal. */
+      const logicalBodyH = parseFloat(getComputedStyle(root).getPropertyValue('--kingdoms-logical-vh')) || (view.width / scale);
+      left = view.top / scale;
+      top = logicalBodyH - ((view.left + view.width) / scale);
+      width = view.height / scale;
+      height = view.width / scale;
+    }else{
+      /* Root zoom scales CSS pixels after layout, so the inspector needs the
+         visual viewport converted back to logical app coordinates. */
+      left = view.left / scale;
+      top = view.top / scale;
+      width = view.width / scale;
+      height = view.height / scale;
+    }
+
+    root.style.setProperty('--kg-inspector-vv-top', Math.max(0, top) + 'px');
+    root.style.setProperty('--kg-inspector-vv-left', Math.max(0, left) + 'px');
+    root.style.setProperty('--kg-inspector-vv-width', Math.max(1, width) + 'px');
+    root.style.setProperty('--kg-inspector-vv-height', Math.max(1, height) + 'px');
+    /* Inspector contents live inside the app's globally scaled/rotated root on touch.
+       Counter-scale pixel-sized UI so text/buttons remain physically readable. */
+    root.style.setProperty('--kg-inspector-ui-comp', String(touchLandscape ? (1 / scale) : 1));
+    root.classList.toggle('kg-inspector-logical-landscape', forcedLandscape);
+    root.classList.toggle('kg-inspector-touch-landscape', touchLandscape);
+    root.classList.toggle('kg-inspector-physical-landscape', touchLandscape && !forcedLandscape);
+  }
+
+  function resyncSoon(){
+    syncInspectorVisualViewport();
+    requestAnimationFrame(syncInspectorVisualViewport);
+    setTimeout(syncInspectorVisualViewport, 120);
+    setTimeout(syncInspectorVisualViewport, 320);
+  }
+
+  resyncSoon();
+  window.addEventListener('resize', resyncSoon, {passive:true});
+  window.addEventListener('orientationchange', resyncSoon, {passive:true});
   if(window.visualViewport){
-    window.visualViewport.addEventListener('resize', syncInspectorVisualViewport, {passive:true});
+    window.visualViewport.addEventListener('resize', resyncSoon, {passive:true});
     window.visualViewport.addEventListener('scroll', syncInspectorVisualViewport, {passive:true});
   }
 
-  /* Re-sync at the instant the explicit inspector opens. */
+  /* Re-sync at the instant the explicit inspector opens, after the design viewport
+     has had a chance to update its scale/orientation class. */
   const observer = new MutationObserver(() => {
     const el = modal();
-    if(el && el.getAttribute('aria-hidden') === 'false') syncInspectorVisualViewport();
+    if(el && el.getAttribute('aria-hidden') === 'false') resyncSoon();
   });
   const startObserver = () => {
     const el = modal();
@@ -13981,12 +14030,109 @@ body.kingdoms-play-mode #kgBoard { display:flex; flex-direction:column; height:1
   right:clamp(10px,1vw,16px) !important;
 }
 @media(max-width:680px){
-  #cardInspectorModal .card-inspector-window{
+  html:not(.kingdoms-force-landscape) #cardInspectorModal .card-inspector-window{
     width:calc(100% - 20px) !important;
     height:calc(100% - 20px) !important;
   }
 }
+
+
+/* Portrait phones/tablets are rendered as a logical landscape workspace by the
+   app. Keep the explicit inspector in that same logical orientation instead of
+   letting physical-width media queries collapse it into a portrait stack. */
+html.kingdoms-force-landscape #cardInspectorModal .card-inspector-window{
+  grid-template-columns:minmax(220px,36%) minmax(0,1fr) !important;
+  grid-template-rows:1fr !important;
+  width:calc(100% - clamp(20px,2.2vw,34px)) !important;
+  height:calc(100% - clamp(20px,3.2vh,34px)) !important;
+}
+html.kingdoms-force-landscape #cardInspectorModal .card-inspector-image-wrap{
+  border-right:1px solid var(--profile-outline-soft,var(--line-soft)) !important;
+  border-bottom:0 !important;
+  padding:clamp(10px,1.8vw,22px) !important;
+}
+html.kingdoms-force-landscape #cardInspectorModal .card-inspector-data{
+  padding:clamp(18px,2.4vw,34px) !important;
+}
+html.kingdoms-force-landscape #cardInspectorModal .card-inspector-name{
+  font-size:clamp(24px,3vw,42px) !important;
+}
+html.kingdoms-force-landscape #cardInspectorModal .card-inspector-rules{
+  font-size:clamp(15px,1.55vw,21px) !important;
+  line-height:1.55 !important;
+}
 </style>
 
+
+
+<style id="explicit-card-inspector-mobile-readability">
+/* Mobile touch-landscape already sizes the OUTER inspector against the real
+   visual viewport. Counter the app's global root scale only for pixel-sized
+   inspector contents so users do not need browser pinch-zoom to read a card. */
+html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-window{
+  grid-template-columns:minmax(0,48%) minmax(0,52%) !important;
+}
+html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-image-wrap{
+  padding:calc(10px * var(--kg-inspector-ui-comp,1)) !important;
+}
+html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-image{
+  width:auto !important;
+  height:auto !important;
+  max-width:100% !important;
+  max-height:100% !important;
+}
+html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-data{
+  padding:calc(16px * var(--kg-inspector-ui-comp,1)) calc(18px * var(--kg-inspector-ui-comp,1)) !important;
+}
+html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-name{
+  font-size:calc(28px * var(--kg-inspector-ui-comp,1)) !important;
+  line-height:1.14 !important;
+  margin-right:calc(48px * var(--kg-inspector-ui-comp,1)) !important;
+}
+html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-meta{
+  font-size:calc(14px * var(--kg-inspector-ui-comp,1)) !important;
+  line-height:1.35 !important;
+  margin-bottom:calc(14px * var(--kg-inspector-ui-comp,1)) !important;
+}
+html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-rules{
+  font-size:calc(18px * var(--kg-inspector-ui-comp,1)) !important;
+  line-height:1.5 !important;
+}
+html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-close{
+  width:calc(44px * var(--kg-inspector-ui-comp,1)) !important;
+  height:calc(44px * var(--kg-inspector-ui-comp,1)) !important;
+  font-size:calc(25px * var(--kg-inspector-ui-comp,1)) !important;
+  line-height:1 !important;
+  top:calc(10px * var(--kg-inspector-ui-comp,1)) !important;
+  right:calc(10px * var(--kg-inspector-ui-comp,1)) !important;
+}
+
+/* On very short landscape phone viewports, preserve readable text and let the
+   rules pane scroll rather than shrinking typography to fit everything at once. */
+@media(max-height:520px){
+  html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-window{
+    grid-template-columns:minmax(0,44%) minmax(0,56%) !important;
+  }
+  html.kg-inspector-touch-landscape #cardInspectorModal .card-inspector-rules{
+    font-size:calc(17px * var(--kg-inspector-ui-comp,1)) !important;
+  }
+}
+</style>
+
+
+
+<style id="explicit-card-inspector-physical-landscape-parity">
+/* When the player physically rotates the device, kingdoms-force-landscape is
+   intentionally absent. Keep the same two-column touch inspector instead of
+   falling back into the narrow-screen/portrait inspector rules. */
+html.kg-inspector-physical-landscape #cardInspectorModal .card-inspector-window{
+  grid-template-columns:minmax(0,48%) minmax(0,52%) !important;
+  grid-template-rows:1fr !important;
+}
+html.kg-inspector-physical-landscape #cardInspectorModal .card-inspector-image-wrap{
+  border-right:1px solid var(--profile-outline-soft,var(--line-soft)) !important;
+  border-bottom:0 !important;
+}
+</style>
 </body>
 </html>
