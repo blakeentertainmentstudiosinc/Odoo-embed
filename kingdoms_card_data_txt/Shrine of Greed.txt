@@ -9,4 +9,6 @@ Image ID: 47
 Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Shrine%20of%20Greed.jpg
 
 Rules Text:
-Enters play taxed unless you pay 2 gold. Once – [Tax & Sacrifice]: Draw 2 cards. Only use one copy of this effect per turn.
+Enters play taxed unless you pay 2 gold.
+
+Once – [Tax & Sacrifice]: Draw 2 cards. Only use one copy of this effect per turn.
