@@ -1,0 +1,14 @@
+Name: Undergrowth Druid
+ID: undergrowth-druid
+Data Group: Main card database
+Cost: 2
+Faction: Green
+Type: Unit - Orc Druid
+Stats: 1/1
+Image ID: 40
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Undergrowth%20Druid.jpg
+
+Rules Text:
+[Entrance]: Reveal the top 4 cards of your main deck, you may send any units amoung those cards to the grave and the rest to the bottom of the deck.
+
+[Passive]: Units in your grave are also flora type.

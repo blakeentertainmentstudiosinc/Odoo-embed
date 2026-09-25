@@ -1,0 +1,14 @@
+Name: The Thieves' Den: Rebellion Main HQ
+ID: the-thieves-den-rebellion-main-hq
+Data Group: Bastion
+Cost: 
+Faction: Red
+Type: Bastion
+Stats: 
+Image ID: 73
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/The%20Thieves%27%20Den%20-%20Rebellion%20Main%20HQ.jpg
+
+Rules Text:
+Fence- Once per turn when you play a card you don't own: You may discard 1 card to play a taxed "Shiny Stone" from your side deck.
+
+Fringe – [Once Per Your Turn]: Choose one; Epic - • Send a basic terra card you control to your hand: +1 Gold. • If you control 2 or more royals: +1 Gold. (A royal is any card from the throne room. Only resolve one epic effect per turn.)

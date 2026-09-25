@@ -1,0 +1,16 @@
+Name: Vengeful Spirit
+ID: vengeful-spirit
+Data Group: Main card database
+Cost: 3
+Faction: Blue
+Type: Unit - Spirit
+Stats: 1/1
+Image ID: 89
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Vengeful%20Spirit.jpg
+
+Rules Text:
+[Dodge]: May direct damage from itself to your bastion.
+
+[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.
+
+[Entrance]: Target a unit & tax it. While this card is in your control, the target has its effects stopped & it stays taxed during its untax phase.

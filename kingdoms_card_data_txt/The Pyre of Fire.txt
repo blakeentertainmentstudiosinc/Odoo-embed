@@ -1,0 +1,14 @@
+Name: The Pyre of Fire
+ID: the-pyre-of-fire
+Data Group: Bastion
+Cost: 
+Faction: Blue
+Type: Bastion
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/The%20Pyre%20of%20Fire.jpg
+
+Rules Text:
+One Of Us! – If one or more royals you control are blue: Whenever an enemy plays a card from the grave, exile, or throne room, they burn equal to the card’s printed cost. (To burn, a player sends the top card of their main deck to the grave.)
+
+Fringe – [Once per your turn]: If you control two or more royals; target a player, they burn 1 & then draw 1.

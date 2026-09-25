@@ -1,0 +1,16 @@
+Name: Wisp & Willow, the Raging Flame
+ID: wisp-willow-raging-flame
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Mythic Unit - Elemental
+Stats: 2/2
+Image ID: 83
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Wisp%20%26%20Willow%2C%20the%20Raging%20Flame.jpg
+
+Rules Text:
+[Passive]: Copies of "Wisp, & Willow the Twin Flame" you play count towards this cards level up.
+
+[Trigger Once Per Turn]: When a scroll is played; All enemies burn 1 card, then you may burn 1 card & if you do, all enemies burn 1 card. (Burn a card by sending the top card of your main deck to the grave.)
+
+Level Up – [Entrance]: The 2nd+ a copy of this you own; It's trigger effect loses "once per turn". (Round Down.)

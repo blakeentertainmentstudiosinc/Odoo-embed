@@ -1,0 +1,16 @@
+Name: Woodlin Sprite
+ID: woodlin-sprite
+Data Group: Main card database
+Cost: 1
+Faction: Green
+Type: Unit - Flora Fae
+Stats: 0/1
+Image ID: 42
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Woodlin%20Sprite.jpg
+
+Rules Text:
+[Reach]: Defends as if it had ranged. Takes no combat damage while attacking a non-ranged/reach unit.
+
+[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.
+
+[Trigger]: When this moves; You may target a unit you control other than "Woodlin Spirit" & move it.

@@ -1,0 +1,14 @@
+Name: Vellaceus, Dwarven Capital
+ID: vellaceus-dwarven-capital
+Data Group: Bastion
+Cost: 
+Faction: Yellow
+Type: Bastion
+Stats: 
+Image ID: 23
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Vellaceus%2C%20Dwarven%20Capital.jpg
+
+Rules Text:
+Garrison - You may play a unit from the top of your main deck by declaring its name, then revealing it & paying its cost(s).
+
+[Passive]: While you control 2 or more royals; Non-lord units you control on the battlefield get +1/+1 & lords you control on the battlefield get +1 atk.

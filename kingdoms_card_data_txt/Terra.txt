@@ -1,0 +1,13 @@
+Name: Terra
+ID: natural-terra
+Data Group: Terra
+Cost: 
+Faction: Colourless
+Type: Natural Terra
+Stats: 
+Image ID: 101
+Image ID Source Key: terra
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/Terra.jpg
+
+Rules Text:
+[Tax]: +1 Gold.

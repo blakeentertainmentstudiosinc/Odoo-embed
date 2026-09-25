@@ -1,0 +1,14 @@
+Name: Vitoria Tower
+ID: vitoria-tower
+Data Group: Bastion
+Cost: 
+Faction: Blue
+Type: Bastion
+Stats: 
+Image ID: 100
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Vitoria%20Tower.jpg
+
+Rules Text:
+Scrutinize - Once per turn if you would study: You may study double that many instead.
+
+Fringe – [Once Per Your Turn]: If you control 2 or more royals; Study 1, then draw 1.

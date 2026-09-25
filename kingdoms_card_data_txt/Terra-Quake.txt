@@ -1,0 +1,14 @@
+Name: Terra-Quake
+ID: terra-quake
+Data Group: Main card database
+Cost: 3
+Faction: Green
+Type: Scroll
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Terra-Quake.jpg
+
+Rules Text:
+Split X damage among as many enemy units as possible. Then split X damage among as many friendly units as possible. X = The number of terra you control, plus the terra in your grave. (Terra-Quake deals the damage.)
+
+[Optional Cost]: Sacrifice terra, as you play this; increase X by 1 for each.

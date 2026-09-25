@@ -1,0 +1,14 @@
+Name: Valtruess, Piercing Eye of the Storm
+ID: valthruess-piercing-eye-of-the-storm
+Data Group: Main card database
+Cost: 5
+Faction: Yellow
+Type: Mythic Unit - Dragon Elemental
+Stats: 1/1
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/Valtruess%2C%20Piercing%20Eye%20of%20the%20Storm.jpg
+
+Rules Text:
+Epic – [Entrance]: If played from the hand/throne room, you may destroy all other non-bastion cards. Starting with you & going in turn order, each player chooses up to 3 cards in grave that were destroyed this way & plays them. For each non-terra card played this way, its player searches their terra deck for a basic terra, plays it taxed, & shuffles. Then this gets a +1/+1 counter for each terra in play. (Only resolve one epic effect per turn.)
+
+[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.

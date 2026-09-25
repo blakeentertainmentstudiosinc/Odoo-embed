@@ -1,0 +1,16 @@
+Name: Wisp & Willow, the Twin Flame
+ID: wisp-willow-twin-flame
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Mythic Unit - Elemental
+Stats: 2/2
+Image ID: 82
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Wisp%20%26%20Willow%2C%20the%20Twin%20Flame.jpg
+
+Rules Text:
+[Passive]: If you would pay extra Gold to play a card, instead you may burn 1 for each extra Gold you would pay. (To burn, a player sends the top card of their main deck to grave.)
+
+[Trigger Once Per Turn]: When a scroll is played; all enemies burn 1 & you may burn 1. If you do, all enemies burn 1 again.
+
+[Trigger Once Per Sequence]: When 2 or more enemy cards are burned; this gets a +1/+1 counter.

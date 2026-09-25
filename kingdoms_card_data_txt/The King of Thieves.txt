@@ -1,0 +1,14 @@
+Name: The King of Thieves
+ID: the-king-of-thieves
+Data Group: Main card database
+Cost: 3
+Faction: Red
+Type: Lord - Mythic Unit - Human Thief
+Stats: Morale 5
+Image ID: 66
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Red/The%20King%20of%20Thieves.jpg
+
+Rules Text:
+[Entrance]: This levels up. For each copy of it you've leveled up, each enemy exiles a card face down from the top of their main deck. Those cards count towards your hand size. You may play, look at, & discard them as if they were in your hand. Even while you don't control this card.
+
+Fringe – [Once Per Your Turn]: If untaxed, choose one - [2]: Target a unit/bastion, this deals 2 effect damage to it. - [1]: +1 Gold.

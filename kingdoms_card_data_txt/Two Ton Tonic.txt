@@ -1,0 +1,16 @@
+Name: Two Ton Tonic
+ID: two-ton-tonic
+Data Group: Main card database
+Cost: 2
+Faction: Yellow
+Type: Supply
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/two%20ton%20tonic.jpg
+
+Rules Text:
+[On Play]: Target a unit, supply this to it.
+
+[Passive]: If supplied, can’t be supplied to a new target.
+
+[Trigger]: When this becomes supplied to a unit; the unit gets a vitality counter. (If a unit with a vitality counter would be destroyed or dealt lethal damage, remove its vitality counters & prevent that damage/destruction instead.)

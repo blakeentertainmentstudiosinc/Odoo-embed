@@ -1,0 +1,14 @@
+Name: Zjar, Master Pyromancer
+ID: zjar-master-pyromancer
+Data Group: Main card database
+Cost: 3
+Faction: Blue
+Type: Lord - Mythic Unit - Human Magi
+Stats: 0/3
+Image ID: 81
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/Zjar%2C%20Master%20Pyromancer.jpg
+
+Rules Text:
+[Passive]: If a player would burn cards, they burn twice that many cards instead. Burned cards are exiled when they enter the grave. While Zjar is in play, cards in exile by Zjar can be activated by their owners but their cost is increased by 1.
+
+Fringe – [Once Per Your Turn]: Choose one; • +[1]: All players burn 1 card. • -[3]: All players burn 3 cards. (Burn a card by sending the top card of your main deck to the grave.)

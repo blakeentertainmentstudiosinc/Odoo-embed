@@ -1,0 +1,16 @@
+Name: The Aceus Arms Hall of Legends
+ID: aceus-arms-cache
+Data Group: Main card database
+Cost: 1
+Faction: Yellow
+Type: Mythic Relic
+Stats: 
+Image ID: 7
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/The%20Aceus%20Arms%20Hall%20of%20Legends.jpg
+
+Rules Text:
+[Tax, Cost 2]: Target a non-lord unit, it gets a +1/+1 counter.
+
+[Tax, Discard 1]: Target a non-lord unit, it gets +1/+1 until the end of the turn.
+
+[Trigger Once Per Turn, Cost 1]: When a modified unit you control attacks; draw 1 card. (A unit is modified if it has a non-morale counter, a supply, or if its atk/hp don’t match its printed atk/hp.)

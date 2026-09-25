@@ -1,0 +1,18 @@
+Name: Trailblazer
+ID: trailblazer
+Data Group: Main card database
+Cost: 3
+Faction: Green
+Type: Unit - Elf Druid
+Stats: 2/3
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Trailblazer.jpg
+
+Rules Text:
+[Urgency]: May attack/use tax effects immediately.
+
+[Entrance]: You may exile a terra from your grave; play a terra from your hand/your cultivated cards. It enters untaxed if from your cultivated cards, otherwise it enters taxed.
+
+[Trigger once per turn]: When this grapples a unit; untax this.
+
+[Grapple]: Takes no combat damage attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is in play.

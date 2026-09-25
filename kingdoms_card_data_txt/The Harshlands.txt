@@ -1,0 +1,14 @@
+Name: The Harshlands
+ID: the-harshlands
+Data Group: Bastion
+Cost: 
+Faction: Green
+Type: Bastion
+Stats: 
+Image ID: 
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/the%20harshlands.jpg
+
+Rules Text:
+One Of Us! – If one or more royals you control are green: Enemy units can’t move from the front-line to the Kingdom except by card effect & units you control don’t have rooted. (Rooted: Can’t defend its bastion & can’t move except by card effect.)
+
+[Passive]: If you control two or more royals; enemy units on the front-line get taxed during their untax step (instead of untaxing) unless they have rooted or restless.

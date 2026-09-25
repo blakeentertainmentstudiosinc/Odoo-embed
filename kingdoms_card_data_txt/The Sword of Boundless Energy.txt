@@ -1,0 +1,19 @@
+Name: The Sword of Boundless Energy
+ID: the-sword-of-boundless-energy
+Data Group: Main card database
+Cost: 3
+Faction: Yellow
+Type: Mythic Supply - Continuous
+Stats: 
+Image ID: 10
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/Yellow/The%20Sword%20of%20Boundless%20Energy.jpg
+
+Rules Text:
+[On Play]: Target a unit, supply this to it.
+
+Slow – [Cost 2]: Target a unit, supply this to it. (Slow effects can’t be activated as a response.)
+
+[Passive]: A unit supplied with this gets:
+• +2 ATK.
+• [Restless]: May stay untaxed to attack. Gives it no extra attacks.
+• [Urgency]: May attack/use tax effects immediately.

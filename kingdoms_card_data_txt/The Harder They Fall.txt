@@ -1,0 +1,14 @@
+Name: The Harder They Fall
+ID: the-harder-they-fall
+Data Group: Main card database
+Cost: 2
+Faction: Blue
+Type: Scroll - Swift
+Stats: 
+Image ID: 99
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/blue/The%20Harder%20They%20Fall.jpg
+
+Rules Text:
+Target a player. They sacrifice a non-lord unit with the lowest ATK.
+
+[Optional Cost]: You may put 1 unit from your hand to the bottom of your deck as you play this, if you do, reduce this cards cost by 1.

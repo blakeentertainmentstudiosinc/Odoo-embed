@@ -1,0 +1,16 @@
+Name: Wild-Force
+ID: wild-force
+Data Group: Main card database
+Cost: 3
+Faction: Green
+Type: Scroll - Swift
+Stats: 
+Image ID: 41
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Wild-Force.jpg
+
+Rules Text:
+[Additional Cost]: Sacrifice a “Terra”. Target a non-bastion card & exile it.
+
+[Force]: Must finish resolving before cards/effects without force can be played. Except generating gold & other special actions.
+
+[Passive]: Cards can respond to this without force, except its target.

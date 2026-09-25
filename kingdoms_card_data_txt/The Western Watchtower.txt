@@ -1,0 +1,14 @@
+Name: The Western Watchtower
+ID: western-watchtower
+Data Group: Terra
+Cost: 
+Faction: Colourless
+Type: Mythic Terra
+Stats: 
+Image ID: 102
+Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/colorless/The%20Western%20Watchtower.jpg
+
+Rules Text:
+[Tax]: +1 Gold.
+
+[Tax & Sacrifice]: Prevent combat damage during the next instance of combat this turn. (After this resolves.)
