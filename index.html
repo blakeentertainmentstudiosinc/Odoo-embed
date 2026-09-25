@@ -1215,7 +1215,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3){
           <input id="deckName" type="text" placeholder="e.g. Dwarf Aggro v2">
         </div>
         <div class="field">
-          <label for="pilotName">Player name <span class="field-optional">(optional)</span></label>
+          <label for="pilotName">Player / creator name <span class="field-optional">(required for community submissions)</span></label>
           <input id="pilotName" type="text" placeholder="e.g. Jacob B.">
         </div>
       </div>
@@ -1565,7 +1565,7 @@ const CARD_RULE_TEXT = {
   "de-xaio-oni-of-the-end": "Fringe – [Once per your turn]: Choose one –\n• +[0]: This gets +1 morale for each relic you control. If you control this card, “Corrosis Talisman”, “Blessed Stone”, “Seed of the Ancient Tree”, & “Orb of Tsunami” you may activate this card’s fringe effect again.\n• -[13]: If you control this card, “Corrosis Talisman”, “Blessed Stone”, “Seed of the Ancient Tree”, & “Orb of Tsunami” you win the game.",
   "sarath-noble-knight": "[Passive]: Gets +1/+1 for every 2 counters on your throne room.\n\nEpic – [Entrance]: You may sacrifice this card & target a royal you own in a throne room zone. If you do, play it & that zone gets 2 counters. (Only resolve one epic effect per turn.)\n\n[Trigger]: When a royal you own enters the throne room; you may play this card from the grave with an undeath counter by paying its cost(s). (Gets exiled instead of dying.)",
   "posse-of-peasants": "[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.",
-  "dwarven-cathedral": "One Of Us! – If one or more royals you control are yellow: Card effects you activate may target the kingdom instead of the front-line.\n\nFringe – [Once per your turn, Exalt Cost 3]: If you control two or more royals: for each unit you exalt (exile) from grave, reduce this cost by 1; the next unit effect you activate that requires a target may have an extra target declared. (May be the same target twice.)",
+  "dwarven-cathedral": "One Of Us! – If one or more royals you control are yellow: Card effects you activate may target (or effect) the kingdom instead of the front-line.\n\nFringe – [Once per your turn, Exalt Cost 3]: If you control two or more royals: for each unit you exalt (exile) from grave, reduce this cost by 1; the next unit effect you activate that requires a target may have an extra target declared. (May be the same target twice.)",
   "the-pyre-of-fire": "One Of Us! – If one or more royals you control are blue: Whenever an enemy plays a card from the grave, exile, or throne room, they burn equal to the card’s printed cost. (To burn, a player sends the top card of their main deck to the grave.)\n\nFringe – [Once per your turn]: If you control two or more royals; target a player, they burn 1 & then draw 1.",
   "goblin-boneyard": "One Of Us! – If one or more royals you control are red: Goblins you control have urgency. (May attack/use tax effects immediately.)\n\nFringe – [Once per your turn]: If you control two or more royals; target a goblin in your grave, you may pay its cost(s) to play it with an undeath counter. (They get exiled instead of dying.)",
   "the-harshlands": "One Of Us! – If one or more royals you control are green: Enemy units can’t move from the front-line to the Kingdom except by card effect & units you control don’t have rooted. (Rooted: Can’t defend its bastion & can’t move except by card effect.)\n\n[Passive]: If you control two or more royals; enemy units on the front-line get taxed during their untax step (instead of untaxing) unless they have rooted or restless.",
@@ -1581,7 +1581,7 @@ const CARD_RULE_TEXT = {
   "back-stab": "Target a friendly unit on the front-line & an enemy unit. Your unit attacks the enemy unit but yours doesn’t get taxed or take combat damage. (This is as an extra attack.)",
   "backup-bomb": "Target a unit or bastion, this deal 2 damage to it.",
   "bad-omen": "Target a unit & move it, it cannot move again this turn.",
-  "barbar-dwarf": "[Berserk]: Once per your turn, immediately after this deals combat damage, untax it.\n\n[Urgency]: May attack/use tax effects immediately.\n\n[Combative]: When this deals combat damage to a unit; you may untax this.; untax this.",
+  "barbar-dwarf": "[Berserk]: Once per your turn, immediately after this deals combat damage, untax it.\n\n[Urgency]: May attack/use tax effects immediately.\n\n[Combative]: When this deals combat damage to a unit; you may untax this.",
   "become-krab": "Target a unit. Until the end of your next turn its printed effects are stopped. Plus it’s a 1/2 green krab (aquan) instead of its printed ATK/HP, unit types, & faction.",
   "big-shield-dwarf": "[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Evasive]: If taxed & defending, takes no combat damage.\n\n[Trigger]: When this takes damage; tax it.",
   "blessed-stone": "Epic, Slow – [Tax & Sacrifice]: Target a unit in your grave & exile it. Then target a unit in any grave & play it. (Only resolve one epic effect per turn. Slow effects can’t be used as a response.)",
@@ -1651,7 +1651,7 @@ const CARD_RULE_TEXT = {
   "the-harder-they-fall": "Target a player. They sacrifice a non-lord unit with the lowest ATK.\n\n[Optional Cost]: You may put 1 unit from your hand to the bottom of your deck as you play this, if you do, reduce this cards cost by 1.",
   "the-king-of-thieves": "[Entrance]: This levels up. For each copy of it you've leveled up, each enemy exiles a card face down from the top of their main deck. Those cards count towards your hand size. You may play, look at, & discard them as if they were in your hand. Even while you don't control this card.\n\nFringe – [Once Per Your Turn]: If untaxed, choose one - [2]: Target a unit/bastion, this deals 2 effect damage to it. - [1]: +1 Gold.",
   "the-sword-of-boundless-energy": "[On Play]: Target a unit, supply this to it.\n\nSlow – [Cost 2]: Target a unit, supply this to it. (Slow effects can’t be activated as a response.)\n\n[Passive]: A unit supplied with this gets:\n• +2 ATK.\n• [Restless]: May stay untaxed to attack. Gives it no extra attacks.\n• [Urgency]: May attack/use tax effects immediately.",
-  "the-thieves-den-rebellion-main-hq": "Fence- Once per turn when you play a card you don't own: You may discard 1 card to play a taxed \"Shiny Stone\" from your side deck.\n\nFringe – [Once Per Your Turn]: Choose one; • Send a basic terra card you control to your hand: +1 Gold. • If you control 2 or more royals: +1 Gold. (A royal is any card from the throne room.)",
+  "the-thieves-den-rebellion-main-hq": "Fence- Once per turn when you play a card you don't own: You may discard 1 card to play a taxed \"Shiny Stone\" from your side deck.\n\nFringe – [Once Per Your Turn]: Choose one; Epic - • Send a basic terra card you control to your hand: +1 Gold. • If you control 2 or more royals: +1 Gold. (A royal is any card from the throne room. Only resolve one epic effect per turn.)",
   "undergrowth-druid": "[Entrance]: Reveal the top 4 cards of your main deck, you may send any units amoung those cards to the grave and the rest to the bottom of the deck.\n\n[Passive]: Units in your grave are also flora type.",
   "vellaceus-dwarven-capital": "Garrison - You may play a unit from the top of your main deck by declaring its name, then revealing it & paying its cost(s).\n\n[Passive]: While you control 2 or more royals; Non-lord units you control on the battlefield get +1/+1 & lords you control on the battlefield get +1 atk.",
   "vengeful-spirit": "[Dodge]: May direct damage from itself to your bastion.\n\n[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.\n\n[Entrance]: Target a unit & tax it. While this card is in your control, the target has its effects stopped & it stays taxed during its untax phase.",
@@ -1685,15 +1685,42 @@ function cardRulesText(c){
 function formatCardRulesText(text){
   let value = String(text || '');
 
-  // Preserve the card text exactly as authored. In particular, do not silently
-  // turn ordinary hyphens/minus signs into typographic dashes. The formatter's
-  // only job here is paragraph layout.
-  //
-  // A hyphen/en dash/em dash immediately before a bracketed ability binds that
-  // ability to the label on its left, so keep those on the same line.
-  value = value.replace(/\s+(?=\[[A-Za-z][^\]]*\])/g, (space, offset, source) => {
-    const before = source.slice(0, offset).replace(/\s+$/,'');
-    return /[-–—]$/.test(before) ? ' ' : '\n\n';
+  // If a keyword/label is written directly before a bullet, e.g.
+  // "Epic - • ...", "Fringe – • ...", or "Once Per Turn - • ...",
+  // start the new line at that keyword instead of at the bullet itself.
+  // A label is treated as one to four title-style words immediately before
+  // the dash/bullet pair.
+  value = value.replace(
+    /([^\r\n;:.!?])([ \t]+)(?=([A-Z][A-Za-z'’]*(?:[ \t]+[A-Z][A-Za-z'’]*){0,3})[ \t]*[-–—][ \t]*•)/g,
+    '$1\n'
+  );
+  value = value.replace(
+    /([;:.!?])([ \t]+)(?=([A-Z][A-Za-z'’]*(?:[ \t]+[A-Z][A-Za-z'’]*){0,3})[ \t]*[-–—][ \t]*•)/g,
+    '$1\n'
+  );
+
+  // Normalize authored bullets first. If a keyword/label immediately precedes
+  // the bullet, keep the bullet attached because the structural break belongs
+  // before the keyword instead. Otherwise the bullet itself owns the line break,
+  // even when that bullet item later contains a signed bracket effect.
+  value = value.replace(/•([^•\r\n]*)/g, (match, body, offset, source) => {
+    const before = source.slice(0, offset);
+    if (/(?:^|[\r\n])[A-Z][A-Za-z'’]*(?:[ \t]+[A-Z][A-Za-z'’]*){0,3}[ \t]*[-–—][ \t]*$/.test(before)) return match;
+    if (offset === 0 || source[offset - 1] === '\n' || source[offset - 1] === '\r') return match;
+    return '\n' + match;
+  });
+
+  // Signed bracket effects only count when the closing bracket is followed by
+  // a colon, e.g. +[1]:, -[3]:, + [2]:, or - [4]:. They get a new bulleted
+  // line only when they are NOT already inside an authored bullet item on the
+  // same rendered line. This prevents a bullet item containing +[...] / -[...]
+  // from receiving a second internal line break.
+  value = value.replace(/[+-][ \t]*\[[^\]\r\n]*\]:/g, (match, offset, source) => {
+    const lineStart = Math.max(source.lastIndexOf('\n', offset - 1), source.lastIndexOf('\r', offset - 1)) + 1;
+    const lineBefore = source.slice(lineStart, offset);
+    if (lineBefore.includes('•')) return match;
+    if (!lineBefore.trim()) return '• ' + match;
+    return '\n• ' + match;
   });
 
   return value
@@ -9176,8 +9203,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 :root{--popup-lift:100px;}
 .deck-options-dialog,
 .castle-confirm,
-.theme-picker-dialog,
-.card-inspector-window{
+.theme-picker-dialog{
   --popup-drag-x:0px;
   --popup-drag-y:0px;
   position:fixed !important;
@@ -9190,11 +9216,9 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 }
 .deck-options-dialog,.castle-confirm{max-height:min(74dvh,680px) !important;}
 .theme-picker-dialog{z-index:12001 !important;}
-.card-inspector-window{height:min(680px,74dvh) !important;}
 .deck-options-header,
 .castle-confirm > h2,
-.theme-picker-top,
-.card-inspector-name{
+.theme-picker-top{
   cursor:grab;
   user-select:none;
   -webkit-user-select:none;
@@ -9202,12 +9226,10 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 }
 .popup-dragging .deck-options-header,
 .castle-confirm.popup-dragging > h2,
-.popup-dragging .theme-picker-top,
-.popup-dragging .card-inspector-name{cursor:grabbing;}
+.popup-dragging .theme-picker-top{cursor:grabbing;}
 @media (max-height:720px){
   :root{--popup-lift:48px;}
   .deck-options-dialog,.castle-confirm{max-height:78dvh !important;}
-  .card-inspector-window{height:min(620px,78dvh) !important;}
 }
 </style>
 
@@ -9218,8 +9240,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
     ['#deckOptionsDialog','.deck-options-header'],
     ['#castleConfirm','h2'],
     ['#colorIdentityDialog','h2'],
-    ['#themeColorPickerOverlay .theme-picker-dialog','.theme-picker-top'],
-    ['#cardInspectorModal .card-inspector-window','.card-inspector-name']
+    ['#themeColorPickerOverlay .theme-picker-dialog','.theme-picker-top']
   ];
 
   function install(panel,handle){
@@ -13715,6 +13736,250 @@ body.kingdoms-play-mode #kgBoard { display:flex; flex-direction:column; height:1
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
 </script>
+
+
+<style id="explicit-card-inspector-maximize">
+/* Explicit card inspection (Info button / middle-click) uses the viewport instead
+   of the older 1120x760 cap so card text remains readable on small screens. */
+#cardInspectorModal.card-inspector-modal{
+  box-sizing:border-box !important;
+  padding-top:calc(clamp(54px,7dvh,78px) + env(safe-area-inset-top, 0px)) !important;
+  padding-right:calc(clamp(12px,1.25vw,20px) + env(safe-area-inset-right, 0px)) !important;
+  padding-bottom:calc(clamp(12px,1.25vw,20px) + env(safe-area-inset-bottom, 0px)) !important;
+  padding-left:calc(clamp(12px,1.25vw,20px) + env(safe-area-inset-left, 0px)) !important;
+}
+#cardInspectorModal .card-inspector-window{
+  width:100% !important;
+  height:100% !important;
+  max-width:none !important;
+  max-height:none !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  grid-template-columns:minmax(220px,36vw) minmax(0,1fr) !important;
+}
+#cardInspectorModal .card-inspector-data{
+  padding:clamp(20px,2.5vw,42px) !important;
+}
+#cardInspectorModal .card-inspector-name{
+  font-size:clamp(25px,3.2vw,46px) !important;
+}
+#cardInspectorModal .card-inspector-meta{
+  font-size:clamp(13px,1.35vw,17px) !important;
+}
+#cardInspectorModal .card-inspector-rules{
+  font-size:clamp(16px,1.65vw,22px) !important;
+  line-height:1.58 !important;
+}
+
+/* Give text priority as width gets tight. */
+@media(max-width:900px){
+  #cardInspectorModal .card-inspector-window{
+    grid-template-columns:minmax(180px,32vw) minmax(0,1fr) !important;
+  }
+  #cardInspectorModal .card-inspector-image-wrap{
+    padding:10px !important;
+  }
+}
+
+/* On phone-size layouts, keep the inspector full-screen but cap artwork height so
+   the readable rules panel gets most of the viewport. */
+@media(max-width:680px){
+  #cardInspectorModal.card-inspector-modal{
+    padding-top:calc(clamp(52px,8dvh,70px) + env(safe-area-inset-top, 0px)) !important;
+    padding-right:calc(10px + env(safe-area-inset-right, 0px)) !important;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-left:calc(10px + env(safe-area-inset-left, 0px)) !important;
+  }
+  #cardInspectorModal .card-inspector-window{
+    width:100% !important;
+    height:100% !important;
+    grid-template-columns:1fr !important;
+    grid-template-rows:minmax(120px,30dvh) minmax(0,1fr) !important;
+    border-radius:8px !important;
+  }
+  #cardInspectorModal .card-inspector-image-wrap{
+    border-right:0 !important;
+    border-bottom:1px solid var(--profile-outline-soft,var(--line-soft)) !important;
+    padding:8px !important;
+  }
+  #cardInspectorModal .card-inspector-data{
+    padding:18px 16px 28px !important;
+  }
+  #cardInspectorModal .card-inspector-name{
+    margin-right:42px !important;
+    font-size:clamp(23px,7vw,34px) !important;
+  }
+  #cardInspectorModal .card-inspector-meta{
+    font-size:13px !important;
+    margin-bottom:16px !important;
+  }
+  #cardInspectorModal .card-inspector-rules{
+    font-size:clamp(16px,4.4vw,20px) !important;
+    line-height:1.55 !important;
+  }
+}
+
+@media(max-width:420px){
+  #cardInspectorModal .card-inspector-window{
+    grid-template-rows:minmax(100px,24dvh) minmax(0,1fr) !important;
+  }
+  #cardInspectorModal .card-inspector-data{
+    padding:15px 13px 24px !important;
+  }
+  #cardInspectorModal .card-inspector-rules{
+    font-size:16px !important;
+  }
+}
+</style>
+
+
+<style id="explicit-card-inspector-visual-viewport-fix">
+/* Explicit inspector viewport safety. The inspector window itself stays in normal
+   flex layout inside the modal: no legacy fixed centering or upward popup lift can
+   move its close button behind browser chrome. visualViewport still bounds the
+   modal for mobile/embedded browser UI and zoomed layouts. The window fills the
+   safe modal area so centering never exposes oversized backdrop gutters. */
+#cardInspectorModal.card-inspector-modal{
+  inset:auto !important;
+  top:var(--kg-inspector-vv-top, 0px) !important;
+  left:var(--kg-inspector-vv-left, 0px) !important;
+  width:var(--kg-inspector-vv-width, 100vw) !important;
+  height:var(--kg-inspector-vv-height, 100dvh) !important;
+  max-width:none !important;
+  max-height:none !important;
+  box-sizing:border-box !important;
+  padding-top:calc(clamp(16px,2.2dvh,28px) + env(safe-area-inset-top, 0px)) !important;
+  padding-right:calc(clamp(12px,1.25vw,20px) + env(safe-area-inset-right, 0px)) !important;
+  padding-bottom:calc(clamp(12px,1.8dvh,20px) + env(safe-area-inset-bottom, 0px)) !important;
+  padding-left:calc(clamp(12px,1.25vw,20px) + env(safe-area-inset-left, 0px)) !important;
+  align-items:center !important;
+  justify-content:center !important;
+  overflow:hidden !important;
+}
+#cardInspectorModal .card-inspector-window{
+  position:relative !important;
+  inset:auto !important;
+  left:auto !important;
+  top:auto !important;
+  right:auto !important;
+  bottom:auto !important;
+  transform:none !important;
+  translate:none !important;
+  margin:auto !important;
+  width:100% !important;
+  height:100% !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+}
+#cardInspectorModal .card-inspector-close{
+  top:clamp(10px,1.4dvh,16px) !important;
+  right:clamp(10px,1vw,16px) !important;
+}
+@media(max-width:680px){
+  #cardInspectorModal.card-inspector-modal{
+    padding-top:calc(12px + env(safe-area-inset-top, 0px)) !important;
+    padding-right:calc(10px + env(safe-area-inset-right, 0px)) !important;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-left:calc(10px + env(safe-area-inset-left, 0px)) !important;
+  }
+}
+</style>
+<script id="explicit-card-inspector-visual-viewport-runtime">
+(function(){
+  const root = document.documentElement;
+  const modal = () => document.getElementById('cardInspectorModal');
+
+  function syncInspectorVisualViewport(){
+    const vv = window.visualViewport;
+    const top = vv ? Math.max(0, vv.offsetTop || 0) : 0;
+    const left = vv ? Math.max(0, vv.offsetLeft || 0) : 0;
+    const width = vv ? vv.width : window.innerWidth;
+    const height = vv ? vv.height : window.innerHeight;
+
+    root.style.setProperty('--kg-inspector-vv-top', top + 'px');
+    root.style.setProperty('--kg-inspector-vv-left', left + 'px');
+    root.style.setProperty('--kg-inspector-vv-width', Math.max(1, width) + 'px');
+    root.style.setProperty('--kg-inspector-vv-height', Math.max(1, height) + 'px');
+  }
+
+  syncInspectorVisualViewport();
+  window.addEventListener('resize', syncInspectorVisualViewport, {passive:true});
+  window.addEventListener('orientationchange', syncInspectorVisualViewport, {passive:true});
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', syncInspectorVisualViewport, {passive:true});
+    window.visualViewport.addEventListener('scroll', syncInspectorVisualViewport, {passive:true});
+  }
+
+  /* Re-sync at the instant the explicit inspector opens. */
+  const observer = new MutationObserver(() => {
+    const el = modal();
+    if(el && el.getAttribute('aria-hidden') === 'false') syncInspectorVisualViewport();
+  });
+  const startObserver = () => {
+    const el = modal();
+    if(el) observer.observe(el, {attributes:true, attributeFilter:['aria-hidden']});
+  };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver, {once:true});
+  else startObserver();
+})();
+</script>
+
+
+
+<style id="explicit-card-inspector-true-window-centering">
+/* Final explicit-inspector geometry:
+   - the modal/backdrop tracks the actual visual viewport
+   - the ENTIRE inspector window is centered as one unit
+   - only a small safety inset is removed from its available size
+   - overrides the legacy popup -100px lift without affecting other popups */
+#cardInspectorModal.card-inspector-modal{
+  position:fixed !important;
+  inset:auto !important;
+  top:var(--kg-inspector-vv-top,0px) !important;
+  left:var(--kg-inspector-vv-left,0px) !important;
+  width:var(--kg-inspector-vv-width,100vw) !important;
+  height:var(--kg-inspector-vv-height,100dvh) !important;
+  max-width:none !important;
+  max-height:none !important;
+  padding:0 !important;
+  overflow:hidden !important;
+}
+#cardInspectorModal .card-inspector-backdrop{
+  position:absolute !important;
+  inset:0 !important;
+}
+#cardInspectorModal .card-inspector-window{
+  position:absolute !important;
+  z-index:1 !important;
+  left:50% !important;
+  top:50% !important;
+  right:auto !important;
+  bottom:auto !important;
+  inset-inline-start:50% !important;
+  inset-block-start:50% !important;
+  transform:translate(-50%,-50%) !important;
+  translate:none !important;
+  margin:0 !important;
+  width:calc(100% - clamp(24px,2.5vw,40px)) !important;
+  height:calc(100% - clamp(24px,3.6dvh,40px)) !important;
+  max-width:none !important;
+  max-height:none !important;
+  min-width:0 !important;
+  min-height:0 !important;
+}
+#cardInspectorModal .card-inspector-close{
+  top:clamp(10px,1.4dvh,16px) !important;
+  right:clamp(10px,1vw,16px) !important;
+}
+@media(max-width:680px){
+  #cardInspectorModal .card-inspector-window{
+    width:calc(100% - 20px) !important;
+    height:calc(100% - 20px) !important;
+  }
+}
+</style>
 
 </body>
 </html>
