@@ -1262,6 +1262,7 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(3){
           <div class="community-submit-summary" id="communitySubmitSummary"></div>
           <div id="communityNames" class="community-submit-summary" aria-live="polite"></div>
           <div id="communityCaptcha"></div>
+          <button id="communityCaptchaRetry" type="button" class="filter-btn" hidden>Retry verification</button>
           <label class="community-submit-note"><input type="checkbox" id="communityConsent"> Publish my deck, creator name, and description for everyone to see.</label>
           <button class="action-btn deck-save-btn" id="submitCommunityDeckBtn" type="button">Submit Deck to Community</button>
           <p class="community-submit-note">Publishes immediately. Creator names are self-reported, not verified Odoo accounts. Only share information you want public.</p>
@@ -1916,8 +1917,6 @@ function showColorIdentityDialog(changes){
 }
 
 async function reconcileWithDialog(){
-  removeGreyedRoyalCopies();
-
   const changes = reconcileMainDeckWithRoyals();
   reconcileSideDeckWithRoyals();
 
@@ -2088,11 +2087,11 @@ function mainDeckAllowedFactions(){
 
 function canReturnTransferredSideCopyToMain(id){
   const card = CARDS.find(c => c.id === id);
-  if(!card || state.royals.includes(id)) return false;
+  if(!card) return false;
   if(!mainDeckAllowedFactions().has(card.faction)) return false;
   const mainCopies = Math.max(0, Number(state.main[id]) || 0);
   const sideCopies = Math.max(0, Number(state.side[id]) || 0);
-  return mainCopies + sideCopies < maxCopiesFor(card);
+  return mainCopies + sideCopies + selectedRoyalCopyCount(id) < maxCopiesFor(card);
 }
 
 function canAddSideDeckCard(id){
@@ -2110,7 +2109,7 @@ function canAddSideDeckCard(id){
    cap does not block a Main/Side transfer; it only blocks creating a new copy. */
 function canAddMainDeckCard(id){
   const card = deckCardById(id);
-  if(!card || isBastionOptionId(id) || state.royals.includes(id)) return false;
+  if(!card || isBastionOptionId(id)) return false;
   if(!mainDeckAllowedFactions().has(card.faction)) return false;
   if(cappedDeckCopyCountFor(id) < maxCopiesFor(card)) return true;
   return Math.max(0, Number(state.side[id]) || 0) > 0;
@@ -2125,7 +2124,6 @@ function mainDeckAddBlockReason(id){
   const card = deckCardById(id);
   if(!card) return 'This card cannot be added to the Main Deck.';
   if(isBastionOptionId(id)) return 'Bastions can only be your active Bastion or be kept in the Side Deck.';
-  if(state.royals.includes(id)) return 'This is your active Royal. Its Royal slot counts as one copy, and extra copies belong in the Side Deck rather than the Main Deck.';
   if(!mainDeckAllowedFactions().has(card.faction)) return `This card cannot be added to the Main Deck because ${card.faction} is outside your current faction identity.`;
   if(cappedDeckCopyCountFor(id) >= maxCopiesFor(card) && Math.max(0, Number(state.side[id]) || 0) <= 0){
     return sharedCopyLimitWarning(card);
@@ -2184,12 +2182,6 @@ function changeMainDeckCard(id, delta){
 
 function enforceSideDeckSharedCopyLimits(){
   state.sideFromMain ||= {};
-  /* Active Royals cannot have copies in Main Deck. If an older save/state has
-     one there, remove it rather than allowing an illegal fourth-zone copy. */
-  (state.royals || []).forEach(id => {
-    if(state.main[id]) delete state.main[id];
-    if(state.cachedMain[id]) delete state.cachedMain[id];
-  });
   Object.keys(state.side || {}).forEach(id => {
     const allowed = sideDeckCopyLimitFor(id);
     const current = Math.max(0, Number(state.side[id]) || 0);
@@ -2637,34 +2629,6 @@ function setupCardHoverTooltip(root){
   });
 }
 
-function setupRoyalPoolTooltips(grid){
-  if(!grid) return;
-  grid.querySelectorAll('.selected-royal-in-pool').forEach(card => {
-    const message = 'This is your Royal.';
-
-    /* A selected Royal is blocked from being added to the Main Deck, but it is
-       still a fully interactive information card. Capture ordinary left-clicks
-       before the deck-edit handler and pin its data to the sticky header. The
-       dedicated Info button keeps its own first-click pin / second-click inspector
-       behavior, so do not intercept clicks that originate on that button. */
-    card.addEventListener('click', e => {
-      if(e.button !== 0 || e.target.closest('.card-info-button')) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      renderStickyCardFromElement(card);
-    }, true);
-    card.addEventListener('mouseenter', e => {
-      showMouseDisclaimer([message], e.clientX, e.clientY, 'selected');
-    });
-    card.addEventListener('mousemove', e => {
-      const tip = document.getElementById('mouseDisclaimerTooltip');
-      if(!tip || tip.getAttribute('aria-hidden') === 'true') showMouseDisclaimer([message], e.clientX, e.clientY, 'selected');
-      else positionMouseDisclaimer(e.clientX, e.clientY);
-    });
-    card.addEventListener('mouseleave', hideMouseDisclaimer);
-  });
-}
-
 /* ============================================================================
    MAIN CARD POOL RENDERING
    ============================================================================ */
@@ -2728,7 +2692,6 @@ function renderPool(){
       </div>
       <div class="card-wall-test">
         ${visibleCards.map((c, index) => {
-          const selectedRoyal = state.royals.includes(c.id);
           const sideDeckMode = state.activeDeck === 'side';
           const sideRoyalChoice = sideDeckMode && isRoyalOptionId(c.id);
           const n = totalDeckCopyCountFor(c.id);
@@ -2736,14 +2699,13 @@ function renderPool(){
           const restrictionReason = !groupLegal && !sideRoyalChoice
             ? `This card is greyed out because the selected ${mixedLeaderLock ? 'Royal and Bastion' : 'Royals'} do not allow the ${group.faction} faction.`
             : '';
-          const selectedRoyalClass = selectedRoyal && !sideDeckMode ? ' selected-royal-in-pool restricted-card' : '';
           const addBlockReason = sideDeckMode ? sideDeckAddBlockReason(c.id) : mainDeckAddBlockReason(c.id);
           const standardMainCapReached = !sideDeckMode && !!addBlockReason && cappedDeckCopyCountFor(c.id) >= maxCopiesFor(c);
           const sideCanAdd = sideDeckMode ? !addBlockReason : false;
           const sideCapReached = sideDeckMode && !!addBlockReason;
           const mainCapClass = standardMainCapReached ? ' main-copy-cap-reached' : '';
           const sideSelectableClass = sideDeckMode && sideCanAdd && restrictionReason ? ' side-deck-selectable-greyed' : '';
-          return `<article class="simple-card${selectedRoyalClass}${restrictionReason ? ' restricted-card' : ''}${mainCapClass}${sideSelectableClass}${sideCapReached ? ' side-copy-cap-reached' : ''}" data-card-id="${c.id}" ${addBlockReason ? `data-add-block-reason="${escapeHtml(addBlockReason)}" aria-disabled="true"` : ''} ${sideCapReached ? 'data-side-copy-cap="1"' : ''} ${restrictionReason ? `data-restriction-reason="${escapeHtml(restrictionReason)}"` : ''}>
+          return `<article class="simple-card${restrictionReason ? ' restricted-card' : ''}${mainCapClass}${sideSelectableClass}${sideCapReached ? ' side-copy-cap-reached' : ''}" data-card-id="${c.id}" ${addBlockReason ? `data-add-block-reason="${escapeHtml(addBlockReason)}" aria-disabled="true"` : ''} ${sideCapReached ? 'data-side-copy-cap="1"' : ''} ${restrictionReason ? `data-restriction-reason="${escapeHtml(restrictionReason)}"` : ''}>
             <div class="simple-card-image">
               ${img ? `<img src="${img}" alt="" loading="lazy">` : `<div class="card-image-missing"></div>`}
               <div class="simple-card-copy-count${builderCopyBadgeIsSplit(c.id) ? ' split-copy-count' : ''}" data-count="${n}" aria-label="${escapeHtml(builderCopyBadgeLabel(c.id))}">${builderCopyBadgeMarkup(c.id, n)}</div>
@@ -2790,34 +2752,11 @@ function renderPool(){
   collapseRestrictedCardsIn(grid, ".pool-group");
 
   setupCardHoverTooltip(grid);
-  setupRoyalPoolTooltips(grid);
 }
 function royalIsInMainDeck(id){
   return (state.main[id] || 0) > 0 ||
     (state.cachedMain[id] || 0) > 0;
 }
-
-function removeGreyedRoyalCopies(){
-  const removed = [];
-
-  ROYAL_OPTIONS.forEach(royal => {
-    if(state.royals.includes(royal.id)) return;
-
-    /* A Royal may intentionally live in the Side Deck as an alternate Royal.
-       Only purge illegal Royal copies from the Main Deck/cache. */
-    const activeCount = state.main[royal.id] || 0;
-    const cachedCount = state.cachedMain[royal.id] || 0;
-    const total = activeCount + cachedCount;
-    if(total <= 0) return;
-
-    delete state.main[royal.id];
-    delete state.cachedMain[royal.id];
-    removed.push({ name: royal.name, count: total });
-  });
-
-  return removed;
-}
-
 
 function collapseRestrictedCardsIn(container, groupSelector){
   if(!container) return;
@@ -3823,6 +3762,13 @@ function normalizeDeckTheme(theme){
   };
 }
 
+function deckHasCustomTheme(theme){
+  const t = normalizeDeckTheme(theme);
+  return Object.keys(DEFAULT_DECK_THEME).some(section =>
+    Object.keys(DEFAULT_DECK_THEME[section]).some(key =>
+      t[section][key] !== DEFAULT_DECK_THEME[section][key]));
+}
+
 function themeColor(hue, saturation, lightness){
   return `hsl(${Math.round(hue)} ${Math.max(0, Math.min(100, saturation))}% ${Math.max(0, Math.min(100, lightness))}%)`;
 }
@@ -4361,7 +4307,7 @@ function normalizeImportedDeck(raw){
 
   const royalIds = new Set(ROYAL_OPTIONS.map(c => c.id));
   const bastionIds = new Set(BASTION_OPTIONS.map(c => c.id));
-  const mainIds = new Set(CARDS.filter(c => !ROYAL_OPTIONS.some(r => r.id === c.id)).map(c => c.id));
+  const mainIds = new Set(CARDS.map(c => c.id));
 
   const royals = Array.isArray(raw.royals) ? raw.royals.filter(id => royalIds.has(id)).slice(0, MAX_ROYALS) : [];
   const bastion = raw.bastion && bastionIds.has(raw.bastion) ? raw.bastion : null;
@@ -4371,7 +4317,7 @@ function normalizeImportedDeck(raw){
       const card = CARDS.find(c => c.id === id);
       if(!card || !mainIds.has(id)) return;
       const n = Math.floor(Number(count));
-      if(Number.isFinite(n) && n > 0) main[id] = Math.min(n, maxCopiesFor(card));
+      if(Number.isFinite(n) && n > 0) main[id] = Math.min(n, Math.max(0, maxCopiesFor(card) - (royals.includes(id) ? 1 : 0)));
     });
   }
 
@@ -4413,6 +4359,11 @@ function normalizeImportedDeck(raw){
 
 function applyDeckToBuilder(rawDeck){
   const deck = normalizeImportedDeck(rawDeck);
+  // A deck's default theme carries no visual preference. Custom themes are
+  // optional on load; declining leaves the player's current controls intact.
+  const applyImportedTheme = deckHasCustomTheme(deck.theme) && window.confirm(
+    `“${deck.name || 'This deck'}” has custom theme settings. Apply them?\n\nCancel keeps your current theme settings.`
+  );
   state.royals = [...deck.royals];
   state.bastion = deck.bastion;
   state.cachedBastion = null;
@@ -4426,7 +4377,7 @@ function applyDeckToBuilder(rawDeck){
   state.terraDeck = {...deck.terraDeck};
   document.getElementById('deckName').value = deck.name;
   document.getElementById('pilotName').value = deck.pilot;
-  setDeckTheme(deck.theme);
+  if(applyImportedTheme) setDeckTheme(deck.theme);
 
   // Keep imported decks subject to the same live Royal/Bastion faction rules as hand-built decks.
   reconcileBastionWithRoyals();
@@ -4788,7 +4739,7 @@ function selectDeckStorageTab(tab){
   document.getElementById('communityDecksPanel').hidden = true;
   document.getElementById('communityDecksTab').setAttribute('aria-selected','false');
   document.getElementById('communityDecksTab').classList.remove('is-active');
-  if(isSubmit){ updateCommunitySubmitSummary(); refreshCommunityNames(); prepareCommunityCaptcha(); }
+  if(isSubmit){ communityNameRows=null; updateCommunitySubmitSummary(); refreshCommunityNames(); prepareCommunityCaptcha(); }
   else renderLocalDecks();
 }
 
@@ -9388,6 +9339,12 @@ body.v35-layout-locked .left-deck-rail #deckListMini > :nth-child(4){
 .community-leaders img{width:70px;height:98px;object-fit:contain;}
 .community-leaders img.bastion{width:105px;height:75px;}
 .community-deck pre{white-space:pre-wrap;font:12px/1.5 'Work Sans',sans-serif;}
+.community-deck details{margin:10px 0;}
+.community-deck summary{cursor:pointer;color:var(--gold);font-size:12px;}
+.community-submission{margin:8px 0;padding:10px;border:1px solid var(--line-soft);border-radius:7px;}
+.community-submission p{margin:0 0 6px;}
+.community-submission-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.community-submission-head .saved-deck-action{width:auto;min-width:112px;margin:0;}
 #communityNames button{white-space:normal;min-height:34px;}
 #communitySearch{box-sizing:border-box;width:100%;padding:10px;background:var(--panel);color:var(--parchment);border:1px solid var(--line);border-radius:6px;}
 #communityGalleryStatus,#communityCaptcha{font-size:12px;line-height:1.5;}
@@ -9408,16 +9365,29 @@ const KINGDOMS_COMMUNITY = Object.freeze({
 });
 const COMMUNITY_SESSION_KEY='kingdomsCommunityGuestV1';
 let communitySession=null, communityAuthPending=null;
-let communityCaptchaToken='', communityWidget=null, communityCaptchaLoading=null;
-let communityNamesSerial=0, communityNameChoice=null;
+let communityCaptchaToken='', communityCaptchaError='', communityWidget=null, communityCaptchaLoading=null;
+let communityNamesSerial=0, communityNameChoice=null, communityOwnName=null, communityNameRows=null, communityNameTimer=0;
 let communityPage=0, communityGallerySerial=0, communityPendingSubmission=null;
+let communityGalleryRows=null;
 const communityEl=id=>document.getElementById(id);
 try{communitySession=JSON.parse(localStorage.getItem(COMMUNITY_SESSION_KEY)||'null');}catch(_){}
 
-function communityLeadersKey(deck){return [...deck.royals].sort().join('|')+'::'+(deck.bastion||'');}
 function communityText(tag,text,className){
   const el=document.createElement(tag);el.textContent=text;
   if(className)el.className=className;return el;
+}
+const COMMUNITY_BLOCKED_WORDS=new Set([
+  'fuck','fucker','fucking','motherfucker','shit','shitty','bitch','bastard',
+  'cunt','asshole','cocksucker','nigger','nigga','faggot','fag',
+  'kike','chink','spic','tranny','retard'
+]);
+function communityHasProhibitedLanguage(value){
+  const normalized=String(value||'').normalize('NFKC').toLowerCase()
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g,'')
+    .replace(/[@4]/g,'a').replace(/[3]/g,'e').replace(/[1!|]/g,'i')
+    .replace(/[0]/g,'o').replace(/[5$]/g,'s').replace(/[7]/g,'t');
+  const readable=normalized.replace(/(?:\b[a-z]\b[\s._-]*){3,}/g,part=>part.replace(/[^a-z]/g,''));
+  return (readable.match(/[\p{L}\p{N}]+/gu)||[]).some(word=>COMMUNITY_BLOCKED_WORDS.has(word));
 }
 function saveCommunitySession(session){
   communitySession=session;
@@ -9448,8 +9418,17 @@ async function communityRequest(path,options={}){
   }finally{clearTimeout(timer);}
 }
 function resetCommunityCaptcha(){
-  communityCaptchaToken='';
+  communityCaptchaToken='';communityCaptchaError='';
+  communityEl('communityCaptchaRetry').hidden=true;
   if(communityWidget!==null && window.turnstile)window.turnstile.reset(communityWidget);
+}
+function communityCaptchaErrorMessage(code){
+  const value=String(code||'');
+  if(value==='110200')return `Cloudflare error ${value}: this page's hostname is not allowed for the Turnstile site key. Add the hostname in Cloudflare Turnstile Hostname Management.`;
+  if(value==='110100'||value==='110110'||value==='400020')return `Cloudflare error ${value}: the Turnstile site key is invalid. Check the public site key in this HTML against the Cloudflare widget.`;
+  if(value==='200500')return `Cloudflare error ${value}: the challenge could not connect to challenges.cloudflare.com. Check browser tracking protection, content blockers, DNS or network filters, then retry.`;
+  if(value==='110600'||value==='110620')return `Cloudflare error ${value}: the challenge timed out. Retry the verification.`;
+  return `Cloudflare verification failed${value?` (error ${value})`:''}. Retry the challenge or check the browser console for details.`;
 }
 async function prepareCommunityCaptcha(){
   const holder=communityEl('communityCaptcha');
@@ -9472,15 +9451,31 @@ async function prepareCommunityCaptcha(){
       holder.replaceChildren();
       communityWidget=window.turnstile.render(holder,{
         sitekey:KINGDOMS_COMMUNITY.turnstileSiteKey,theme:'dark',size:'flexible',
-        callback:token=>{communityCaptchaToken=token;},
-        'expired-callback':()=>{communityCaptchaToken='';},
-        'error-callback':()=>{communityCaptchaToken='';setDeckStorageStatus('CAPTCHA failed. Please retry the verification.','err');}
+        callback:token=>{communityCaptchaToken=token;communityCaptchaError='';communityEl('communityCaptchaRetry').hidden=true;},
+        'expired-callback':()=>{communityCaptchaToken='';communityCaptchaError='The CAPTCHA expired. Complete it again before submitting.';},
+        'error-callback':code=>{
+          communityCaptchaToken='';communityCaptchaError=communityCaptchaErrorMessage(code);
+          communityEl('communityCaptchaRetry').hidden=false;
+          setDeckStorageStatus(communityCaptchaError,'err');
+        }
       });
-    }catch(error){holder.textContent=error.message;}
+    }catch(error){
+      communityCaptchaError=error.message;holder.textContent=communityCaptchaError;
+      communityEl('communityCaptchaRetry').hidden=false;
+    }
     finally{communityCaptchaLoading=null;}
   })();
   return communityCaptchaLoading;
 }
+communityEl('communityCaptchaRetry').addEventListener('click',()=>{
+  communityCaptchaToken='';communityCaptchaError='';
+  communityEl('communityCaptchaRetry').hidden=true;
+  if(communityWidget!==null&&window.turnstile){
+    window.turnstile.remove(communityWidget);
+    communityWidget=null;
+  }
+  prepareCommunityCaptcha();
+});
 async function communityGuestToken(){
   if(communityAuthPending)return communityAuthPending;
   communityAuthPending=(async()=>{
@@ -9496,7 +9491,7 @@ async function communityGuestToken(){
       }
     }
     if(!KINGDOMS_COMMUNITY.turnstileSiteKey)throw new Error('The site owner needs to finish CAPTCHA setup first.');
-    if(!communityCaptchaToken)throw new Error('Please complete the human verification first.');
+    if(!communityCaptchaToken)throw new Error(communityCaptchaError||'Please complete the human verification first.');
     try{
       const session=await communityRequest('/auth/v1/signup',{body:{data:{},gotrue_meta_security:{captcha_token:communityCaptchaToken}}});
       if(!session?.access_token)throw new Error('Enable Anonymous Sign-Ins in Supabase Authentication.');
@@ -9506,30 +9501,54 @@ async function communityGuestToken(){
   try{return await communityAuthPending;}finally{communityAuthPending=null;}
 }
 
+async function fetchCommunityNameRows(){
+  if(communityNameRows)return communityNameRows;
+  if(communityGalleryRows){
+    communityNameRows=communityGalleryRows.map(({name,created_at})=>({name,created_at}));
+    return communityNameRows;
+  }
+  const rows=[],batchSize=500;
+  for(let offset=0;;offset+=batchSize){
+    const params=new URLSearchParams({select:'name,created_at',order:'created_at.desc',limit:String(batchSize),offset:String(offset)});
+    const batch=await communityRequest('/rest/v1/kingdoms_decks?'+params);
+    rows.push(...batch);
+    if(batch.length<batchSize)return communityNameRows=rows;
+  }
+}
 async function refreshCommunityNames(){
   const serial=++communityNamesSerial;
-  const deck=currentDeckForSave(), key=communityLeadersKey(deck);
-  const holder=communityEl('communityNames');communityNameChoice=null;
+  const input=communityEl('deckName'),holder=communityEl('communityNames');
+  if(communityOwnName===null||communityNameChoice?.source!=='suggestion')communityOwnName=input.value.trim();
+  const typedName=communityOwnName;
   holder.replaceChildren();
-  if(!deck.royals.length||!deck.bastion){holder.textContent='Select your Royals and Bastion to find matching deck names.';return;}
-  holder.textContent='Looking for decks with these exact Royals and Bastion…';
+  if(!typedName){holder.textContent='Enter your deck name to find similar community names.';return;}
+  holder.textContent='Checking similar community deck names…';
   try{
-    const rows=await communityRequest('/rest/v1/rpc/kingdoms_matching_names',{body:{p_key:key}});
+    const rows=await fetchCommunityNameRows();
     if(serial!==communityNamesSerial)return;
-    holder.replaceChildren(communityText('strong',rows.length?'These decks use the same Royals and Bastion':'No matching deck names yet'));
-    holder.append(communityText('span','Choose an existing name or use your own. Your cardlist and creator credit remain separate.'));
+    const groups=groupCommunityRows(rows);
+    const matches=groups.map(group=>({name:communityCanonicalName(group),versions:group.length}))
+      .filter(group=>communityNamesSimilar(typedName,group.name)).slice(0,8);
+    holder.replaceChildren(communityText('strong',matches.length?'Similar community deck names':'No similar deck names found'));
+    holder.append(communityText('span',matches.length
+      ? 'Choosing an existing name adds your list to its community group. Your creator credit stays yours.'
+      : 'Your deck will appear as a new community name.'));
     function choose(name){
-      if(name)communityEl('deckName').value=name;
-      communityNameChoice={key,name:communityEl('deckName').value.trim()};
+      if(name){
+        if(communityNameChoice?.source!=='suggestion')communityOwnName=input.value.trim();
+        input.value=name;
+      }else input.value=communityOwnName??input.value;
+      communityNameChoice={name:input.value.trim(),source:name?'suggestion':'own'};
       updateCommunitySubmitSummary();
       holder.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.name===(name||''))));
     }
-    rows.forEach(row=>{
-      const b=savedDeckAction(`Use “${row.name}” · ${row.versions} version(s)`,'',()=>choose(row.name));
-      b.dataset.name=row.name;holder.append(b);
+    matches.forEach(group=>{
+      const b=savedDeckAction(`Use “${group.name}” instead · ${group.versions} submitted list${group.versions===1?'':'s'}`,'',()=>choose(group.name));
+      b.dataset.name=group.name;holder.append(b);
     });
-    const own=savedDeckAction('Use my own deck name','',()=>choose(null));own.dataset.name='';holder.append(own);
-    if(!rows.length)choose(null);
+    const own=savedDeckAction('Use my own name','',()=>choose(null));own.dataset.name='';holder.append(own);
+    if(!matches.length)choose(null);
+    else if(communityNameChoice?.name===input.value.trim())choose(communityNameChoice.source==='suggestion'?input.value.trim():null);
   }catch(error){if(serial===communityNamesSerial)holder.textContent=error.message;}
 }
 
@@ -9543,8 +9562,11 @@ async function publishCommunityDeck(){
   const gameMode=(communityEl('communityGameMode')?.value || '').trim().slice(0,80);
   deck.gameMode=gameMode;
   if(!name||name.length>120||!creator||creator.length>80){setDeckStorageStatus('Enter a deck name (up to 120 characters) and a public creator name (up to 80).','err');return;}
+  const offensiveField=[['deck name',name],['creator name',creator],['description',description],['game mode',gameMode]]
+    .find(([,value])=>communityHasProhibitedLanguage(value));
+  if(offensiveField){setDeckStorageStatus(`Remove profanity or slurs from the ${offensiveField[0]} before submitting.`,'err');return;}
   if(!deck.royals.length||!deck.bastion||deck.mainCount<1){setDeckStorageStatus('Choose your Royals and Bastion and add Main Deck cards first.','err');return;}
-  if(!communityNameChoice||communityNameChoice.key!==communityLeadersKey(deck)||communityNameChoice.name!==name){
+  if(!communityNameChoice||communityNameChoice.name!==name){
     await refreshCommunityNames();setDeckStorageStatus('Review the matching names above, then choose one or use your own name.','err');return;
   }
   if(!communityEl('communityConsent').checked){setDeckStorageStatus('Confirm that you want to publish this information publicly.','err');return;}
@@ -9558,49 +9580,181 @@ async function publishCommunityDeck(){
     const token=await communityGuestToken();
     await communityRequest('/rest/v1/rpc/kingdoms_submit_deck',{body:payload,token});
     communityEl('communityConsent').checked=false;
+    communityGalleryRows=null;communityNameRows=null;
     communityPage=0;communityEl('communitySearch').value='';openCommunityGallery();
     setDeckStorageStatus(`Published “${name}”. It is now public.`);
   }catch(error){setDeckStorageStatus(error.message||'Could not submit. Your deck is still in the builder.','err');}
   finally{button.disabled=false;button.textContent='Submit Deck to Community';}
 }
 
-function communityDeckRow(row){
+function communityGroupDeck(rows){
+  // Use the most common complete leader setup; ties favour the latest submission.
+  const leaders=new Map();
+  rows.forEach(row=>{
+    const key=JSON.stringify([row.deck?.royals||[],row.deck?.bastion||null]);
+    leaders.set(key,(leaders.get(key)||0)+1);
+  });
+  const leaderRow=rows.reduce((best,row)=>
+    leaders.get(JSON.stringify([row.deck?.royals||[],row.deck?.bastion||null]))>
+    leaders.get(JSON.stringify([best.deck?.royals||[],best.deck?.bastion||null])) ? row : best,rows[0]);
+  const averageMap=section=>{
+    const sums={};
+    rows.forEach(row=>Object.entries(row.deck?.[section]||{}).forEach(([id,count])=>{
+      const n=Number(count);
+      if(Number.isFinite(n)&&n>0)sums[id]=(sums[id]||0)+n;
+    }));
+    return Object.fromEntries(Object.entries(sums).map(([id,sum])=>[id,sum/rows.length]));
+  };
+  const average={
+    ...leaderRow.deck,name:communityCanonicalName(rows),pilot:'',
+    royals:[...(leaderRow.deck?.royals||[])],bastion:leaderRow.deck?.bastion||null,
+    main:averageMap('main'),side:averageMap('side'),terraDeck:averageMap('terraDeck'),
+    terra:rows.reduce((sum,row)=>sum+(Number(row.deck?.terra)||0),0)/rows.length
+  };
+  average.mainCount=Object.values(average.main).reduce((sum,n)=>sum+n,0);
+  average.sideCount=Object.values(average.side).reduce((sum,n)=>sum+n,0);
+  return average;
+}
+function communityRoundedDeck(average){
+  const roundMap=section=>Object.fromEntries(Object.entries(average[section]).map(([id,count])=>[id,Math.round(count)]).filter(([,count])=>count>0));
+  return {...average,main:roundMap('main'),side:roundMap('side'),terraDeck:roundMap('terraDeck'),terra:Math.round(average.terra),mainCount:undefined,sideCount:undefined};
+}
+function communityAverageDeckText(average){
+  const count=n=>Number(n.toFixed(2)).toString();
+  const entries=map=>Object.entries(map).sort((a,b)=>deckCardLabel(a[0]).localeCompare(deckCardLabel(b[0])));
+  const lines=[`[Royals]`,...average.royals.map(deckCardLabel),'',`[Bastion]`,deckCardLabel(average.bastion)];
+  for(const [label,map] of [['Main Deck',average.main],['Side Deck',average.side]]){
+    lines.push('',`[${label}]`);
+    const cards=entries(map);
+    lines.push(...(cards.length?cards.map(([id,n])=>`${count(n)} x ${deckCardLabel(id)}`):['None']));
+    lines.push(`${label} Total: ${count(cards.reduce((sum,[,n])=>sum+n,0))}`);
+  }
+  const terraCards=entries(average.terraDeck);
+  lines.push('','[Terra Deck]',`Natural Terra: ${count(average.terra)}`,
+    ...terraCards.map(([id,n])=>`${count(n)} x ${deckCardLabel(id)}`),
+    `Terra Total: ${count(average.terra+terraCards.reduce((sum,[,n])=>sum+n,0))}`);
+  return lines.join('\n');
+}
+function communityNameKey(name){
+  // Treat spacing, case, Unicode variants, and invisible formatting characters
+  // as the same visible name when grouping community submissions.
+  return String(name||'').normalize('NFKC')
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g,'')
+    .replace(/\s+/g,' ').trim().toLocaleLowerCase();
+}
+function communityComparableName(name){
+  return communityNameKey(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^\p{L}\p{N}]+/gu,' ').trim().replace(/\s+/g,' ');
+}
+function communityNameDistance(a,b,limit){
+  if(Math.abs(a.length-b.length)>limit)return limit+1;
+  let previous=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const current=[i];
+    for(let j=1;j<=b.length;j++)current[j]=Math.min(
+      previous[j]+1,current[j-1]+1,previous[j-1]+(a[i-1]===b[j-1]?0:1));
+    if(Math.min(...current)>limit)return limit+1;
+    previous=current;
+  }
+  return previous[b.length];
+}
+function communityNamesSimilar(a,b){
+  const left=communityComparableName(a),right=communityComparableName(b);
+  if(!left||!right)return false;
+  if(left===right)return true;
+  const shorter=Math.min(left.length,right.length),longer=Math.max(left.length,right.length);
+  if(shorter<8||left.slice(0,3)!==right.slice(0,3))return false;
+  const limit=shorter>=15?2:1;
+  return communityNameDistance(left,right,limit)<=limit && (longer-shorter)<=limit;
+}
+function groupCommunityRows(rows){
+  const groups=[];
+  rows.forEach(row=>{
+    const group=groups.find(group=>communityNamesSimilar(group[0].name,row.name));
+    if(group)group.push(row);
+    else groups.push([row]);
+  });
+  return groups;
+}
+function communityCanonicalName(rows){
+  const counts=new Map();
+  rows.forEach(row=>{
+    const key=communityNameKey(row.name);
+    counts.set(key,(counts.get(key)||0)+1);
+  });
+  // On a tie, the oldest submitted spelling stays the group name.
+  return [...rows].reverse().reduce((best,row)=>
+    counts.get(communityNameKey(row.name))>counts.get(communityNameKey(best.name))?row:best,
+    rows[rows.length-1]).name;
+}
+function communityDeckRow(rows){
+  const row=rows[0], groupName=communityCanonicalName(rows), average=communityGroupDeck(rows);
   const card=communityText('article','','community-deck');
-  card.append(communityText('h3',row.name),communityText('p',`by ${row.creator} · ${new Date(row.created_at).toLocaleDateString()}`));
+  card.append(communityText('h3',groupName),communityText('p',`${rows.length} submitted decklist${rows.length===1?'':'s'} · latest ${new Date(row.created_at).toLocaleDateString()}`));
   const leaders=communityText('div','','community-leaders');
-  [...row.deck.royals,row.deck.bastion].forEach(id=>{
+  [...average.royals,average.bastion].forEach(id=>{
     const data=deckCardById(id);if(!data)return;
     const img=document.createElement('img');img.src=cardImageUrl(data);img.alt=data.name;img.title=data.name;img.loading='lazy';
-    if(id===row.deck.bastion)img.className='bastion';leaders.append(img);
+    if(id===average.bastion)img.className='bastion';leaders.append(img);
   });
-  card.append(leaders,communityText('p',[...row.deck.royals,row.deck.bastion].map(deckCardLabel).join(' · ')));
-  if(row.deck?.gameMode) card.append(communityText('p',`Game mode: ${row.deck.gameMode}`));
-  if(row.description)card.append(communityText('p',row.description));
-  const details=document.createElement('details');details.append(communityText('summary','View complete decklist'));
-  details.append(communityText('pre',serializeDeckText(row.deck)));card.append(details);
-  card.append(savedDeckAction('Load Deck','primary',()=>{
-    if(!window.confirm('Load this community deck? Unsaved changes in the builder will be replaced.'))return;
+  card.append(leaders,communityText('p',[...average.royals,average.bastion].map(deckCardLabel).join(' · ')));
+  card.append(communityText('p',`Average Main Deck: ${average.mainCount.toFixed(1)} cards · Side Deck: ${average.sideCount.toFixed(1)} cards`));
+  const details=document.createElement('details');details.append(communityText('summary','View average card counts'));
+  details.append(communityText('pre',communityAverageDeckText(average)));card.append(details);
+  const submissions=document.createElement('details');
+  submissions.append(communityText('summary',`See all ${rows.length} submitted decklists`));
+  rows.forEach(submission=>{
+    const entry=communityText('div','','community-submission');
+    const head=communityText('div','','community-submission-head');
+    head.append(communityText('p',`by ${submission.creator} · ${new Date(submission.created_at).toLocaleDateString()}`));
+    head.append(savedDeckAction('Load Deck','primary',()=>{
+      if(!window.confirm(`Load ${submission.creator}'s submitted decklist for “${groupName}”? Unsaved changes in the builder will be replaced.`))return;
+      try{
+        const loaded=applyDeckToBuilder(submission.deck);activeLocalDeckId=null;
+        communityNameChoice=null;selectDeckStorageTab('local');
+        setDeckStorageStatus(`Loaded ${submission.creator}'s submitted decklist for “${groupName}”. Existing builder legality rules apply.`);
+      }catch(error){setDeckStorageStatus(error.message,'err');}
+    }));
+    entry.append(head);
+    if(submission.description)entry.append(communityText('p',submission.description));
+    const full=document.createElement('details');full.append(communityText('summary','View full decklist'));
+    full.append(communityText('pre',serializeDeckText(submission.deck)));entry.append(full);
+    submissions.append(entry);
+  });
+  card.append(submissions);
+  card.append(savedDeckAction('Load Average Deck','primary',()=>{
+    if(!window.confirm('Load the rounded average deck? Unsaved changes in the builder will be replaced.'))return;
     try{
-      applyDeckToBuilder(row.deck);activeLocalDeckId=null;
+      applyDeckToBuilder(communityRoundedDeck(average));activeLocalDeckId=null;
       communityNameChoice=null;selectDeckStorageTab('local');
-      setDeckStorageStatus(`Loaded “${row.name}”. Local save slots were not overwritten. Existing builder legality rules still apply.`);
+      setDeckStorageStatus(`Loaded the rounded average for “${groupName}” from ${rows.length} submitted decklist${rows.length===1?'':'s'}. Existing builder legality rules apply.`);
     }catch(error){setDeckStorageStatus(error.message,'err');}
   }));return card;
+}
+async function fetchCommunityDecks(){
+  const rows=[],batchSize=500;
+  for(let offset=0;;offset+=batchSize){
+    const params=new URLSearchParams({select:'id,name,creator,description,deck,created_at',order:'created_at.desc,id.desc',limit:String(batchSize),offset:String(offset)});
+    const batch=await communityRequest('/rest/v1/kingdoms_decks?'+params);
+    rows.push(...batch);
+    if(batch.length<batchSize)return rows;
+  }
 }
 async function loadCommunityGallery(){
   const serial=++communityGallerySerial, page=communityPage;
   const status=communityEl('communityGalleryStatus');status.textContent='Loading community decks…';
   communityEl('communityPrevious').disabled=true;communityEl('communityNext').disabled=true;
   communityEl('communityGallery').replaceChildren();
-  const params=new URLSearchParams({select:'id,name,creator,description,leaders_key,deck,created_at',order:'created_at.desc,id.desc',limit:'13',offset:String(page*12)});
-  const term=communityEl('communitySearch').value.trim().replace(/[%,()*"\\]/g,' ');
-  if(term)params.set('or',`(name.ilike.*${term}*,creator.ilike.*${term}*)`);
+  const term=communityNameKey(communityEl('communitySearch').value);
   try{
-    const rows=await communityRequest('/rest/v1/kingdoms_decks?'+params);
+    const rows=communityGalleryRows||(communityGalleryRows=await fetchCommunityDecks());
     if(serial!==communityGallerySerial)return;
-    communityEl('communityGallery').replaceChildren(...rows.slice(0,12).map(communityDeckRow));
-    status.textContent=rows.length?`Page ${page+1} · newest first`:'No decks found. Be the first to submit one!';
-    communityEl('communityPrevious').disabled=page===0;communityEl('communityNext').disabled=rows.length<=12;
+    const groups=groupCommunityRows(rows);
+    const visible=groups.filter(group=>!term||group.some(row=>
+      communityNameKey(row.name).includes(term)||communityNameKey(row.creator).includes(term)));
+    communityEl('communityGallery').replaceChildren(...visible.slice(page*12,(page+1)*12).map(communityDeckRow));
+    status.textContent=visible.length?`Grouped by similar name · ${visible.length} deck names · page ${page+1} · newest first`:'No decks found. Be the first to submit one!';
+    communityEl('communityPrevious').disabled=page===0;communityEl('communityNext').disabled=(page+1)*12>=visible.length;
   }catch(error){if(serial===communityGallerySerial){status.textContent=error.message;communityEl('communityPrevious').disabled=page===0;}}
 }
 function openCommunityGallery(){
@@ -9611,11 +9765,15 @@ function openCommunityGallery(){
   loadCommunityGallery();
 }
 communityEl('communityDecksTab').addEventListener('click',openCommunityGallery);
-communityEl('communityRefresh').addEventListener('click',()=>{communityPage=0;loadCommunityGallery();});
+communityEl('communityRefresh').addEventListener('click',()=>{communityGalleryRows=null;communityPage=0;loadCommunityGallery();});
 communityEl('communitySearch').addEventListener('keydown',e=>{if(e.key==='Enter'){communityPage=0;loadCommunityGallery();}});
 communityEl('communityNext').addEventListener('click',()=>{communityPage++;loadCommunityGallery();});
 communityEl('communityPrevious').addEventListener('click',()=>{communityPage=Math.max(0,communityPage-1);loadCommunityGallery();});
-communityEl('deckName').addEventListener('input',()=>{communityNameChoice=null;});
+communityEl('deckName').addEventListener('input',()=>{
+  communityOwnName=communityEl('deckName').value.trim();communityNameChoice=null;
+  clearTimeout(communityNameTimer);
+  if(!communityEl('submitDeckPanel').hidden)communityNameTimer=setTimeout(refreshCommunityNames,280);
+});
 communityEl('deckName').maxLength=120;
 communityEl('pilotName').maxLength=80;
 // Refresh state-sensitive name suggestions every time the file dialog opens.
@@ -11769,11 +11927,7 @@ function prepareCardZoneMove(current, source, destination){
         : next.royals.find(r=>deckCardById(r)?.faction===card.faction) || next.royals[0];
       next.royals=next.royals.map(r=>r===replace ? id : r);
     }else next.royals.push(id);
-    // Keep as many extra Main copies as Side has room for; discard overflow.
-    const extras=count(next.main);
-    const room=Math.max(0,MAX_SIDE_DECK-sum(next.side));
-    put(next.side,count(next.side)+Math.min(extras,room));
-    delete next.main[id];
+    // Keep remaining Main copies after moving one into the Royal slot.
   }else if(to==='bastion'){
     if(next.royals.length>=2 && id!=='abandoned-castle' && card.faction!=='Colourless' &&
        !next.royals.some(r=>deckCardById(r)?.faction===card.faction)){
@@ -11785,7 +11939,6 @@ function prepareCardZoneMove(current, source, destination){
   }else if(to==='main' || to==='side'){
     if(to==='main'){
       if(isBastionOptionId(id)) return fail('Bastions belong in the Bastion slot or Side Deck.');
-      if(next.royals.includes(id)) return fail('Move the active Royal itself to unselect it first.');
       let allowed=null;
       if(next.bastion!=='abandoned-castle'){
         if(next.royals.length>=2) allowed=new Set(['Colourless',...next.royals.map(r=>deckCardById(r)?.faction)]);
