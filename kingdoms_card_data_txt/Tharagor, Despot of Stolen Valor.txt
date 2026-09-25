@@ -9,7 +9,7 @@ Image ID: 43
 Image URL: https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/green/Tharagor%2C%20Despot%20of%20Stolen%20Valor.jpg
 
 Rules Text:
-Slow - [Cost 3]: Target a non-scroll card in your grave, this cultivates it. (A cultivated card becomes a supply with no effects but keeps its original types.)
+Slow – [Cost 3]: Target a non-scroll card in your grave, this cultivates it. (A cultivated card becomes a supply with no effects but keeps its original types.)
 
 [Trigger]: When this cultivates a card with an entrance effect; You may activate it.
 
