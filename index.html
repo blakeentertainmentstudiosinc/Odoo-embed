@@ -1685,6 +1685,13 @@ function cardRulesText(c){
 function formatCardRulesText(text){
   let value = String(text || '');
 
+  // Display-only Levy cleanup: keep the rules/source data intact, but hide
+  // Levy's side-deck reminder sentence anywhere card text is rendered.
+  value = value.replace(
+    /(\[\s*Levy\s*\]\s*:\s*A deck may contain up to 9 copies of this\.)\s*A side deck may have up to 15 cards with levy before they count towards its capacity\./gi,
+    '$1'
+  );
+
   // If a keyword/label is written directly before a bullet, e.g.
   // "Epic - • ...", "Fringe – • ...", or "Once Per Turn - • ...",
   // start the new line at that keyword instead of at the bullet itself.
