@@ -2,8 +2,9 @@
 <!--
 KINGDOMS TCG DECK BUILDER — SOURCE GUIDE
 
-Single-file app for local use and embedding. Card data, artwork, application
-logic, and responsive styles remain bundled together.
+Single-file app for local use and embedding. Application logic and responsive
+styles remain bundled together. Live card metadata/rules are pulled from the
+GitHub kingdoms_card_data_txt folder at runtime; artwork keeps its existing URLs.
 
 CSS CLEANUP (2026-09-18)
 Removed 523 superseded declarations, 132 empty rules, and 11
@@ -1546,132 +1547,159 @@ const CARD_IMAGE_IDS = {
    Source-of-truth rules text transcribed from the supplied card images.
    Tooltips and the inspector read from this table rather than inventing text.
    ============================================================================ */
-const CARD_RULE_TEXT = {
-  "restless-dwarf": "[On Attack]: This gets +1 ATK for each dwarf you control, until the end step.\n\n[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.",
-  "valthruess-piercing-eye-of-the-storm": "Epic – [Entrance]: If played from the hand/throne room, you may destroy all other non-bastion cards. Starting with you & going in turn order, each player chooses up to 3 cards in grave that were destroyed this way & plays them. For each non-terra card played this way, its player searches their terra deck for a basic terra, plays it taxed, & shuffles. Then this gets a +1/+1 counter for each terra in play. (Only resolve one epic effect per turn.)\n\n[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.",
-  "two-ton-tonic": "[On Play]: Target a unit, supply this to it.\n\n[Passive]: If supplied, can’t be supplied to a new target.\n\n[Trigger]: When this becomes supplied to a unit; the unit gets a vitality counter. (If a unit with a vitality counter would be destroyed or dealt lethal damage, remove its vitality counters & prevent that damage/destruction instead.)",
-  "scold": "Target a player. They burn 2. (To burn, a player sends the top card of their main deck to grave.)",
-  "ambush-predator": "[Invulnerable to]: Poison damage.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Reach]: Defends as if it had ranged. Takes no combat damage while attacking a non-ranged/reach unit.\n\n[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Grapple]: Takes no combat damage when attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is alive.",
-  "plyeth-invulnerable-bog-frog": "[Invulnerable to]: Poison damage, effect damage, enemy scroll effects, magis, druids, & shamans.\n\n[Reach]: Defends as if it had ranged. Takes no combat damage attacking non-/reach/ranged units.\n\n[Overwhelm]: While attacking, deals excess combat damage to the bastion.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.",
-  "become-plant": "[Optional Cost]: Discard a card; reduce this card’s cost by 1.\n\nTarget a unit, until the end of your next turn the unit has -3 ATK, is rooted, & also has the flora type. (Rooted units can’t defend the bastion & only move by card effect.)",
-  "effigy-of-evolution": "[Entrance]: Target any number of terra/flora you control or in your grave, this cultivates them. (A cultivated card is also a supply but loses its original effects.)\n\n[Tax & Cost 2]: Choose a terra this is cultivating & play it, or re-activate this card’s entrance effect.\n\nOnce – [Tax & Cost 3]: Target a non-human unit. Transfer all cultivated cards from this to the unit & then sacrifice this. This turn the unit gets +1 ATK for each card it’s cultivating. (Effects with once can’t resolve multiple copies in one turn.)",
-  "seedling": "[Entrance]: You may discard a card, if you discarded a terra/flora card this way, draw 1.\n\n[Trigger]: If this enters the grave; you may exile it & add a natural terra from your grave/terra deck to your hand. (Shuffle & reveal if from deck.)\n\n[Rooted]: Can’t defend the bastion & only moves by card effect.",
-  "terra-quake": "Split X damage among as many enemy units as possible. Then split X damage among as many friendly units as possible. X = The number of terra you control, plus the terra in your grave. (Terra-Quake deals the damage.)\n\n[Optional Cost]: Sacrifice terra, as you play this; increase X by 1 for each.",
-  "trailblazer": "[Urgency]: May attack/use tax effects immediately.\n\n[Entrance]: You may exile a terra from your grave; play a terra from your hand/your cultivated cards. It enters untaxed if from your cultivated cards, otherwise it enters taxed.\n\n[Trigger once per turn]: When this grapples a unit; untax this.\n\n[Grapple]: Takes no combat damage attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is in play.",
-  "mordin-veteran-undertaker": "[Entrance & Upkeep]: Reveal the top 2 cards of your main deck; you may send any units among them to the grave. The other cards go back on top in any order.\n\n[Passive]: Mordin gets +1/+1 for every 2 units in all exiles combined. Instead of going to the grave, friendly units may be exiled with an after-life counter. You may pay 1 Gold to do the same to enemy units.\n\nFringe – [Once per your turn, Cost 4]: Target a unit exiled with an after-life counter & play it with an un-death counter. (Instead of dying, it’s exiled.)",
-  "frogue": "[Sneak]: If able to attack a bastion, may target its units. Non-reflex units can’t move in response to sneak.\n\n[Poison]: Any amount of combat damage this deals to a unit is enough to destroy it.",
-  "pocket-lhint": "[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.",
-  "rot": "[Dreg]: Cannot be a royal.\n\n[Invulnerable to]: The effects of -1/-1 counters.\n\nRitual – As you play ROT you MUST sacrifice a unit(s): For each, put a -1/-1 counter on ROT & reduce its cost by 1.\n\n[Passive]: Units deal combat damage to each-other in the form of -1/-1 counters. Units leaving play transfer their -1/-1 counters to ROT. ROT’s ATK is equal to the number of -1/-1 counters it has.",
-  "de-xaio-oni-of-the-end": "Fringe – [Once per your turn]: Choose one –\n• +[0]: This gets +1 morale for each relic you control. If you control this card, “Corrosis Talisman”, “Blessed Stone”, “Seed of the Ancient Tree”, & “Orb of Tsunami” you may activate this card’s fringe effect again.\n• -[13]: If you control this card, “Corrosis Talisman”, “Blessed Stone”, “Seed of the Ancient Tree”, & “Orb of Tsunami” you win the game.",
-  "sarath-noble-knight": "[Passive]: Gets +1/+1 for every 2 counters on your throne room.\n\nEpic – [Entrance]: You may sacrifice this card & target a royal you own in a throne room zone. If you do, play it & that zone gets 2 counters. (Only resolve one epic effect per turn.)\n\n[Trigger]: When a royal you own enters the throne room; you may play this card from the grave with an undeath counter by paying its cost(s). (Gets exiled instead of dying.)",
-  "posse-of-peasants": "[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.",
-  "dwarven-cathedral": "One Of Us! – If one or more royals you control are yellow: Card effects you activate may target (or effect) the kingdom instead of the front-line.\n\nFringe – [Once per your turn, Exalt Cost 3]: If you control two or more royals: for each unit you exalt (exile) from grave, reduce this cost by 1; the next unit effect you activate that requires a target may have an extra target declared. (May be the same target twice.)",
-  "the-pyre-of-fire": "One Of Us! – If one or more royals you control are blue: Whenever an enemy plays a card from the grave, exile, or throne room, they burn equal to the card’s printed cost. (To burn, a player sends the top card of their main deck to the grave.)\n\nFringe – [Once per your turn]: If you control two or more royals; target a player, they burn 1 & then draw 1.",
-  "goblin-boneyard": "One Of Us! – If one or more royals you control are red: Goblins you control have urgency. (May attack/use tax effects immediately.)\n\nFringe – [Once per your turn]: If you control two or more royals; target a goblin in your grave, you may pay its cost(s) to play it with an undeath counter. (They get exiled instead of dying.)",
-  "the-harshlands": "One Of Us! – If one or more royals you control are green: Enemy units can’t move from the front-line to the Kingdom except by card effect & units you control don’t have rooted. (Rooted: Can’t defend its bastion & can’t move except by card effect.)\n\n[Passive]: If you control two or more royals; enemy units on the front-line get taxed during their untax step (instead of untaxing) unless they have rooted or restless.",
-  "abandoned-castle": "All For One! – You have 1 throne room zone instead of 2.\n\nOne For All! – Cards in your deck(s) may be from any faction.\n\nFort – If playing a game mode where a fort type bastion is required: It starts with 8 less morale, & you only have 1 throne room zone. Also your terra deck size is 5-10, & your main deck size is 20-45.",
-  "aceus-arms-cache": "[Tax, Cost 2]: Target a non-lord unit, it gets a +1/+1 counter.\n\n[Tax, Discard 1]: Target a non-lord unit, it gets +1/+1 until the end of the turn.\n\n[Trigger Once Per Turn, Cost 1]: When a modified unit you control attacks; draw 1 card. (A unit is modified if it has a non-morale counter, a supply, or if its atk/hp don’t match its printed atk/hp.)",
-  "after-the-storm": "Only activate this card immediately after a unit(s) you control on the front-line is destroyed; for each, target an enemy unit on the front-line and destroy them.",
-  "aires-lord-of-battle": "[Urgency]: May attack/use tax effects immediately.\n\n[Entrance]: Except the 1st time; it levels up & for each copy of it you’ve leveled up, it gets +[1] morale.\n\nSwift Fringe – [Once Per Turn]: May move for -[1].\n\nFringe – [Once Per Your Turn]: If untaxed, choose one: -[2]: This turn, this gets +4 ATK. +[O]: Target a bastion & a lord, both get +[1].",
-  "ambush-archer": "[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.\n\n[Entrance]: Target a unit or bastion & this deals 1 damage to it.",
-  "argon-the-telekinetic": "[Reflex]: Deals combat damage first against non-reflex units. Dealing lethal damage ends combat.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Entrance]: You may target a unit & tax it. It stays taxed while you control this card.\n\n[Dies]: You may target a unit & tax it, then exile each other copy of this card from your grave. The target stays taxed if this is in grave & you control a blue royal/this is your royal.",
-  "ashen-the-red-cowl": "[Urgency]: May attack/use tax effects immediately.\n\n[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.\n\n[Bloodthirsty]: Exile the destroyed unit instead. You may play cards exiled this way by paying their cost(s) as long as you control a copy of this card.",
-  "assassinate": "Target a unit & destroy it.",
-  "avren-the-spellsword": "[Entrance]: Except the first time; it levels up & gets 2 +1/+1 counters for each copy of it you’ve leveled up.\n\n[Trigger]: When you draw from a card effect; this gets a +1/+1 counter for each card.\n\n[Dies]: If this isn’t your royal, you may place it in an empty throne room zone of yours but don’t increase your throne room tax. (This becomes an extra royal.)",
-  "back-stab": "Target a friendly unit on the front-line & an enemy unit. Your unit attacks the enemy unit but yours doesn’t get taxed or take combat damage. (This is as an extra attack.)",
-  "backup-bomb": "Target a unit or bastion, this deal 2 damage to it.",
-  "bad-omen": "Target a unit & move it, it cannot move again this turn.",
-  "barbar-dwarf": "[Berserk]: Once per your turn, immediately after this deals combat damage, untax it.\n\n[Urgency]: May attack/use tax effects immediately.\n\n[Combative]: When this deals combat damage to a unit; you may untax this.",
-  "become-krab": "Target a unit. Until the end of your next turn its printed effects are stopped. Plus it’s a 1/2 green krab (aquan) instead of its printed ATK/HP, unit types, & faction.",
-  "big-shield-dwarf": "[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Evasive]: If taxed & defending, takes no combat damage.\n\n[Trigger]: When this takes damage; tax it.",
-  "blessed-stone": "Epic, Slow – [Tax & Sacrifice]: Target a unit in your grave & exile it. Then target a unit in any grave & play it. (Only resolve one epic effect per turn. Slow effects can’t be used as a response.)",
-  "bottom-feeding-mulch-maker": "[Grapple]: Takes no combat damage when attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is alive.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Trigger]: When a unit you control dies; This gets a +1/+1 counter.",
-  "buzzsaw-beetle": "[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Entrance]: Burn 3 from your terra deck, then if your terra deck is empty, draw 1.\n\n[Passive]: If you were to draw from an empty deck, put a +1/+1 counter on this instead.",
-  "corrosis-talisman": "[Force]: Must finish resolving before cards/effects without force can be played. Except generating gold & other special actions.\n\nEpic Force – [Cost 1, Tax, & Sacrifice]: Target a relic or supply in play/any card in grave, stop its effects, then exile it. (Only resolve one epic effect per turn.)",
-  "cosmic-visions": "Choose one or both as you play this: • Sacrifice any number of terra you control &/or exile any number of terra from your grave; Draw 1 for each. • Discard any number of cards from your hand; +1 Gold for each.",
-  "cowardly-retreat": "Target a unit & send it to the top of its deck, or if it’s your turn you may shuffle it into its deck instead.",
-  "dauz-aceus-forgemaster": "[Passive]: Reduce the cost of supplies in your hand that cost 2+, by 1. (Not to 0)\n\n[Passive, Trigger Once Per Turn]: If a supplied unit would be destroyed; You may exile 1 of its supplies & prevent what would destroy it.\n\nFringe – [Once Per Your Turn]: Choose one; +[0]: Reveal cards from the top of your main deck until you reveal a supply, add it to your hand, & shuffle the other cards back. -[1]: Target a supply in your grave, send it to your hand. +[1]: Target a non-continuous supply & supply it to a new valid target.",
-  "deep-visions": "Draw 2, then discard 1 from your hand.",
-  "dreyraka-herald-of-the-harshlands": "[Grapple]: Takes no combat damage when attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is alive.\n\n[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Passive]: Units without restless enter the front-line taxed, unless their controller pays 1 Gold.",
-  "drez-the-druid-warrior": "[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Entrance]: Reveal a dwarf card from your main deck & put it on the top of your main deck.\n\n[Dies]: If this isn’t your royal & you have an empty throne room zone; it may ascend. When this ascends you may trigger its entrance.\n\n[Cost 3]: Re-activate this cards entrance.",
-  "dwarfed-dwarf": "[Sneak]: If able to attack a bastion, may target its units. Non-reflex units can’t move in response to sneak.\n\n[Evasive]: If taxed & defending, takes no combat damage.\n\n[Entrance]: If you control another unit; this gets a +1/+1 counter.",
-  "dwarven-bannerman": "[Entrance]: Target a non-lord unit, it gets a +1/+1 counter.\n\n[Tax & Cost 2]: Target a non-lord unit, it gets a +1/+1 counter.",
-  "dwarven-champion": "[Optional Shared Cost]: Tax up to 2 (untaxed) dwarves you control; each shares 1 gold towards this card’s cost.\n\n[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Berserk]: Once per your turn, immediately after this deals combat damage, untax it.",
-  "dwarven-trenchman": "[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Entrance]: This turn enemy units on the front-line can’t move, can’t resolve entrance effects, & can’t deal damage if attacking.\n\n[Optional Cost]: Sacrifice a terra; reduce this card’s cost by 1. If you did, this card’s entrance effect gains - “Also, enemy units on the front-line can’t deal damage if defending.”",
-  "eagle-eye": "[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.\n\n[Reflex]: Deals combat damage first against non-reflex units. Dealing lethal damage ends combat.\n\n[Entrance]: Draw 1.\n\n[Passive]: If you play this as a response to you or another player studying, reduce its cost by 1.",
-  "elder-magi": "[Reach]: Defends as if it had ranged. Takes no combat damage while attacking a non-ranged/reach unit.\n\n[Urgency]: May attack/use tax effects immediately.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.",
-  "erkava": "Only Activate this as a non-terra card enters/activates its effect. If its paid cost to be played/activate its effect was 1 or less, target it & stop its effects this turn. If you did & it’s a scroll/relic/supply that was played this turn, destroy it.\n\n[Optional Cost]: Pay an extra Gold; replace “1” in the effect text above with “3”.",
-  "ethereal-shield": "[Reach]: Defends as if it had ranged. Takes no combat damage while attacking a non-ranged/reach unit.\n\n[Dodge]: May direct damage from itself to your bastion.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Entrance/Dies]: You may study 1. If you did & this is alive, it gets a -1/-1 counter.",
-  "gazing-tree-of-the-south-wind": "Undergrowth – You may play basic terra from your grave as if they were in your hand.\n\nFringe – [Once Per Your Turn]: If you control two or more royals: Target a unit in your grave, you may play it this turn by paying its cost.",
-  "goblin-commando": "[Critical]: If attacking a unit, deals double combat damage.\n\n[Entrance]: Target a unit, stop its effects this turn, then if its your turn this gets a +1/+1 counter.",
-  "goblinoid": "[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.",
-  "heath-the-prideful": "[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Survivor]: When this survives 1 or more combat damage; it gets a +1/+1 counter.\n\n[Optional Cost]: This may enter with up to 2 -1/-1 counters; Reduce its cost by 1 for each.\n\nLevel Up – [Entrance]: Except the first; it levels up & gets a +1/+1 counter, then it gets another for each copy you’ve leveled up.",
-  "helga-the-bog-witch": "[Trigger Once Per Turn]: After you study; Draw 1, then this gets a +1/+1 counter.",
-  "im-trying-to-study": "Only activate this immediately after a player studies. Target a unit, this deals 3 damage to it.",
-  "igdranis-ancient-tree-of-ages": "[Rooted]: Can’t defend the bastion & only moves by card effect.\n\nSwift Fringe – [Once Per Turn]: Choose one; +[2]: Target a cultivated card you control or a flora card in your grave, play it by paying its cost(s) & exiling another copy of it from your hand, grave, or main deck. (Shuffle.) -[6] &\n\n[Cost 1, Sacrifice a flora/terra]: Choose the target(s) of an effect that is targeting a card(s) you control.",
-  "jack-wolf-man-the-tame": "[Urgency]: May attack/use tax effects immediately.\n\n[Finesse]: May take no combat damage while attacking.\n\n[Bloodthirsty]: You may target a unit or bastion, this deals 2 effect damage to it.\n\n[Passive]: Damage dealt by red cards you control is increased by 1.",
-  "kh-lip-the-goblin-king": "[Entrance]: Reveal a “Goblinoid” from your main deck, add it to your hand, then shuffle.\n\n[Passive]: All goblin units you control get +1 atk.\n\n[Once Per Your Turn]: If Untaxed Choose one; +[1]: Play a “Goblinoid” from your hand. -[2]: Re-activate this card’s entrance & you may re-activate this card’s fringe effect this turn.",
-  "lhint-goblin-mutationmancer": "[Passive]: Gets +1 ATK for each relic you control. Goblins you control are also relics. Non-lord goblin units you control get +1 HP.\n\n[Optional Upkeep]: Cost 1 & Discard 1; play a “Pocket L’hint” from your side deck for each HP this card has.\n\n[Cost 3 & Sacrifice a Relic]: This gets a +1/+1 counter for each goblin you control.",
-  "lillia-saint-of-vitality": "Swift Fringe – [Once Per Turn]: Target a unit you control, it may use its hp value as its atk value while attacking this turn.\n\n[Tax, Cost 2]: Choose one; • Target any unit you control & re-activate its entrance effect. • Target a unit you control without a vitality counter & give it one. (If a card with a vitality counter would be destroyed, remove its vitality counters & prevent what would destroyed it.)",
-  "little-thief": "[Urgency]: May attack/use tax effects immediately.\n\n[Entrance]: Target an enemy, they exile the top card of their main deck. Until the end of your next turn you may play it by paying its cost(s). If you don’t, the opp may send it back to the top of their deck at their next upkeep.",
-  "lord-xavi-master-of-the-council": "[Entrance]: Except the first time; it levels up & its fringe effect becomes “\n\nSwift Fringe – [Once Per Turn]”.\n\nFringe – [Once Per Your Turn]: If untaxed, choose one: • - [1]: Draw 1 card. • +[1]: Study 1 (View the top card of a deck you own, put it back on top or on bottom.) • -[9]: Target a unit. Its controller exiles the top card of their main deck, a random card from their hand, & the unit. Repeat this for each time you’ve leveled up a copy of Xavi.",
-  "lotus-shrine": "[Trigger]: If another player controls no terra cards; sacrifice this.\n\nOnce – [Tax]: +1 Gold. (Effects with once can’t resolve multiple copies in one turn.)",
-  "lotus-toad": "[Urgency]: May attack/use tax effects immediately.\n\n[Tax]: In response to your bastion taking damage; Prevent that damage, then deal the same amount of damage to an enemy bastion & exile this if the damage was greater than 1.\n\n[Trigger]: When a card is played and its paid cost was less than its printed cost. This deals damage to the players bastion equal to the difference.",
-  "lucid-mind": "Study 1, then draw 1.",
-  "magi-freshman": "[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.\n\n[Entrance]: Study X. X = the number of “Magi Freshman” you control.",
-  "noble-squire": "[Passive]: Gets +1/+1 for each royal you control. (A royal is any card from the throne room.)",
-  "nuvish-nature-s-bulwark": "[Epic]\n\n[Passive]: Increase the cost to play units by 1.\n\n[Entrance]: Reveal a “Plantoid” from your deck, add it to your hand, then shuffle.\n\nFringe – [Once Per Your Turn]: Choose one; • - [1]: The next unit you play costs 1 less. • +[1]: Re-activate this card’s entrance.",
-  "orb-of-tsunami": "[Passive]: All units you control with 2 or less printed ATK get +1 ATK.\n\nEpic – [Cost 4, Tax, & Sacrifice]: Destroy all non-lord units with 3 or less current ATK. (Only resolve one epic effect per turn.)",
-  "overpower": "Only activate this card when a unit enters. Target it, if its paid cost was 1 or less, destroy it & stop its effects this turn.\n\n[Optional Cost]: Pay an extra Gold; replace the “1” in the above effect text with “3”.",
-  "overtired": "Target a unit, if it’s taxed, destroy it.",
-  "phoenix-feather": "Target a unit you control, it becomes rested & then, either its hp heals, or prevent its next source of damage.\n\n[Optional Cost]: Pay an extra gold; If you do, this gets the additional effect – “Target an enemy unit on the front-line. Move your unit to the front-line & it attacks the enemy unit but stays rested.” (This is an extra attack.)",
-  "plague-rogue": "[Poison]: Any amount of combat damage this deals to a unit is enough to destroy it.\n\n[Entrance]: Target a unit, this turn it has poison.",
-  "plantoid": "[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.\n\n[Rooted]: Can’t defend the bastion & only moves by card effect.\n\n[Additional Cost]: Sacrifice 1 terra card.\n\n[Tax]: Reduce the next cost you pay this turn by 1, or by 2 if you control another “Plantoid”.",
-  "poisoned-dagger": "[On Play]: Target a unit, supply this to it.\n\n[Passive]: A unit supplied with this gets:\n• +1 ATK.\n• [Dies]: Draw 1.\n• [Poison]: Any amount of combat damage this deals to a unit is enough to destroy it.",
-  "pushback-magi": "[Reflex]: Deals combat damage first against non-reflex units. Dealing lethal damage ends combat.\n\n[Swift]\n\n[Entrance]: Target a unit; Tax it & stop any effects it would gain from entering play. Then: If its on the battlefield – You may move it to the kingdom. If its in the kingdom – You may send it to the hand.",
-  "pyro-magi-warrior": "[Combative]: When this deals combat damage to a unit; its controller burns 1 card for each damage, then if this doesn’t have a +1/+1 counter, it gets one. (To burn, a player sends the top card of their main deck to grave.)\n\n[Reflex]: Deals combat damage first against non-reflex units. Dealing lethal damage ends combat.",
-  "ready-another-axe": "[On Play]: Target a unit, supply this to it.\n\n[Passive]: A unit supplied with this has berserk.\n\n[Berserk]: Once per your turn, immediately after this deals combat damage, untax it.",
-  "reckless-mercenary": "[Passive]: Reduce this cards cost by 1 for each unit you control that was destroyed in combat/by enemy card effect(s) this turn.\n\n[Berserk]: Once per your turn, immediately after dealing combat damage, untax this.\n\n[Opportunist]: If attacking a taxed unit, may take no combat damage.",
-  "red-cloak": "[On Play]: Target a unit, supply this to it.\n\n[Passive]: A unit supplied with this gets +2 ATK.\n\n[Optional Cost]: Discard 1 card as you play this; reduce its cost by 1 & exile 1 card from the top of your main deck face up. If this card resolves, you may play the exiled card until the end of your next turn by paying its cost(s).",
-  "red-riding-rogue": "[Urgency]: May attack/use tax effects immediately.\n\n[Entrance]: Target a friendly unit & an enemy unit. Your unit attacks the enemy unit but yours’ doesn’t get taxed or take combat damage. (This is as an extra attack.)",
-  "relaxed-dwarf": "[Tax, Cost 2]: Target a unit; it untaxes & this gets a -1/-1 counter.",
-  "riptide-elemental": "[Dodge]: May direct damage from itself to your bastion.\n\n[Entrance]: Target up to 2 units. Prevent all damage they do this turn, tax them, & choose one to stay taxed during its next untax step. Then, for each taxed enemy unit in play, this gets a +1/+1 counter. Now, for every 2 +1/+1 counters on this card, you may draw 1.",
-  "rogue-thief": "[Urgency]: May attack/use tax effects immediately.\n\n[Finesse]: May take no combat damage while attacking.\n\n[Dies]: You may target a relic or supply in play/in an enemy grave & take control of it/play it, then exile this card. A supply taken this way may be supplied to a valid target.",
-  "rogue-toad": "[Poison]: Any amount of combat damage this deals to a unit is enough to destroy it.",
-  "rootsnare-druid": "[Grapple]: Takes no combat damage when attacking taxed units. Units this deals combat damage to get taxed & stay taxed during their untax step if this is alive.\n\n[Entrance]: Target a unit, this may grapple it, then you may move it to the front-line &/or tax it. If it’s taxed, this turn it takes O combat damage & is untargettable. If it’s untaxed, remove up to 2 of its counters or destroy 1 of its supplies.",
-  "seed-of-the-ancient-tree": "[Entrance]: Each player searches their terra deck for a terra card & plays them taxed. (Shuffle.)\n\nEpic – [Tax]: If you control less terra than another player & this is the first card you’ve taxed this turn; +1 Gold. (Only resolve one epic effect per turn.)\n\n[Cost 2, Tax, & Sacrifice]: All players sacrifice a mythic terra.",
-  "shadow-striker": "[Urgency]: May attack/use tax effects immediately.\n\n[Sneak]: If able to attack a bastion, may target its units. Non-reflex units can’t move in response to sneak.\n\n[On attack]: Has dodge for the attack. (May direct damage from itself to your bastion.)",
-  "shiny-rock": "Epic – [Tax & Sacrifice]: +1 Gold. (Only resolve one epic effect per turn.)",
-  "shiny-stone": "[Levy]: A deck may contain up to 9 copies of this. A side deck may have up to 15 cards with levy before they count towards its capacity.\n\n[Tax & Sacrifice]: +1 Gold.",
-  "shrine-of-greed": "Enters play taxed unless you pay 2 gold. Once -\n\n[Tax & Sacrifice]: Draw 2 cards. Only use one copy of this effect per turn.",
-  "speed-scroll": "Epic – The next cost you pay this turn is reduced by 2. (Only resolve one epic effect per turn.)",
-  "stack-lhumbar": "[Restless]: May stay untaxed to attack. Gives it no extra attacks.\n\n[Survivor]: When this survives 1 or more combat damage; it gets a +1/+1 counter.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Passive]: This may guard as many times as you like each turn.",
-  "sy-laqon-natures-apex": "[Rooted]: Can’t defend the bastion & only moves by card effect.\n\n[Overwhelm]: While attacking, deals excess combat damage to the bastion.\n\n[Entrance]: This may cultivate all terra/flora in your grave.\n\n[Passive]: Gets +1/+1 for each cultivated card you control.",
-  "tharagor-despot-of-stolen-valor": "Non-Swift -\n\n[Cost 3]: Target a non-scroll card in your grave, this cultivates it. (A cultivated card becomes a supply with no effects but keeps its original types.)\n\n[Trigger]: When this cultivates a card with an entrance effect; You may activate it.\n\n[Passive]: This gains the printed effects/types of cards it is cultivating. Lords this cultivates have their morale counters put on Tharagor instead.",
-  "the-harder-they-fall": "Target a player. They sacrifice a non-lord unit with the lowest ATK.\n\n[Optional Cost]: You may put 1 unit from your hand to the bottom of your deck as you play this, if you do, reduce this cards cost by 1.",
-  "the-king-of-thieves": "[Entrance]: This levels up. For each copy of it you've leveled up, each enemy exiles a card face down from the top of their main deck. Those cards count towards your hand size. You may play, look at, & discard them as if they were in your hand. Even while you don't control this card.\n\nFringe – [Once Per Your Turn]: If untaxed, choose one - [2]: Target a unit/bastion, this deals 2 effect damage to it. - [1]: +1 Gold.",
-  "the-sword-of-boundless-energy": "[On Play]: Target a unit, supply this to it.\n\nSlow – [Cost 2]: Target a unit, supply this to it. (Slow effects can’t be activated as a response.)\n\n[Passive]: A unit supplied with this gets:\n• +2 ATK.\n• [Restless]: May stay untaxed to attack. Gives it no extra attacks.\n• [Urgency]: May attack/use tax effects immediately.",
-  "the-thieves-den-rebellion-main-hq": "Fence- Once per turn when you play a card you don't own: You may discard 1 card to play a taxed \"Shiny Stone\" from your side deck.\n\nFringe – [Once Per Your Turn]: Choose one; Epic - • Send a basic terra card you control to your hand: +1 Gold. • If you control 2 or more royals: +1 Gold. (A royal is any card from the throne room. Only resolve one epic effect per turn.)",
-  "undergrowth-druid": "[Entrance]: Reveal the top 4 cards of your main deck, you may send any units amoung those cards to the grave and the rest to the bottom of the deck.\n\n[Passive]: Units in your grave are also flora type.",
-  "vellaceus-dwarven-capital": "Garrison - You may play a unit from the top of your main deck by declaring its name, then revealing it & paying its cost(s).\n\n[Passive]: While you control 2 or more royals; Non-lord units you control on the battlefield get +1/+1 & lords you control on the battlefield get +1 atk.",
-  "vengeful-spirit": "[Dodge]: May direct damage from itself to your bastion.\n\n[Ranged]: If in the kingdom, may attack the front-line. If able to attack a bastion, may target its units. Only ranged units can defend themselves/their bastion from ranged.\n\n[Entrance]: Target a unit & tax it. While this card is in your control, the target has its effects stopped & it stays taxed during its untax phase.",
-  "vitoria-tower": "Scrutinize - Once per turn if you would study: You may study double that many instead.\n\nFringe – [Once Per Your Turn]: If you control 2 or more royals; Study 1, then draw 1.",
-  "western-watchtower": "[Tax]: +1 Gold.\n\n[Tax & Sacrifice]: Prevent combat damage during the next instance of combat this turn. (After this resolves.)",
-  "wild-force": "[Additional Cost]: Sacrifice a “Terra”. Target a non-bastion card & exile it.\n\n[Force]: Must finish resolving before cards/effects without force can be played. Except generating gold & other special actions.\n\n[Passive]: Cards can respond to this without force, except its target.",
-  "wisp-willow-raging-flame": "[Passive]: Copies of \"Wisp, & Willow the Twin Flame\" you play count towards this cards level up.\n\n[Trigger Once Per Turn]: When a scroll is played; All enemies burn 1 card, then you may burn 1 card & if you do, all enemies burn 1 card. (Burn a card by sending the top card of your main deck to the grave.)\n\nLevel Up – [Entrance]: The 2nd+ a copy of this you own; It's trigger effect loses \"once per turn\". (Round Down.)",
-  "wisp-willow-twin-flame": "[Passive]: If you would pay extra Gold to play a card, instead you may burn 1 for each extra Gold you would pay. (To burn, a player sends the top card of their main deck to grave.)\n\n[Trigger Once Per Turn]: When a scroll is played; all enemies burn 1 & you may burn 1. If you do, all enemies burn 1 again.\n\n[Trigger Once Per Sequence]: When 2 or more enemy cards are burned; this gets a +1/+1 counter.",
-  "woodlin-sprite": "[Reach]: Defends as if it had ranged. Takes no combat damage while attacking a non-ranged/reach unit.\n\n[Guard]: Tax this; direct a source of damage to it. May only guard a zone it’s in.\n\n[Trigger]: When this moves; You may target a unit you control other than \"Woodlin Spirit\" & move it.",
-  "zjar-master-pyromancer": "[Passive]: If a player would burn cards, they burn twice that many cards instead. Burned cards are exiled when they enter the grave. While Zjar is in play, cards in exile by Zjar can be activated by their owners but their cost is increased by 1.\n\nFringe – [Once Per Your Turn]: Choose one; • +[1]: All players burn 1 card. • -[3]: All players burn 3 cards. (Burn a card by sending the top card of your main deck to the grave.)"
+const CARD_RULE_TEXT = Object.create(null);
+
+const KINGDOMS_CARD_DATA_TXT = {
+  owner: "blakeentertainmentstudiosinc",
+  repo: "Odoo-embed",
+  branch: "main",
+  folder: "kingdoms_card_data_txt",
+  apiUrl: "https://api.github.com/repos/blakeentertainmentstudiosinc/Odoo-embed/contents/kingdoms_card_data_txt?ref=main",
+  rawBaseUrl: "https://raw.githubusercontent.com/blakeentertainmentstudiosinc/Odoo-embed/main/kingdoms_card_data_txt/"
 };
+
+const CARD_DATA_TXT_STATE = {
+  ready: false,
+  loading: false,
+  failed: false,
+  promise: null,
+  loadedCount: 0,
+  error: null
+};
+
+function parseKingdomsCardDataTxt(rawText){
+  const source = String(rawText || '').replace(/\r\n?/g, '\n').replace(/^\uFEFF/, '').replace(/(?:^|\n)Image ID:\s*.*(?=\n|$)/gi, '');
+  const rulesMatch = source.match(/(?:^|\n)Rules Text:\s*\n([\s\S]*)$/i);
+  const field = label => {
+    const m = source.match(new RegExp(`(?:^|\\n)${label}:\\s*(.*)$`, 'im'));
+    return m ? m[1].trim() : '';
+  };
+
+  return {
+    name: field('Name'),
+    id: field('ID'),
+    dataGroup: field('Data Group'),
+    cost: field('Cost'),
+    faction: field('Faction'),
+    type: field('Type'),
+    stats: field('Stats'),
+    imageUrl: field('Image URL'),
+    text: rulesMatch ? rulesMatch[1].trim() : ''
+  };
+}
+
+function applyKingdomsTxtRecord(record){
+  if(!record || !record.id) return false;
+
+  const card =
+    CARDS.find(c => c.id === record.id) ||
+    BASTION_OPTIONS.find(c => c.id === record.id) ||
+    TERRA_CARDS.find(c => c.id === record.id) ||
+    null;
+
+  if(!card) return false;
+
+  if(record.name) card.name = record.name;
+  if(record.faction) card.faction = record.faction;
+  if(record.type) card.type = record.type;
+  if(record.stats) card.stats = record.stats;
+
+  if(record.cost !== ''){
+    const parsedCost = Number(record.cost);
+    card.cost = Number.isFinite(parsedCost) ? parsedCost : record.cost;
+  }
+
+
+  if(record.imageUrl) CARD_IMAGE_URLS[record.id] = record.imageUrl;
+
+  CARD_RULE_TEXT[record.id] = record.text || '';
+  card.text = record.text || '';
+
+  return true;
+}
+
+async function fetchKingdomsTxtDirectory(){
+  const response = await fetch(KINGDOMS_CARD_DATA_TXT.apiUrl, {
+    headers: { Accept: 'application/vnd.github+json' },
+    cache: 'no-store'
+  });
+  if(!response.ok) throw new Error(`GitHub TXT directory request failed (${response.status})`);
+  const entries = await response.json();
+  if(!Array.isArray(entries)) throw new Error('GitHub TXT directory returned an unexpected response.');
+  return entries.filter(entry => entry && entry.type === 'file' && /\.txt$/i.test(entry.name || ''));
+}
+
+async function fetchKingdomsTxtFile(entry){
+  const url = entry.download_url ||
+    (KINGDOMS_CARD_DATA_TXT.rawBaseUrl + encodeURIComponent(entry.name).replace(/%2F/gi, '/'));
+
+  const response = await fetch(url, { cache: 'no-store' });
+  if(!response.ok) throw new Error(`${entry.name}: ${response.status}`);
+  return response.text();
+}
+
+async function loadKingdomsCardDataFromTxt(){
+  if(CARD_DATA_TXT_STATE.promise) return CARD_DATA_TXT_STATE.promise;
+
+  CARD_DATA_TXT_STATE.loading = true;
+  CARD_DATA_TXT_STATE.failed = false;
+  CARD_DATA_TXT_STATE.error = null;
+
+  CARD_DATA_TXT_STATE.promise = (async () => {
+    const entries = await fetchKingdomsTxtDirectory();
+
+    const results = await Promise.allSettled(entries.map(async entry => {
+      const raw = await fetchKingdomsTxtFile(entry);
+      const record = parseKingdomsCardDataTxt(raw);
+      return applyKingdomsTxtRecord(record) ? record.id : null;
+    }));
+
+    CARD_DATA_TXT_STATE.loadedCount = results.filter(result =>
+      result.status === 'fulfilled' && result.value
+    ).length;
+
+    const failures = results.filter(result => result.status === 'rejected');
+    if(failures.length && CARD_DATA_TXT_STATE.loadedCount === 0){
+      throw failures[0].reason || new Error('No TXT card data could be loaded.');
+    }
+
+    CARD_DATA_TXT_STATE.ready = true;
+    CARD_DATA_TXT_STATE.loading = false;
+
+    // ROYAL_OPTIONS was computed from CARDS earlier. Mutating CARDS preserves the
+    // object references, so metadata/rules updates above are immediately visible.
+    // Re-render once after loading so names/types/stats/tooltips reflect GitHub.
+    try{
+      if(typeof renderAll === 'function') renderAll();
+    }catch(err){
+      console.warn('[Kingdoms TXT data] render refresh skipped:', err);
+    }
+
+    document.dispatchEvent(new CustomEvent('kingdoms-card-data-ready', {
+      detail: { loadedCount: CARD_DATA_TXT_STATE.loadedCount, totalFiles: entries.length }
+    }));
+
+    return CARD_DATA_TXT_STATE.loadedCount;
+  })().catch(err => {
+    CARD_DATA_TXT_STATE.loading = false;
+    CARD_DATA_TXT_STATE.failed = true;
+    CARD_DATA_TXT_STATE.error = err;
+    CARD_DATA_TXT_STATE.promise = null;
+    console.error('[Kingdoms TXT data] Failed to load card data from GitHub:', err);
+    return 0;
+  });
+
+  return CARD_DATA_TXT_STATE.promise;
+}
+
 CARD_RULE_TEXT["natural-terra"]="[Tax]: +1 Gold.";
+const naturalTerraFallback = TERRA_CARDS.find(card => card.id === "natural-terra");
+if(naturalTerraFallback) naturalTerraFallback.text = CARD_RULE_TEXT["natural-terra"];
 
 
-// Keep the card objects themselves fully populated so every renderer, tooltip,
-// saved deck, and future feature sees the audited rules text.  CARD_RULE_TEXT
-// is transcribed from the supplied card images.
-[...CARDS, ...BASTION_OPTIONS].forEach(card => {
-  if(card && CARD_RULE_TEXT[card.id]) card.text = CARD_RULE_TEXT[card.id];
-});
+// Card records are populated from the TXT files in the GitHub repository.
+// Existing card objects are mutated in place so all current renderers keep working.
+loadKingdomsCardDataFromTxt();
 
 
 // IMAGE-AUTHORITATIVE CARD DATA AUDIT
@@ -2419,6 +2447,33 @@ try { localStorage.removeItem('kingdomsTooltipTextEditsV1'); } catch (_) {}
 
 
 
+function sanitizeCardDisplayText(value){
+  return String(value == null ? '' : value)
+    // Source/transport fields are never user-facing inspector metadata.
+    .replace(/(?:^|\n)\s*(?:Image\s*ID|Image\s*URL|Rules\s*Text)\s*:\s*[^\n]*(?=\n|$)/gi, '')
+    .replace(/\b(?:Image\s*ID|Image\s*URL|Rules\s*Text)\s*:\s*[^·|\n]+(?:\s*[·|]\s*)?/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function cardDisplayMetaParts(card){
+  if(!card) return [];
+  const parts = [];
+  const isBastion = BASTION_OPTIONS.some(b => b.id === card.id) || String(card.type || '').trim().toLowerCase() === 'bastion';
+  // Bastions use their own stats presentation. Keep cost/faction on the card
+  // object for deck legality and filtering, but do not print those fields in
+  // inspector/tool-tip stats where they read as the stray "Cost Faction" line.
+  if(!isBastion){
+    if(card.cost !== '' && card.cost != null) parts.push('Cost ' + card.cost);
+    if(card.faction) parts.push(card.faction);
+    if(card.type) parts.push(card.type);
+  }
+  if(card.stats) parts.push(card.stats);
+  return [...new Set(parts
+    .map(part => sanitizeCardDisplayText(part))
+    .filter(part => part && !/^(?:Image\s*ID|Image\s*URL|Rules\s*Text)\s*:/i.test(part)))];
+}
+
 function cardInspectorLookup(id){
   return CARDS.find(x => x.id === id) || ROYAL_OPTIONS.find(x => x.id === id) || BASTION_OPTIONS.find(x => x.id === id) || TERRA_CARDS.find(x => x.id === id);
 }
@@ -2436,14 +2491,10 @@ function openCardInspector(card){
   const rules = document.getElementById('cardInspectorRules');
 
   name.textContent = card.name || 'Unnamed Card';
-  const metaParts = [];
-  if(card.cost !== '' && card.cost != null) metaParts.push('Cost ' + card.cost);
-  if(card.faction) metaParts.push(card.faction);
-  if(card.type) metaParts.push(card.type);
-  if(card.stats) metaParts.push(card.stats);
+  const metaParts = cardDisplayMetaParts(card);
   meta.textContent = metaParts.join(' · ');
 
-  const rawRules = formatCardRulesText(cardRulesText(card));
+  const rawRules = sanitizeCardDisplayText(formatCardRulesText(cardRulesText(card)));
   rules.textContent = rawRules || 'No card text listed.';
   rules.classList.toggle('inspector-unavailable', !rawRules);
 
@@ -2530,12 +2581,8 @@ function renderStickyCardData(c, messages = [], variant = 'warning'){
   const tooltip = document.getElementById('cardHoverTooltip');
   if(!tooltip || !c) return;
 
-  const text = formatCardRulesText(cardRulesText(c));
-  const metaParts = [];
-  if(c.cost !== '' && c.cost != null) metaParts.push(`Cost ${c.cost}`);
-  if(c.faction) metaParts.push(c.faction);
-  if(c.type) metaParts.push(c.type);
-  if(c.stats) metaParts.push(c.stats);
+  const text = sanitizeCardDisplayText(formatCardRulesText(c ? cardRulesText(c) : ''));
+  const metaParts = cardDisplayMetaParts(c);
   const metaHtml = metaParts.length
     ? `<div class="hover-meta">${escapeHtml(metaParts.join(' · '))}</div>`
     : '';
